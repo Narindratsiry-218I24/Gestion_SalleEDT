@@ -1,0 +1,109 @@
+@{
+    ViewBag.Title = "Structures";
+}
+
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Configuration Académique</h1>
+            <p class="text-gray-500 mt-1">Gérez les mentions, niveaux, et filières de l'établissement.</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle Structure
+            </button>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="award" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Mentions</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0">4</h4>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <i data-lucide="layers" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Filières</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0">12</h4>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Classes</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0">24</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
+        <div class="p-6 border-b border-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-lg text-[#17203A] m-0">Hiérarchie Académique</h3>
+            <div class="relative w-[300px]">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <input type="text" placeholder="Rechercher une mention, filière..." class="w-full pl-9 pr-3 h-10 bg-gray-50 border border-gray-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+            </div>
+        </div>
+        <div class="p-0">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Mention / Filière</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100" id="structuresTableBody">
+                    <tr><td colspan="2" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadStructures() {
+            $.get("/api/Mention", function(data) {
+                const tbody = $("#structuresTableBody");
+                tbody.empty();
+                if(data.length === 0) {
+                    tbody.append('<tr><td colspan="2" class="text-center py-4 text-gray-500">Aucune structure trouvée.</td></tr>');
+                    return;
+                }
+                data.forEach(function(m) {
+                    tbody.append(`
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="py-4 px-6 font-semibold text-[#17203A]">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="award" class="w-4 h-4 text-blue-500"></i> 
+                                    Mention: ${m.NomMention}
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 text-right">
+                                <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+                lucide.createIcons();
+            });
+        }
+
+        $(document).ready(function() {
+            loadStructures();
+        });
+    </script>
+}

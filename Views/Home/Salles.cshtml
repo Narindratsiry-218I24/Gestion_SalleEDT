@@ -1,0 +1,190 @@
+@{
+    ViewBag.Title = "Salles de classe";
+}
+
+<div class="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Salles</h1>
+            <p class="text-gray-500 mt-1">Gérez l'infrastructure, la capacité d'accueil et la disponibilité des salles sur l'ensemble du campus.</p>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Bâtiment</span>
+                <select class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">Tous</option>
+                    <option value="A">Bâtiment A</option>
+                    <option value="B">Bâtiment B</option>
+                    <option value="C">Bâtiment C</option>
+                    <option value="D">Bâtiment D</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Type de salle</span>
+                <select class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">Tous</option>
+                    <option value="cours">Cours</option>
+                    <option value="tp">TP</option>
+                    <option value="amphi">Amphi</option>
+                </select>
+            </div>
+            <button class="h-11 px-6 bg-[#17203A] text-white hover:bg-[#12192B] gap-2 font-bold rounded-md flex items-center border-none" onclick="document.getElementById('addRoomModal').classList.remove('hidden')">
+                <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Salle
+            </button>
+        </div>
+    </div>
+
+    <!-- Room Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h4 class="text-slate-500 text-sm font-semibold mb-2">Total Salles</h4>
+            <p class="text-3xl font-black text-[#17203A]">124</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles de Cours</h4>
+            <p class="text-3xl font-black text-[#17203A]">82</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles TP</h4>
+            <p class="text-3xl font-black text-[#17203A]">30</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h4 class="text-slate-500 text-sm font-semibold mb-2">Amphithéâtres</h4>
+            <p class="text-3xl font-black text-[#17203A]">12</p>
+        </div>
+    </div>
+
+    <!-- Room Inventory Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Nom Salle</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Capacité</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100" id="roomTableBody">
+                    <tr><td colspan="3" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Campus Layout & Usage -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-full">
+        <div class="lg:col-span-8 h-full">
+            <div class="h-full min-h-[300px] bg-gray-100 flex items-center justify-center relative overflow-hidden group rounded-xl">
+                <div class="absolute inset-0 bg-blue-900/5 transition-colors duration-500"></div>
+                <div class="relative z-10 text-center p-12">
+                    <div class="bg-white px-4 py-2 rounded-lg shadow-sm font-bold text-[#17203A] mb-4 inline-block">Plan Interactif du Campus</div>
+                    <p class="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">La cartographie visuelle sera affichée ici.</p>
+                </div>
+            </div>
+        </div>
+        <div class="lg:col-span-4 h-full">
+            <div class="bg-white rounded-xl shadow-sm p-6 h-full">
+                <h3 class="text-lg font-bold text-[#17203A] mb-4">Usage & Efficacité</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-500">Taux d'occupation global</span>
+                        <span class="font-bold text-[#17203A]">76%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: 76%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Room Modal (Hidden by default) -->
+    <div id="addRoomModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addRoomModal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter une nouvelle salle</h2>
+                <form class="space-y-4" id="formAddRoom">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la salle</label>
+                        <input type="text" id="nomSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ex: Salle 101" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Capacité</label>
+                        <input type="number" id="capaciteSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ex: 40" />
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50" onclick="document.getElementById('addRoomModal').classList.add('hidden')">Annuler</button>
+                        <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b]">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadSalles() {
+            $.get("/api/Salle", function(data) {
+                const tbody = $("#roomTableBody");
+                tbody.empty();
+                if(data.length === 0) {
+                    tbody.append('<tr><td colspan="3" class="text-center py-4 text-gray-500">Aucune salle trouvée.</td></tr>');
+                    return;
+                }
+                data.forEach(function(s) {
+                    tbody.append(`
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="py-4 px-6 font-semibold text-[#17203A]">${s.NomSalle}</td>
+                            <td class="py-4 px-6">${s.Capacite} places</td>
+                            <td class="py-4 px-6 text-right">
+                                <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none" onclick="deleteSalle(${s.IdSalle})">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+                lucide.createIcons();
+            });
+        }
+
+        function deleteSalle(id) {
+            if(confirm("Voulez-vous vraiment supprimer cette salle ?")) {
+                $.ajax({
+                    url: '/api/Salle/' + id,
+                    type: 'DELETE',
+                    success: function() { loadSalles(); }
+                });
+            }
+        }
+
+        $(document).ready(function() {
+            loadSalles();
+            
+            $("#formAddRoom").submit(function(e) {
+                e.preventDefault();
+                const data = {
+                    NomSalle: $("#nomSalle").val(),
+                    Capacite: parseInt($("#capaciteSalle").val())
+                };
+                $.ajax({
+                    url: '/api/Salle',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function() {
+                        $("#addRoomModal").addClass("hidden");
+                        $("#formAddRoom")[0].reset();
+                        loadSalles();
+                    },
+                    error: function(err) {
+                        alert("Erreur lors de l'ajout");
+                    }
+                });
+            });
+        });
+    </script>
+}

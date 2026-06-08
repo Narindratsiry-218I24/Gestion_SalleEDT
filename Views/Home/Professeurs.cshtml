@@ -1,0 +1,140 @@
+@{
+    ViewBag.Title = "Enseignants";
+}
+
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Annuaire des Enseignants</h1>
+            <p class="text-gray-500 mt-1">Gérez le corps professoral et leurs disponibilités.</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Enseignant
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100">
+        <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Recherche</span>
+            <div class="relative w-[250px]">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <input type="text" placeholder="Nom, email..." class="w-full pl-9 pr-3 h-10 bg-gray-50/50 border-none font-medium text-[#17203A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Statut</span>
+            <select class="w-[150px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                <option value="all">Tous</option>
+                <option value="actif">Actif</option>
+                <option value="conge">En Congé</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Teachers Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 flex-1 content-start" id="professeursGrid">
+        <div class="col-span-full text-center py-12 text-gray-500 font-bold">Chargement...</div>
+    </div>
+
+    <!-- Add Prof Modal -->
+    <div id="addProfModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addProfModal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter Enseignant</h2>
+                <form class="space-y-4" id="formAddProf">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                        <input type="text" id="nomProf" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                        <input type="text" id="prenomProf" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white" onclick="document.getElementById('addProfModal').classList.add('hidden')">Annuler</button>
+                        <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadProfesseurs() {
+            $.get("/api/Professeur", function(data) {
+                const grid = $("#professeursGrid");
+                grid.empty();
+                if(data.length === 0) {
+                    grid.append('<div class="col-span-full text-center py-12 text-gray-500 font-bold">Aucun enseignant trouvé.</div>');
+                    return;
+                }
+                data.forEach(function(p) {
+                    grid.append(`
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group relative">
+                            <div class="h-24 bg-[#17203A]"></div>
+                            <div class="px-6 pb-6 relative">
+                                <div class="w-20 h-20 rounded-xl bg-white p-1 absolute -top-10 left-6 shadow-sm">
+                                    <div class="w-full h-full bg-blue-100 rounded-lg flex items-center justify-center text-blue-800 font-black text-2xl">
+                                        ${(p.Nom ? p.Nom.substring(0,1) : '')}${(p.Prenom ? p.Prenom.substring(0,1) : '')}
+                                    </div>
+                                </div>
+                                <div class="mt-14">
+                                    <h3 class="font-bold text-lg text-[#17203A] m-0">${p.Nom} ${p.Prenom}</h3>
+                                </div>
+                                <div class="mt-4 flex gap-2">
+                                    <button class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 rounded-lg text-sm border-none cursor-pointer transition-colors" onclick="deleteProf(${p.IdProfesseur})">
+                                        Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+                lucide.createIcons();
+            });
+        }
+
+        function deleteProf(id) {
+            if(confirm("Voulez-vous vraiment supprimer cet enseignant ?")) {
+                $.ajax({
+                    url: '/api/Professeur/' + id,
+                    type: 'DELETE',
+                    success: function() { loadProfesseurs(); }
+                });
+            }
+        }
+
+        $(document).ready(function() {
+            loadProfesseurs();
+            
+            $("#formAddProf").submit(function(e) {
+                e.preventDefault();
+                const data = {
+                    Nom: $("#nomProf").val(),
+                    Prenom: $("#prenomProf").val()
+                };
+                $.ajax({
+                    url: '/api/Professeur',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function() {
+                        $("#addProfModal").addClass("hidden");
+                        $("#formAddProf")[0].reset();
+                        loadProfesseurs();
+                    },
+                    error: function(err) {
+                        alert("Erreur lors de l'ajout");
+                    }
+                });
+            });
+        });
+    </script>
+}

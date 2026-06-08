@@ -1,0 +1,203 @@
+@{
+    ViewBag.Title = "Emplois du temps";
+}
+
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Emploi du Temps</h1>
+            <p class="text-gray-500 mt-1">Gérer la répartition hebdomadaire des cours</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none" onclick="document.getElementById('newRequestModal').classList.remove('hidden')">
+                <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle Demande
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100 print:hidden">
+        <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Classe</span>
+            <select class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                <option value="all">Toutes les classes</option>
+                <option value="1">L1 Informatique</option>
+                <option value="2">M1 Management</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Enseignant</span>
+            <select class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                <option value="all">Tous les enseignants</option>
+                <option value="1">Dr. Rakoto</option>
+                <option value="2">Pr. Rasoa</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Salle</span>
+            <select class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                <option value="all">Toutes les salles</option>
+                <option value="1">Salle 101</option>
+                <option value="2">Labo Info 1</option>
+            </select>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Période</span>
+            <div class="flex items-center gap-4">
+                <button class="h-8 w-8 text-gray-400 hover:text-gray-700 p-1 rounded-md bg-transparent border-none">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <span class="font-bold text-[#17203A] text-sm">Cette Semaine</span>
+                <button class="h-8 w-8 text-gray-400 hover:text-gray-700 p-1 rounded-md bg-transparent border-none">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
+        <div class="lg:col-span-3 print:col-span-4 print:w-full h-full">
+            <div class="hidden print:block mb-6">
+                <h1 class="text-2xl font-bold text-[#17203A] m-0">École de Management et d'Innovation Technologique</h1>
+                <h2 class="text-xl font-bold text-gray-800 m-0">Emploi du Temps Universitaire</h2>
+                <p class="text-sm text-gray-500 m-0">Généré le @DateTime.Now.ToShortDateString()</p>
+            </div>
+            
+            <!-- Placeholder for TimetableGrid -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full min-h-[600px] flex items-center justify-center relative">
+                <!-- Days Header -->
+                <div class="absolute top-0 left-0 w-full flex border-b border-gray-100 bg-gray-50/50">
+                    <div class="w-20 border-r border-gray-100 p-2"></div>
+                    <div class="flex-1 p-3 text-center border-r border-gray-100 font-bold text-[#17203A] text-sm">Lundi</div>
+                    <div class="flex-1 p-3 text-center border-r border-gray-100 font-bold text-[#17203A] text-sm">Mardi</div>
+                    <div class="flex-1 p-3 text-center border-r border-gray-100 font-bold text-[#17203A] text-sm">Mercredi</div>
+                    <div class="flex-1 p-3 text-center border-r border-gray-100 font-bold text-[#17203A] text-sm">Jeudi</div>
+                    <div class="flex-1 p-3 text-center font-bold text-[#17203A] text-sm">Vendredi</div>
+                </div>
+                <!-- Time Column -->
+                <div class="absolute top-[45px] left-0 h-full w-20 border-r border-gray-100 bg-gray-50/50 flex flex-col pt-4">
+                    <div class="h-24 text-xs font-bold text-gray-400 text-center relative"><span class="absolute -top-2 left-0 w-full">08:00</span></div>
+                    <div class="h-24 text-xs font-bold text-gray-400 text-center relative"><span class="absolute -top-2 left-0 w-full">10:00</span></div>
+                    <div class="h-24 text-xs font-bold text-gray-400 text-center relative"><span class="absolute -top-2 left-0 w-full">12:00</span></div>
+                    <div class="h-24 text-xs font-bold text-gray-400 text-center relative"><span class="absolute -top-2 left-0 w-full">14:00</span></div>
+                    <div class="h-24 text-xs font-bold text-gray-400 text-center relative"><span class="absolute -top-2 left-0 w-full">16:00</span></div>
+                </div>
+                
+                <!-- Placeholder for dynamic course blocks -->
+                <div id="edtDynamicGrid">
+                    <div class="text-gray-400 font-medium italic mt-20 text-center w-full block absolute">Chargement de l'emploi du temps...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="print:hidden">
+            <!-- SidebarSchedules -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+                <div>
+                    <h3 class="font-bold text-[#17203A] mb-4">Informations Rapides</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-900 m-0">Semaine Pair</p>
+                                <p class="text-xs text-gray-500 m-0">Les TP du groupe B auront lieu cette semaine.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-gray-100">
+                    <h3 class="font-bold text-[#17203A] mb-4">Statut des Salles Actuel</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600 font-medium">Libres maintenant</span>
+                            <span class="font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">14</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600 font-medium">Occupées</span>
+                            <span class="font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">8</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Print/Download buttons -->
+    <div class="fixed bottom-10 right-10 flex flex-col gap-3 print:hidden z-40">
+        <button onclick="window.print()" title="Imprimer l'emploi du temps" class="w-14 h-14 rounded-2xl bg-[#17203A] hover:bg-[#12192B] shadow-2xl p-0 flex items-center justify-center text-white border-none cursor-pointer transition-transform hover:scale-105">
+            <i data-lucide="printer" class="w-6 h-6"></i>
+        </button>
+        <button onclick="window.print()" title="Télécharger l'emploi du temps en PDF" class="w-14 h-14 rounded-2xl bg-[#5C8ABF] hover:bg-[#4a729e] shadow-2xl p-0 flex items-center justify-center text-white border-none cursor-pointer transition-transform hover:scale-105">
+            <i data-lucide="download" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Add Request Modal -->
+    <div id="newRequestModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('newRequestModal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                <h2 class="text-xl font-bold text-[#17203A] mb-4">Soumettre une Requête</h2>
+                <p class="text-sm text-gray-500 mb-6">Demander un changement de salle, reprogrammer un cours ou annuler une séance.</p>
+                <form class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type de demande</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                            <option>Changement de salle</option>
+                            <option>Déplacement de cours</option>
+                            <option>Annulation de cours</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Motif / Justification</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20 h-24" placeholder="Veuillez détailler la raison de votre demande..."></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50" onclick="document.getElementById('newRequestModal').classList.add('hidden')">Annuler</button>
+                        <button type="button" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b]" onclick="document.getElementById('newRequestModal').classList.add('hidden'); alert('Demande soumise avec succès.');">Soumettre</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            function loadEDT() {
+                $.get("/api/EDT", function(data) {
+                    const grid = $("#edtDynamicGrid");
+                    grid.empty();
+                    if(!data || data.length === 0) {
+                        grid.append('<div class="text-gray-400 font-medium italic mt-20 text-center w-full block absolute">Aucun cours planifié cette semaine.</div>');
+                        return;
+                    }
+                    
+                    // Simple dummy render logic since we don't have full layout grid calculated dynamically
+                    // Ideally you would map DayOfWeek and Time to Left/Top coordinates here.
+                    let topOffset = 65;
+                    data.forEach(function(c, index) {
+                        grid.append(`
+                            <div class="absolute top-[${topOffset}px] left-[calc(5rem+${(index%5)*20}%)] w-[19%] h-20 bg-blue-100 border-l-4 border-blue-600 rounded-md p-2 shadow-sm text-xs z-10 hover:shadow-md transition-shadow cursor-pointer">
+                                <p class="font-bold text-blue-900 m-0 truncate">${c.Matiere ? c.Matiere.NomMatiere : 'Cours ' + c.IdDemande}</p>
+                                <p class="text-blue-800 m-0 truncate mt-1">${c.Salle ? c.Salle.NomSalle : 'Salle'}</p>
+                            </div>
+                        `);
+                        topOffset += 90;
+                    });
+                }).fail(function() {
+                    $("#edtDynamicGrid").empty().append('<div class="text-gray-400 font-medium italic mt-20 text-center w-full block absolute">Erreur de chargement.</div>');
+                });
+            }
+            loadEDT();
+        });
+    </script>
+}

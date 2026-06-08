@@ -1,0 +1,139 @@
+@{
+    ViewBag.Title = "Cours";
+}
+
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Cours</h1>
+            <p class="text-gray-500 mt-1">Gérez le catalogue des matières et des cours dispensés.</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer" onclick="document.getElementById('addCoursModal').classList.remove('hidden')">
+                <i data-lucide="plus" class="w-4 h-4"></i> Nouveau Cours
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100">
+        <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Recherche</span>
+            <div class="relative w-[250px]">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <input type="text" placeholder="Nom de la matière..." class="w-full pl-9 pr-3 h-10 bg-gray-50/50 border-none font-medium text-[#17203A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code Matière</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Matière</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Filière / Semestre</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Crédits</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100" id="coursTableBody">
+                    <tr><td colspan="5" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Cours Modal -->
+    <div id="addCoursModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addCoursModal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter un Cours/Matière</h2>
+                <form class="space-y-4" id="formAddCours">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la matière</label>
+                        <input type="text" id="nomMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Code Matière</label>
+                        <input type="text" id="codeMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white" onclick="document.getElementById('addCoursModal').classList.add('hidden')">Annuler</button>
+                        <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadCours() {
+            $.get("/api/Matiere", function(data) {
+                const tbody = $("#coursTableBody");
+                tbody.empty();
+                if(data.length === 0) {
+                    tbody.append('<tr><td colspan="5" class="text-center py-4 text-gray-500">Aucun cours trouvé.</td></tr>');
+                    return;
+                }
+                data.forEach(function(c) {
+                    tbody.append(`
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="py-4 px-6 font-semibold text-[#17203A]">${c.CodeMatiere || 'N/A'}</td>
+                            <td class="py-4 px-6 font-medium text-gray-900">${c.NomMatiere}</td>
+                            <td class="py-4 px-6"><span class="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">Filière / Semestre</span></td>
+                            <td class="py-4 px-6">6</td>
+                            <td class="py-4 px-6 text-right">
+                                <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer" onclick="deleteCours(${c.IdMatiere})">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+                lucide.createIcons();
+            });
+        }
+
+        function deleteCours(id) {
+            if(confirm("Voulez-vous vraiment supprimer ce cours ?")) {
+                $.ajax({
+                    url: '/api/Matiere/' + id,
+                    type: 'DELETE',
+                    success: function() { loadCours(); }
+                });
+            }
+        }
+
+        $(document).ready(function() {
+            loadCours();
+            
+            $("#formAddCours").submit(function(e) {
+                e.preventDefault();
+                const data = {
+                    NomMatiere: $("#nomMatiere").val(),
+                    CodeMatiere: $("#codeMatiere").val()
+                };
+                $.ajax({
+                    url: '/api/Matiere',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function() {
+                        $("#addCoursModal").addClass("hidden");
+                        $("#formAddCours")[0].reset();
+                        loadCours();
+                    },
+                    error: function(err) {
+                        alert("Erreur lors de l'ajout");
+                    }
+                });
+            });
+        });
+    </script>
+}
