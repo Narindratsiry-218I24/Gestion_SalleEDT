@@ -23,6 +23,26 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Dashboard()
+    {
+        return View();
+    }
+
+    public IActionResult Connexion()
+    {
+        return View();
+    }
+
+    public IActionResult Inscription()
+    {
+        return View();
+    }
+
+    public IActionResult Parametres()
+    {
+        return View();
+    }
+
     public IActionResult Cours()
     {
         return View();

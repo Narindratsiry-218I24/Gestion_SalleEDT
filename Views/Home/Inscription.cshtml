@@ -1,0 +1,103 @@
+@{
+    ViewData["Title"] = "Inscription";
+}
+
+<div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f8fafc] px-4 py-12">
+    <div class="absolute left-[-10%] top-[-10%] h-[50%] w-[50%] rounded-full bg-[#17203A]/10 blur-[100px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-[#73A5D4]/10 blur-[100px]"></div>
+
+    <div class="relative w-full max-w-md rounded-3xl border border-white/50 bg-white/70 p-8 shadow-2xl shadow-[#17203A]/5 backdrop-blur-md">
+        <div class="mb-8 flex flex-col items-center">
+            <div class="mb-4 flex h-16 w-36 items-center justify-center rounded-2xl bg-white p-3 shadow-lg shadow-[#17203A]/10 ring-1 ring-gray-100">
+                <img src="~/images/emit-logo.png" asp-append-version="true" alt="EMIT" class="max-h-full max-w-full object-contain" />
+            </div>
+            <h1 class="text-2xl font-black tracking-tight text-[#17203A]">Inscription EMIT</h1>
+            <p class="mt-1 text-sm text-gray-500">Créez votre compte académique</p>
+        </div>
+
+        <form id="registerForm" class="space-y-4" novalidate>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label for="nom" class="block px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Nom</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                        <input id="nom" type="text" placeholder="Nom" class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[#17203A] outline-none transition focus:border-[#17203A] focus:ring-2 focus:ring-[#17203A]/20" />
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label for="prenom" class="block px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Prénom</label>
+                    <input id="prenom" type="text" placeholder="Prénom" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#17203A] outline-none transition focus:border-[#17203A] focus:ring-2 focus:ring-[#17203A]/20" />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label for="registerEmail" class="block px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Adresse Email</label>
+                <div class="relative">
+                    <i data-lucide="mail" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                    <input id="registerEmail" type="email" placeholder="Ex: jean@emit.mg" class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[#17203A] outline-none transition focus:border-[#17203A] focus:ring-2 focus:ring-[#17203A]/20" />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label for="role" class="block px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Rôle</label>
+                <select id="role" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#17203A] outline-none transition focus:border-[#17203A] focus:ring-2 focus:ring-[#17203A]/20">
+                    <option value="demandeur">Enseignant (Demandeur)</option>
+                    <option value="validateur">Chef de mention (Validateur)</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+            </div>
+
+            <p id="registerMessage" class="hidden rounded-xl px-4 py-3 text-sm font-semibold"></p>
+
+            <button id="registerButton" type="submit" class="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#17203A] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#17203A]/20 transition hover:bg-[#12192B] disabled:cursor-not-allowed disabled:opacity-60">
+                S'inscrire <i data-lucide="arrow-right" class="h-4 w-4 text-[#73A5D4] transition group-hover:translate-x-1"></i>
+            </button>
+        </form>
+
+        <div class="mt-8 border-t border-gray-100 pt-6 text-center">
+            <p class="text-sm text-gray-500">Vous avez déjà un compte ? <a asp-controller="Home" asp-action="Connexion" class="font-bold text-[#17203A] underline transition hover:text-[#73A5D4]">Connectez-vous</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("registerForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const data = {
+                Nom: document.getElementById("nom").value.trim(),
+                Prenom: document.getElementById("prenom").value.trim(),
+                Email: document.getElementById("registerEmail").value.trim(),
+                Role: document.getElementById("role").value
+            };
+            const message = document.getElementById("registerMessage");
+            const button = document.getElementById("registerButton");
+
+            if (data.Nom.length < 2 || data.Prenom.length < 2 || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(data.Email)) {
+                message.textContent = "Veuillez vérifier le nom, le prénom et l'adresse email.";
+                message.className = "rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600";
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = '<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i> Création...';
+            lucide.createIcons();
+
+            try {
+                const response = await fetch("/api/Utilisateur/Register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) throw new Error(await response.text() || "Échec de l'inscription.");
+                window.location.href = "/Home/Connexion";
+            } catch (error) {
+                message.textContent = error.message || "Échec de l'inscription.";
+                message.className = "rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600";
+                button.disabled = false;
+                button.innerHTML = "S'inscrire <i data-lucide=\"arrow-right\" class=\"h-4 w-4 text-[#73A5D4]\"></i>";
+                lucide.createIcons();
+            }
+        });
+    </script>
+}

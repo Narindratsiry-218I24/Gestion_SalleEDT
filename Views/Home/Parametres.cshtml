@@ -1,0 +1,93 @@
+@{
+    ViewBag.Title = "Paramètres";
+}
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-black tracking-tight text-[#17203A]">Paramètres du Système</h1>
+        <p class="mt-1 text-gray-500">Configurez les préférences globales et la sécurité de votre plateforme.</p>
+    </div>
+
+    <div class="flex flex-col gap-8 lg:flex-row">
+        <aside class="lg:w-64">
+            <div class="flex flex-col gap-2">
+                <button data-tab="general" class="settings-tab flex w-full items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-left font-bold text-blue-900"><i data-lucide="settings" class="h-4 w-4"></i> Général</button>
+                <button data-tab="security" class="settings-tab flex w-full items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-left font-bold text-gray-600 transition hover:bg-blue-50"><i data-lucide="lock" class="h-4 w-4"></i> Sécurité</button>
+                <button data-tab="notifications" class="settings-tab flex w-full items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-left font-bold text-gray-600 transition hover:bg-blue-50"><i data-lucide="bell" class="h-4 w-4"></i> Notifications</button>
+                <button data-tab="display" class="settings-tab flex w-full items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-left font-bold text-gray-600 transition hover:bg-blue-50"><i data-lucide="palette" class="h-4 w-4"></i> Affichage</button>
+            </div>
+        </aside>
+
+        <main class="flex-1">
+            <section data-panel="general" class="settings-panel space-y-6">
+                <div class="rounded-xl bg-white p-6 shadow-sm">
+                    <h2 class="text-xl font-bold text-[#17203A]">Informations Institutionnelles</h2>
+                    <p class="mt-1 text-sm text-gray-500">Détails affichés sur les rapports et en-têtes.</p>
+                    <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <label class="space-y-2"><span class="text-sm font-bold text-gray-700">Nom de l'Institution</span><input value="EMIT - Université de Fianarantsoa" class="h-11 w-full rounded-md border border-gray-100 bg-gray-50/30 px-4 font-medium outline-none focus:ring-2 focus:ring-[#17203A]/20" /></label>
+                        <label class="space-y-2"><span class="text-sm font-bold text-gray-700">Abréviation</span><input value="EMIT" class="h-11 w-full rounded-md border border-gray-100 bg-gray-50/30 px-4 font-medium outline-none focus:ring-2 focus:ring-[#17203A]/20" /></label>
+                    </div>
+                    <label class="mt-6 block space-y-2"><span class="text-sm font-bold text-gray-700">Adresse du Campus</span><input value="Andrainjato, Fianarantsoa 301, Madagascar" class="h-11 w-full rounded-md border border-gray-100 bg-gray-50/30 px-4 font-medium outline-none focus:ring-2 focus:ring-[#17203A]/20" /></label>
+                </div>
+                <div class="rounded-xl bg-white p-6 shadow-sm">
+                    <h2 class="text-xl font-bold text-[#17203A]">Délais et Calendriers</h2>
+                    <div class="mt-6 flex items-center justify-between rounded-xl border border-blue-50 bg-blue-50/30 p-4">
+                        <div><p class="font-bold text-[#17203A]">Année Universitaire Actuelle</p><p class="text-xs font-medium text-blue-900/60">Session en cours pour les emplois du temps.</p></div>
+                        <span class="rounded-md bg-blue-900 px-4 py-2 text-sm font-bold text-white">2025 - 2026</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-panel="security" class="settings-panel hidden rounded-xl bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-bold text-[#17203A]">Contrôle d'Accès</h2>
+                <p class="mt-1 text-sm text-gray-500">Gérez l'authentification et les tentatives de connexion.</p>
+                <div class="mt-6 flex items-center justify-between">
+                    <div><p class="font-bold text-gray-900">Double Authentification (2FA)</p><p class="text-sm text-gray-500">Ajoutez une couche de sécurité supplémentaire à votre compte.</p></div>
+                    <button type="button" class="relative h-6 w-11 rounded-full bg-gray-200"><span class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm"></span></button>
+                </div>
+                <div class="mt-6 flex cursor-pointer items-center gap-2 border-t pt-6 text-sm font-semibold text-red-600 hover:underline"><i data-lucide="shield-check" class="h-4 w-4"></i> Réinitialiser tous les mots de passe des utilisateurs</div>
+            </section>
+
+            <section data-panel="notifications" class="settings-panel hidden flex min-h-[300px] flex-col items-center justify-center rounded-xl bg-white p-8 text-center text-gray-500 shadow-sm">
+                <i data-lucide="bell" class="mb-4 h-12 w-12 text-gray-200"></i>
+                <p class="font-bold text-[#17203A]">Notifications par Email</p>
+                <p class="mt-2 max-w-xs text-sm">La passerelle SMTP sera bientôt disponible pour envoyer des alertes automatiques.</p>
+            </section>
+
+            <section data-panel="display" class="settings-panel hidden rounded-xl bg-white p-8 shadow-sm">
+                <h2 class="text-xl font-bold text-[#17203A]">Affichage</h2>
+                <p class="mt-2 text-sm text-gray-500">Thème clair optimisé pour les interfaces académiques et les tableaux de bord.</p>
+            </section>
+
+            <div class="mt-8 flex justify-end">
+                <button id="saveSettings" class="flex h-14 items-center gap-2 rounded-2xl bg-[#17203A] px-10 font-bold text-white shadow-xl shadow-blue-900/10 transition hover:bg-[#12192B]">
+                    <i data-lucide="save" class="h-5 w-5"></i> Enregistrer les modifications
+                </button>
+            </div>
+        </main>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll(".settings-tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                const target = tab.dataset.tab;
+                document.querySelectorAll(".settings-tab").forEach(item => item.className = "settings-tab flex w-full items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-left font-bold text-gray-600 transition hover:bg-blue-50");
+                tab.className = "settings-tab flex w-full items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-left font-bold text-blue-900";
+                document.querySelectorAll(".settings-panel").forEach(panel => panel.classList.toggle("hidden", panel.dataset.panel !== target));
+                lucide.createIcons();
+            });
+        });
+
+        document.getElementById("saveSettings").addEventListener("click", function () {
+            const button = this;
+            button.innerHTML = '<i data-lucide="loader-2" class="h-5 w-5 animate-spin"></i> Enregistrement...';
+            lucide.createIcons();
+            setTimeout(() => {
+                button.innerHTML = '<i data-lucide="save" class="h-5 w-5"></i> Enregistrer les modifications';
+                lucide.createIcons();
+            }, 1200);
+        });
+    </script>
+}

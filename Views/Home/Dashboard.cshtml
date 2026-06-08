@@ -1,0 +1,93 @@
+@{
+    ViewBag.Title = "Tableau de bord";
+}
+
+<div class="space-y-8">
+    <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div>
+            <h1 id="welcomeTitle" class="text-4xl font-black tracking-tight text-[#17203A]">Bienvenue</h1>
+            <p class="mt-1 text-gray-500">Voici un aperçu de l'état actuel de l'université.</p>
+        </div>
+        <a asp-controller="Home" asp-action="Validation" class="flex h-12 items-center gap-2 rounded-md bg-[#5C8ABF] px-6 font-bold text-white no-underline shadow-lg shadow-blue-900/10 transition hover:bg-[#4d7daf]">
+            <i data-lucide="trending-up" class="h-4 w-4"></i> Voir les rapports
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <i data-lucide="users" class="absolute -bottom-2 -right-2 h-20 w-20 opacity-5 transition group-hover:scale-110"></i>
+            <div class="flex items-center gap-4"><div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50"><i data-lucide="users" class="h-6 w-6 text-blue-600"></i></div><div><p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Enseignants Actifs</p><h2 id="totalProfesseurs" class="text-2xl font-black text-[#17203A]">--</h2></div></div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <i data-lucide="door-open" class="absolute -bottom-2 -right-2 h-20 w-20 opacity-5 transition group-hover:scale-110"></i>
+            <div class="flex items-center gap-4"><div class="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50"><i data-lucide="door-open" class="h-6 w-6 text-green-600"></i></div><div><p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Salles Disponibles</p><h2 id="totalSalles" class="text-2xl font-black text-[#17203A]">--</h2></div></div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <i data-lucide="calendar" class="absolute -bottom-2 -right-2 h-20 w-20 opacity-5 transition group-hover:scale-110"></i>
+            <div class="flex items-center gap-4"><div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50"><i data-lucide="calendar" class="h-6 w-6 text-amber-600"></i></div><div><p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Cours Aujourd'hui</p><h2 id="totalCours" class="text-2xl font-black text-[#17203A]">--</h2></div></div>
+        </div>
+        <div class="group relative overflow-hidden rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
+            <i data-lucide="check-square" class="absolute -bottom-2 -right-2 h-20 w-20 opacity-5 transition group-hover:scale-110"></i>
+            <div class="flex items-center gap-4"><div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50"><i data-lucide="check-square" class="h-6 w-6 text-red-600"></i></div><div><p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Validations en attente</p><h2 id="demandesAttente" class="text-2xl font-black text-[#17203A]">--</h2></div></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <section class="overflow-hidden rounded-xl bg-white shadow-sm lg:col-span-2">
+            <div class="flex items-center justify-between border-b border-gray-50 px-8 py-6">
+                <h2 class="text-xl font-bold text-[#17203A]">Activités Récentes</h2>
+                <a asp-controller="Home" asp-action="Requetes" class="flex items-center gap-1 font-bold text-blue-600 no-underline hover:bg-blue-50">Tout voir <i data-lucide="arrow-right" class="h-4 w-4"></i></a>
+            </div>
+            <div class="divide-y divide-gray-50">
+                <div class="activity-row flex items-center gap-4 p-6 transition hover:bg-gray-50"><span class="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-green-600"><i data-lucide="bell" class="h-[18px] w-[18px]"></i></span><div class="flex-1"><p class="font-bold text-gray-900">Nouveau planning validé</p><p class="text-xs text-gray-500">Admin - Il y a 10 min</p></div></div>
+                <div class="activity-row flex items-center gap-4 p-6 transition hover:bg-gray-50"><span class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600"><i data-lucide="bell" class="h-[18px] w-[18px]"></i></span><div class="flex-1"><p class="font-bold text-gray-900">Demande de salle Labo 3</p><p class="text-xs text-gray-500">Dr. Rakoto - Il y a 45 min</p></div></div>
+                <div class="activity-row flex items-center gap-4 p-6 transition hover:bg-gray-50"><span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600"><i data-lucide="bell" class="h-[18px] w-[18px]"></i></span><div class="flex-1"><p class="font-bold text-gray-900">Maintenance prévue Salle 104</p><p class="text-xs text-gray-500">Système - Il y a 2 heures</p></div></div>
+                <div class="activity-row flex items-center gap-4 p-6 transition hover:bg-gray-50"><span class="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600"><i data-lucide="bell" class="h-[18px] w-[18px]"></i></span><div class="flex-1"><p class="font-bold text-gray-900">Alerte conflit d'horaire L3</p><p class="text-xs text-gray-500">Système - Il y a 4 heures</p></div></div>
+            </div>
+        </section>
+
+        <aside class="space-y-8">
+            <div class="relative overflow-hidden rounded-xl bg-[#17203A] p-8 text-white shadow-xl">
+                <i data-lucide="trending-up" class="absolute right-6 top-6 h-24 w-24 opacity-10"></i>
+                <div class="relative z-10 space-y-6">
+                    <h2 class="text-xl font-bold">Performance Académique</h2>
+                    <div class="space-y-4"><div class="flex items-end justify-between"><p class="text-sm text-blue-200/70">Taux d'occupation des salles</p><p id="occupancyRateLabel" class="text-2xl font-black">--%</p></div><div class="h-2 overflow-hidden rounded-full bg-white/10"><div id="occupancyRateBar" class="h-full rounded-full bg-amber-500 transition-all" style="width:0%"></div></div></div>
+                    <a asp-controller="Home" asp-action="EDT" class="block h-12 rounded-xl bg-white px-4 py-3 text-center font-bold text-[#17203A] no-underline transition hover:bg-blue-50">Détails de l'analyse</a>
+                </div>
+            </div>
+            <div class="rounded-xl bg-white p-8 text-center shadow-sm">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50"><i data-lucide="life-buoy" class="h-8 w-8 text-amber-600"></i></div>
+                <h3 class="mt-4 font-bold text-gray-900">Support Technique</h3>
+                <p class="mt-1 text-xs text-gray-500">Besoin d'aide avec la plateforme ?</p>
+                <button class="mt-4 w-full rounded-xl border-2 border-dashed border-gray-200 py-3 font-bold text-gray-700 transition hover:border-[#17203A] hover:text-[#17203A]">Contacter le support</button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (async function () {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const firstName = user.Prenom || user.prenom || user.Nom || user.nom || user.Role || user.role || "";
+            document.getElementById("welcomeTitle").textContent = "Bienvenue" + (firstName ? ", " + firstName : "");
+
+            try {
+                const response = await fetch("/api/Dashboard/Stats");
+                if (!response.ok) throw new Error("Stats indisponibles");
+                const stats = await response.json();
+                const get = (pascal, camel) => stats[pascal] ?? stats[camel] ?? 0;
+                document.getElementById("totalProfesseurs").textContent = get("TotalProfesseurs", "totalProfesseurs");
+                document.getElementById("totalSalles").textContent = get("TotalSalles", "totalSalles");
+                document.getElementById("totalCours").textContent = get("TotalCours", "totalCours");
+                document.getElementById("demandesAttente").textContent = get("DemandesAttente", "demandesAttente");
+                const occupancy = Math.round(get("OccupancyRate", "occupancyRate"));
+                document.getElementById("occupancyRateLabel").textContent = occupancy + "%";
+                document.getElementById("occupancyRateBar").style.width = Math.max(0, Math.min(100, occupancy)) + "%";
+            } catch {
+                ["totalProfesseurs", "totalSalles", "totalCours", "demandesAttente"].forEach(id => document.getElementById(id).textContent = "0");
+                document.getElementById("occupancyRateLabel").textContent = "0%";
+            }
+        })();
+    </script>
+}

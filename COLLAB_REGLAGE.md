@@ -107,3 +107,8 @@ if (System.IO.File.Exists(envPath)) {
 - Appuyez sur **F5** ou cliquez sur **Démarrer** dans Visual Studio.
 - L'application devrait s'ouvrir dans votre navigateur.
 - Testez un endpoint API (ex: `/api/votre_controleur`) pour vérifier la connexion DB.
+
+
+//twaillind in 2026
+- npm.cmd run build:css
+- Update-Database

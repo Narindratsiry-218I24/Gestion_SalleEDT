@@ -8,11 +8,6 @@
             <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Configuration Académique</h1>
             <p class="text-gray-500 mt-1">Gérez les mentions, niveaux, et filières de l'établissement.</p>
         </div>
-        <div class="flex gap-3">
-            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer">
-                <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle Structure
-            </button>
-        </div>
     </div>
 
     <!-- Overview Cards -->
@@ -23,7 +18,7 @@
             </div>
             <div>
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Mentions</p>
-                <h4 class="text-2xl font-black text-[#17203A] m-0">4</h4>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statMentions">--</h4>
             </div>
         </div>
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -32,7 +27,7 @@
             </div>
             <div>
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Filières</p>
-                <h4 class="text-2xl font-black text-[#17203A] m-0">12</h4>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statFilieres">--</h4>
             </div>
         </div>
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -41,7 +36,7 @@
             </div>
             <div>
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Classes</p>
-                <h4 class="text-2xl font-black text-[#17203A] m-0">24</h4>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statClasses">--</h4>
             </div>
         </div>
     </div>
@@ -52,19 +47,21 @@
             <h3 class="font-bold text-lg text-[#17203A] m-0">Hiérarchie Académique</h3>
             <div class="relative w-[300px]">
                 <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                <input type="text" placeholder="Rechercher une mention, filière..." class="w-full pl-9 pr-3 h-10 bg-gray-50 border border-gray-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+                <input type="text" id="searchStructures" oninput="filterStructures()" placeholder="Rechercher une mention, filière..." class="w-full pl-9 pr-3 h-10 bg-gray-50 border border-gray-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
             </div>
         </div>
         <div class="p-0">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-100">
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Mention / Filière</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Mention</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Niveaux</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Filières associées</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="structuresTableBody">
-                    <tr><td colspan="2" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                    <tr><td colspan="4" class="text-center py-4 text-gray-500">Chargement...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -73,36 +70,95 @@
 
 @section Scripts {
     <script>
-        function loadStructures() {
-            $.get("/api/Mention", function(data) {
-                const tbody = $("#structuresTableBody");
-                tbody.empty();
-                if(data.length === 0) {
-                    tbody.append('<tr><td colspan="2" class="text-center py-4 text-gray-500">Aucune structure trouvée.</td></tr>');
-                    return;
-                }
-                data.forEach(function(m) {
-                    tbody.append(`
-                        <tr class="hover:bg-gray-50/50 transition-colors">
-                            <td class="py-4 px-6 font-semibold text-[#17203A]">
-                                <div class="flex items-center gap-2">
-                                    <i data-lucide="award" class="w-4 h-4 text-blue-500"></i> 
-                                    Mention: ${m.NomMention}
-                                </div>
-                            </td>
-                            <td class="py-4 px-6 text-right">
-                                <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `);
-                });
-                lucide.createIcons();
-            });
+        let allMentions = [];
+        let allFilieres = [];
+        let allNiveaux = [];
+        let allClasses = [];
+
+        async function loadStructures() {
+            const tbody = document.getElementById("structuresTableBody");
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500"></i> Chargement...</div></td></tr>';
+            if (window.lucide) lucide.createIcons();
+
+            try {
+                const [mentions, filieres, niveaux, classes] = await Promise.all([
+                    app.apiGet('/api/Mention'),
+                    app.apiGet('/api/Filiere'),
+                    app.apiGet('/api/Niveau'),
+                    app.apiGet('/api/Classe')
+                ]);
+                allMentions = mentions || [];
+                allFilieres = filieres || [];
+                allNiveaux = niveaux || [];
+                allClasses = classes || [];
+
+                document.getElementById("statMentions").textContent = allMentions.length;
+                document.getElementById("statFilieres").textContent = allFilieres.length;
+                document.getElementById("statClasses").textContent = allClasses.length;
+
+                renderStructures(allMentions);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-600 font-bold">Erreur: ${app.escapeHtml(err.message)}</td></tr>`;
+            }
         }
 
-        $(document).ready(function() {
+        function renderStructures(mentions) {
+            const tbody = document.getElementById("structuresTableBody");
+            tbody.innerHTML = "";
+
+            if (mentions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Aucune structure trouvée.</td></tr>';
+                return;
+            }
+
+            mentions.forEach(function(m) {
+                const id = app.readProp(m, "IdMention");
+                const nom = app.escapeHtml(app.readProp(m, "NomMention") || "");
+                const code = app.escapeHtml(app.readProp(m, "CodeMention") || "N/A");
+
+                // Get niveaux for this mention
+                const mentionNiveaux = allNiveaux.filter(n => app.readProp(n, "IdMention") == id);
+                const niveauxStr = mentionNiveaux.map(n => app.escapeHtml(app.readProp(n, "CodeNiveau") || "")).join(", ") || "Aucun";
+
+                // Get filieres for this mention
+                const mentionFilieres = allFilieres.filter(f => {
+                    const fMention = app.readProp(f, "Mention");
+                    return fMention && app.readProp(fMention, "IdMention") == id;
+                });
+                const filieresHtml = mentionFilieres.length > 0
+                    ? mentionFilieres.map(f => `<span class="inline-block bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-bold mr-1 mb-1">${app.escapeHtml(app.readProp(f, "CodeFiliere") || app.readProp(f, "NomFiliere") || "")}</span>`).join("")
+                    : '<span class="text-gray-400 text-xs italic">Aucune</span>';
+
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-4 px-6 font-semibold text-[#17203A]">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="award" class="w-4 h-4 text-blue-500"></i>
+                            ${nom}
+                        </div>
+                    </td>
+                    <td class="py-4 px-6"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${code}</span></td>
+                    <td class="py-4 px-6 text-gray-600 font-medium">${niveauxStr}</td>
+                    <td class="py-4 px-6">${filieresHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function filterStructures() {
+            const query = document.getElementById("searchStructures").value.toLowerCase().trim();
+            if (!query) { renderStructures(allMentions); return; }
+            const filtered = allMentions.filter(m => {
+                const nom = (app.readProp(m, "NomMention") || "").toLowerCase();
+                const code = (app.readProp(m, "CodeMention") || "").toLowerCase();
+                return nom.includes(query) || code.includes(query);
+            });
+            renderStructures(filtered);
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
             loadStructures();
         });
     </script>

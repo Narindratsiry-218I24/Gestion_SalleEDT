@@ -1,67 +1,200 @@
+@{
+    var action = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant();
+    var controller = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLowerInvariant();
+    var isPublicPage = controller == "home" && (action == "index" || action == "connexion" || action == "inscription");
+    var title = ViewBag.Title ?? ViewData["Title"] ?? "Portail Académique";
+    var activeAction = action;
+}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Gestion_SalleClasseEDT</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <title>@title - EMIT</title>
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Gestion_SalleClasseEDT.styles.css" asp-append-version="true" />
+    <script>
+        (function () {
+            const isPublicPage = @isPublicPage.ToString().ToLowerInvariant();
+            if (!isPublicPage && !localStorage.getItem("user")) {
+                window.location.replace("/Home/Connexion");
+            }
+        })();
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Gestion_SalleClasseEDT</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Accueil</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="EDT">Emploi du Temps</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Cours">Cours</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Salles">Salles</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Professeurs">Professeurs</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Structures">Structures</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Requetes">Requêtes</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Validation">Validation</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+<body class="antialiased">
+    @if (isPublicPage)
+    {
+        <main>
             @RenderBody()
         </main>
-    </div>
+    }
+    else
+    {
+        <div id="dashboardShell" class="min-h-screen bg-[#f8fafc] lg:flex" x-cloak>
+            <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-white/10 bg-[#17203A] text-white transition-transform duration-200 lg:static lg:translate-x-0">
+                <div class="mb-4 p-6">
+                    <a asp-controller="Home" asp-action="Dashboard" class="flex items-center gap-3 no-underline">
+                        <div class="flex h-12 w-20 items-center justify-center rounded-lg bg-white p-2">
+                            <img src="~/images/emit-logo.png" asp-append-version="true" alt="EMIT" class="max-h-full max-w-full object-contain" />
+                        </div>
+                        <div>
+                            <h1 class="m-0 text-lg font-bold leading-tight text-white">EMIT</h1>
+                            <p class="m-0 text-[10px] uppercase tracking-wider text-white/60">University Management</p>
+                        </div>
+                    </a>
+                </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Gestion_SalleClasseEDT - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                <nav class="flex-1 space-y-1 px-4">
+                    <a asp-controller="Home" asp-action="Dashboard" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "dashboard" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="layout-dashboard" class="h-5 w-5"></i><span>Tableau de bord</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="EDT" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "edt" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="calendar" class="h-5 w-5"></i><span>Emplois du temps</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="Salles" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "salles" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="door-open" class="h-5 w-5"></i><span>Salles de classe</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="Professeurs" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "professeurs" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="users" class="h-5 w-5"></i><span>Enseignants</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="Structures" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "structures" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="network" class="h-5 w-5"></i><span>Structures</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="Cours" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "cours" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="clipboard-list" class="h-5 w-5"></i><span>Cours</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="Requetes" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "requetes" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="clipboard-list" class="h-5 w-5"></i><span>Requêtes</span>
+                    </a>
+                    <a asp-controller="Home" asp-action="Validation" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "validation" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="check-square" class="h-5 w-5"></i><span>Validation</span>
+                    </a>
+                </nav>
+
+                <div class="space-y-4 px-4 py-6">
+                    <a asp-controller="Home" asp-action="Requetes" class="flex w-full items-center justify-start gap-3 rounded-lg bg-[#5C8ABF] px-4 py-3 text-sm font-semibold text-white no-underline transition hover:bg-[#4d7daf]">
+                        <i data-lucide="plus" class="h-5 w-5"></i><span>Nouvelle Requête</span>
+                    </a>
+
+                    <div class="space-y-1 border-t border-white/10 pt-4">
+                        <a asp-controller="Home" asp-action="Parametres" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "parametres" ? "bg-white/5 text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                            <i data-lucide="settings" class="h-5 w-5"></i><span>Paramètres</span>
+                        </a>
+                        <button id="logoutButton" type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-red-400 transition-all hover:bg-red-500/10 hover:text-red-300">
+                            <i data-lucide="log-out" class="h-5 w-5"></i><span>Se déconnecter</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <div id="sidebarBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+
+            <div class="flex min-h-screen flex-1 flex-col lg:h-screen lg:overflow-hidden">
+                <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-8">
+                    <div class="flex min-w-0 flex-1 items-center gap-4 lg:gap-8">
+                        <button id="menuButton" type="button" class="rounded-lg p-2 text-[#17203A] hover:bg-gray-100 lg:hidden">
+                            <i data-lucide="menu" class="h-5 w-5"></i>
+                        </button>
+                        <img src="~/images/emit-logo.png" asp-append-version="true" alt="EMIT" class="hidden h-9 w-auto object-contain md:block" />
+                        <h2 class="truncate text-lg font-bold text-[#17203A] lg:text-xl">@title</h2>
+                        <div class="relative hidden w-full max-w-md md:block">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                            <input type="search" placeholder="Rechercher une demande, une salle..." class="h-10 w-full rounded-md border-0 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-700 outline-none ring-1 ring-transparent transition focus:ring-[#17203A]/20" />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 lg:gap-4">
+                        <button type="button" class="hidden items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:flex">
+                            <span id="userRoleLabel">Role</span><i data-lucide="chevron-down" class="h-4 w-4"></i>
+                        </button>
+                        <div class="flex items-center gap-2 border-l border-gray-200 pl-3">
+                            <button type="button" class="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-[#17203A]"><i data-lucide="bell" class="h-5 w-5"></i></button>
+                            <button type="button" class="hidden rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-[#17203A] sm:block"><i data-lucide="help-circle" class="h-5 w-5"></i></button>
+                            <a asp-controller="Home" asp-action="Parametres" class="flex items-center gap-3 rounded-full p-1 no-underline hover:bg-gray-100">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#17203A] text-white">
+                                    <i data-lucide="user" class="h-5 w-5"></i>
+                                </div>
+                                <div class="hidden text-left xl:block">
+                                    <p id="userNameLabel" class="m-0 text-sm font-bold text-[#17203A]">Utilisateur</p>
+                                    <p id="userEmailLabel" class="m-0 text-xs text-gray-500">connecté</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </header>
+
+                <main class="flex-1 overflow-y-auto p-4 lg:p-8">
+                    <div class="mx-auto max-w-7xl space-y-8">
+                        @RenderBody()
+                    </div>
+                </main>
+            </div>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    }
+
     <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const shell = document.getElementById("dashboardShell");
+            const sidebar = document.getElementById("sidebar");
+            const backdrop = document.getElementById("sidebarBackdrop");
+            const menuButton = document.getElementById("menuButton");
+            const logoutButton = document.getElementById("logoutButton");
+            const userRaw = localStorage.getItem("user");
+
+            if (shell) {
+                if (!userRaw) {
+                    window.location.replace("/Home/Connexion");
+                    return;
+                }
+
+                try {
+                    const user = JSON.parse(userRaw);
+                    const fullName = [user.Prenom || user.prenom, user.Nom || user.nom].filter(Boolean).join(" ") || user.Email || user.email || "Utilisateur";
+                    const email = user.Email || user.email || "connecté";
+                    const role = user.Role || user.role || "Role";
+                    document.getElementById("userNameLabel").textContent = fullName;
+                    document.getElementById("userEmailLabel").textContent = email;
+                    document.getElementById("userRoleLabel").textContent = role;
+                } catch {
+                    localStorage.removeItem("user");
+                    window.location.replace("/Home/Connexion");
+                    return;
+                }
+
+                shell.removeAttribute("x-cloak");
+            }
+
+            function closeSidebar() {
+                sidebar?.classList.add("-translate-x-full");
+                backdrop?.classList.add("hidden");
+            }
+
+            menuButton?.addEventListener("click", function () {
+                sidebar?.classList.remove("-translate-x-full");
+                backdrop?.classList.remove("hidden");
+            });
+            backdrop?.addEventListener("click", closeSidebar);
+            logoutButton?.addEventListener("click", function () {
+                localStorage.removeItem("user");
+                window.location.href = "/Home/Connexion";
+            });
+
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
+    @if (IsSectionDefined("Scripts"))
+    {
+        @await RenderSectionAsync("Scripts", required: false)
+    }
+    else if (IsSectionDefined("scripts"))
+    {
+        @await RenderSectionAsync("scripts", required: false)
+    }
 </body>
 </html>

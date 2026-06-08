@@ -1,0 +1,95 @@
+@{
+    ViewData["Title"] = "Connexion";
+}
+
+<div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f8fafc] px-4">
+    <div class="absolute left-[-10%] top-[-10%] h-[50%] w-[50%] rounded-full bg-[#17203A]/10 blur-[100px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-[#73A5D4]/10 blur-[100px]"></div>
+
+    <div class="relative w-full max-w-md rounded-3xl border border-white/50 bg-white/70 p-8 shadow-2xl shadow-[#17203A]/5 backdrop-blur-md">
+        <div class="mb-8 flex flex-col items-center">
+            <div class="mb-4 flex h-16 w-36 items-center justify-center rounded-2xl bg-white p-3 shadow-lg shadow-[#17203A]/10 ring-1 ring-gray-100">
+                <img src="~/images/emit-logo.png" asp-append-version="true" alt="EMIT" class="max-h-full max-w-full object-contain" />
+            </div>
+            <h1 class="text-center text-2xl font-black tracking-tight text-[#17203A]">Portail Académique EMIT</h1>
+            <p class="mt-1 text-center text-sm text-gray-500">Connectez-vous pour gérer votre emploi du temps</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6" novalidate>
+            <div class="space-y-2">
+                <label for="email" class="block px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Adresse Email</label>
+                <div class="relative">
+                    <i data-lucide="mail" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                    <input id="email" name="email" type="email" placeholder="Ex: admin@emit.mg" class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[#17203A] placeholder-gray-400 outline-none transition focus:border-[#17203A] focus:ring-2 focus:ring-[#17203A]/20" />
+                </div>
+                <p id="emailError" class="hidden px-1 text-xs font-bold text-red-500">Veuillez saisir une adresse email valide.</p>
+            </div>
+
+            <div class="space-y-2">
+                <label for="password" class="block px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Mot de passe</label>
+                <div class="relative">
+                    <i data-lucide="lock" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                    <input id="password" name="password" type="password" placeholder="••••••••" class="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[#17203A] placeholder-gray-400 outline-none transition focus:border-[#17203A] focus:ring-2 focus:ring-[#17203A]/20" />
+                </div>
+                <p id="passwordError" class="hidden px-1 text-xs font-bold text-red-500">Veuillez saisir votre mot de passe.</p>
+            </div>
+
+            <p id="loginMessage" class="hidden rounded-xl px-4 py-3 text-sm font-semibold"></p>
+
+            <button id="loginButton" type="submit" class="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#17203A] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#17203A]/20 transition hover:bg-[#12192B] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60">
+                <span>Se connecter</span>
+                <i data-lucide="arrow-right" class="h-4 w-4 text-[#73A5D4] transition group-hover:translate-x-1"></i>
+            </button>
+        </form>
+
+        <div class="mt-8 border-t border-gray-100 pt-6 text-center">
+            <p class="mb-4 text-sm text-gray-500">Pas encore de compte ? <a asp-controller="Home" asp-action="Inscription" class="font-bold text-[#17203A] underline transition hover:text-[#73A5D4]">S'inscrire</a></p>
+            <p class="text-xs font-medium text-gray-400">Comptes de test (mot de passe libre) :</p>
+            <div class="mt-2 flex flex-col gap-1 text-[11px] font-bold text-gray-500">
+                <div>Admin : <span class="text-[#17203A] underline">admin@emit.mg</span></div>
+                <div>Enseignant : <span class="text-[#17203A] underline">demandeur@emit.mg</span></div>
+                <div>Validateur : <span class="text-[#17203A] underline">validateur@emit.mg</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const button = document.getElementById("loginButton");
+            const message = document.getElementById("loginMessage");
+            const emailValid = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email);
+
+            document.getElementById("emailError").classList.toggle("hidden", emailValid);
+            document.getElementById("passwordError").classList.toggle("hidden", password.length > 0);
+            if (!emailValid || !password) return;
+
+            button.disabled = true;
+            button.innerHTML = '<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i> Connexion...';
+            message.className = "hidden rounded-xl px-4 py-3 text-sm font-semibold";
+
+            try {
+                const response = await fetch("/api/Utilisateur/Login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Email: email, Password: password })
+                });
+
+                if (!response.ok) throw new Error("Email ou mot de passe incorrect.");
+                const user = await response.json();
+                localStorage.setItem("user", JSON.stringify(user));
+                window.location.href = "/Home/Dashboard";
+            } catch (error) {
+                message.textContent = error.message || "Échec de la connexion.";
+                message.className = "rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600";
+                button.disabled = false;
+                button.innerHTML = '<span>Se connecter</span><i data-lucide="arrow-right" class="h-4 w-4 text-[#73A5D4]"></i>';
+                lucide.createIcons();
+            }
+        });
+    </script>
+}

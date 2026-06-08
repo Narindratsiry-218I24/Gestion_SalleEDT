@@ -13,15 +13,13 @@
                 <i data-lucide="plus" class="w-4 h-4"></i> Nouveau Cours
             </button>
         </div>
-    </div>
-
-    <!-- Filters -->
+    </div>    <!-- Filters -->
     <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100">
         <div class="flex flex-col gap-1">
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Recherche</span>
             <div class="relative w-[250px]">
                 <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                <input type="text" placeholder="Nom de la matière..." class="w-full pl-9 pr-3 h-10 bg-gray-50/50 border-none font-medium text-[#17203A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+                <input type="text" id="searchMatiere" oninput="filterMatieres()" placeholder="Nom ou code..." class="w-full pl-9 pr-3 h-10 bg-gray-50/50 border-none font-medium text-[#17203A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
             </div>
         </div>
     </div>
@@ -50,16 +48,32 @@
     <div id="addCoursModal" class="fixed inset-0 z-50 hidden">
         <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addCoursModal').classList.add('hidden')"></div>
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
                 <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter un Cours/Matière</h2>
                 <form class="space-y-4" id="formAddCours">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la matière</label>
-                        <input type="text" id="nomMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        <input type="text" id="nomMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Code Matière</label>
-                        <input type="text" id="codeMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        <input type="text" id="codeMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Filière</label>
+                        <select id="idFiliere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Chargement des filières...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Semestre</label>
+                        <select id="idRefSemestre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Chargement des semestres...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Crédits</label>
+                        <input type="number" id="credit" value="6" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white" onclick="document.getElementById('addCoursModal').classList.add('hidden')">Annuler</button>
@@ -73,67 +87,177 @@
 
 @section Scripts {
     <script>
-        function loadCours() {
-            $.get("/api/Matiere", function(data) {
-                const tbody = $("#coursTableBody");
-                tbody.empty();
-                if(data.length === 0) {
-                    tbody.append('<tr><td colspan="5" class="text-center py-4 text-gray-500">Aucun cours trouvé.</td></tr>');
-                    return;
-                }
-                data.forEach(function(c) {
-                    tbody.append(`
-                        <tr class="hover:bg-gray-50/50 transition-colors">
-                            <td class="py-4 px-6 font-semibold text-[#17203A]">${c.CodeMatiere || 'N/A'}</td>
-                            <td class="py-4 px-6 font-medium text-gray-900">${c.NomMatiere}</td>
-                            <td class="py-4 px-6"><span class="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">Filière / Semestre</span></td>
-                            <td class="py-4 px-6">6</td>
-                            <td class="py-4 px-6 text-right">
-                                <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer" onclick="deleteCours(${c.IdMatiere})">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `);
-                });
-                lucide.createIcons();
-            });
-        }
+        let allMatieres = [];
+        let filieresList = [];
+        let semestersList = [];
 
-        function deleteCours(id) {
-            if(confirm("Voulez-vous vraiment supprimer ce cours ?")) {
-                $.ajax({
-                    url: '/api/Matiere/' + id,
-                    type: 'DELETE',
-                    success: function() { loadCours(); }
+        async function initData() {
+            try {
+                // Fetch filieres
+                const filieres = await app.apiGet('/api/Filiere');
+                filieresList = filieres || [];
+                
+                // Populate filiere dropdown in modal
+                const filiereSelect = document.getElementById("idFiliere");
+                filiereSelect.innerHTML = '<option value="">Choisir une filière...</option>';
+                filieresList.forEach(f => {
+                    const opt = document.createElement("option");
+                    opt.value = app.readProp(f, "IdFiliere");
+                    opt.textContent = `${app.escapeHtml(app.readProp(f, "CodeFiliere") || '')} - ${app.escapeHtml(app.readProp(f, "NomFiliere") || '')}`;
+                    filiereSelect.appendChild(opt);
                 });
+
+                // Fetch classes to extract unique RefSemestre values
+                const classes = await app.apiGet('/api/Classe');
+                const semestersMap = new Map();
+                (classes || []).forEach(c => {
+                    const sem = app.readProp(c, "Semestre");
+                    const refSem = sem ? app.readProp(sem, "RefSemestre") : null;
+                    if (refSem) {
+                        const id = app.readProp(refSem, "IdRefSemestre");
+                        const code = app.readProp(refSem, "CodeSemestre");
+                        if (id && code) semestersMap.set(id, code);
+                    }
+                });
+
+                semestersList = Array.from(semestersMap.entries()).map(([id, code]) => ({ id, code }));
+                semestersList.sort((a, b) => a.code.localeCompare(b.code));
+
+                // Populate semester dropdown in modal
+                const semSelect = document.getElementById("idRefSemestre");
+                semSelect.innerHTML = '<option value="">Choisir un semestre...</option>';
+                semestersList.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.textContent = app.escapeHtml(s.code);
+                    semSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Error loading dropdown data", err);
             }
         }
 
-        $(document).ready(function() {
+        async function loadCours() {
+            const tbody = document.getElementById("coursTableBody");
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500"></i> Chargement...</div></td></tr>';
+            if (window.lucide) lucide.createIcons();
+
+            try {
+                const data = await app.apiGet("/api/Matiere");
+                allMatieres = data || [];
+                renderMatieres(allMatieres);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-600 font-bold bg-red-50/30">Erreur lors du chargement des matières: ${app.escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function renderMatieres(list) {
+            const tbody = document.getElementById("coursTableBody");
+            tbody.innerHTML = "";
+            
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Aucune matière trouvée.</td></tr>';
+                return;
+            }
+
+            list.forEach(function(c) {
+                const id = app.readProp(c, "IdMatiere");
+                const code = app.escapeHtml(app.readProp(c, "CodeMatiere") || 'N/A');
+                const nom = app.escapeHtml(app.readProp(c, "NomMatiere") || '');
+                
+                const filiere = app.readProp(c, "Filiere");
+                const filiereCode = filiere ? app.escapeHtml(app.readProp(filiere, "CodeFiliere") || '') : 'N/A';
+                
+                const sem = app.readProp(c, "RefSemestre");
+                const semCode = sem ? app.escapeHtml(app.readProp(sem, "CodeSemestre") || '') : 'N/A';
+                
+                const credits = app.readProp(c, "Credit") || 0;
+
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-4 px-6 font-semibold text-[#17203A]">${code}</td>
+                    <td class="py-4 px-6 font-medium text-gray-900">${nom}</td>
+                    <td class="py-4 px-6"><span class="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${filiereCode} / ${semCode}</span></td>
+                    <td class="py-4 px-6 font-semibold text-gray-700">${credits}</td>
+                    <td class="py-4 px-6 text-right">
+                        <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="deleteCours(${id})">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function filterMatieres() {
+            const query = document.getElementById("searchMatiere").value.toLowerCase().trim();
+            if (!query) {
+                renderMatieres(allMatieres);
+                return;
+            }
+            const filtered = allMatieres.filter(c => {
+                const nom = (app.readProp(c, "NomMatiere") || "").toLowerCase();
+                const code = (app.readProp(c, "CodeMatiere") || "").toLowerCase();
+                return nom.includes(query) || code.includes(query);
+            });
+            renderMatieres(filtered);
+        }
+
+        async function deleteCours(id) {
+            if (confirm("Voulez-vous vraiment supprimer ce cours ?")) {
+                try {
+                    await app.apiDelete('/api/Matiere/' + id);
+                    loadCours();
+                } catch (err) {
+                    alert("Erreur lors de la suppression: " + err.message);
+                }
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", async function() {
+            await initData();
             loadCours();
             
-            $("#formAddCours").submit(function(e) {
-                e.preventDefault();
-                const data = {
-                    NomMatiere: $("#nomMatiere").val(),
-                    CodeMatiere: $("#codeMatiere").val()
-                };
-                $.ajax({
-                    url: '/api/Matiere',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(data),
-                    success: function() {
-                        $("#addCoursModal").addClass("hidden");
-                        $("#formAddCours")[0].reset();
+            const form = document.getElementById("formAddCours");
+            if (form) {
+                form.addEventListener("submit", async function(e) {
+                    e.preventDefault();
+                    
+                    const nomMatiere = document.getElementById("nomMatiere").value.trim();
+                    const codeMatiere = document.getElementById("codeMatiere").value.trim();
+                    const idFiliere = parseInt(document.getElementById("idFiliere").value);
+                    const idRefSemestre = parseInt(document.getElementById("idRefSemestre").value);
+                    const credit = parseInt(document.getElementById("credit").value);
+
+                    const data = {
+                        NomMatiere: nomMatiere,
+                        CodeMatiere: codeMatiere,
+                        IdFiliere: idFiliere,
+                        IdRefSemestre: idRefSemestre,
+                        Credit: credit
+                    };
+
+                    try {
+                        const btn = form.querySelector('button[type="submit"]');
+                        btn.disabled = true;
+                        btn.innerHTML = 'Enregistrement...';
+
+                        await app.apiPost('/api/Matiere', data);
+                        
+                        document.getElementById("addCoursModal").classList.add("hidden");
+                        form.reset();
                         loadCours();
-                    },
-                    error: function(err) {
-                        alert("Erreur lors de l'ajout");
+                    } catch (err) {
+                        alert("Erreur lors de l'ajout: " + err.message);
+                    } finally {
+                        const btn = form.querySelector('button[type="submit"]');
+                        btn.disabled = false;
+                        btn.innerHTML = 'Enregistrer';
                     }
                 });
-            });
+            }
         });
     </script>
 }

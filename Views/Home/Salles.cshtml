@@ -11,7 +11,7 @@
         <div class="flex flex-wrap items-end gap-3">
             <div class="flex flex-col gap-1.5">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Bâtiment</span>
-                <select class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="filterBatiment" onchange="loadSalles()" class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="all">Tous</option>
                     <option value="A">Bâtiment A</option>
                     <option value="B">Bâtiment B</option>
@@ -21,7 +21,7 @@
             </div>
             <div class="flex flex-col gap-1.5">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Type de salle</span>
-                <select class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="filterType" onchange="loadSalles()" class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="all">Tous</option>
                     <option value="cours">Cours</option>
                     <option value="tp">TP</option>
@@ -38,19 +38,19 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white p-6 rounded-xl shadow-sm">
             <h4 class="text-slate-500 text-sm font-semibold mb-2">Total Salles</h4>
-            <p class="text-3xl font-black text-[#17203A]">124</p>
+            <p class="text-3xl font-black text-[#17203A]" id="statTotal">--</p>
         </div>
         <div class="bg-white p-6 rounded-xl shadow-sm">
             <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles de Cours</h4>
-            <p class="text-3xl font-black text-[#17203A]">82</p>
+            <p class="text-3xl font-black text-[#17203A]" id="statCours">--</p>
         </div>
         <div class="bg-white p-6 rounded-xl shadow-sm">
             <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles TP</h4>
-            <p class="text-3xl font-black text-[#17203A]">30</p>
+            <p class="text-3xl font-black text-[#17203A]" id="statTP">--</p>
         </div>
         <div class="bg-white p-6 rounded-xl shadow-sm">
             <h4 class="text-slate-500 text-sm font-semibold mb-2">Amphithéâtres</h4>
-            <p class="text-3xl font-black text-[#17203A]">12</p>
+            <p class="text-3xl font-black text-[#17203A]" id="statAmphi">--</p>
         </div>
     </div>
 
@@ -61,12 +61,15 @@
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-100">
                         <th class="py-4 px-6 font-bold text-gray-500 text-sm">Nom Salle</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Bâtiment / Étage</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Porte</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Type</th>
                         <th class="py-4 px-6 font-bold text-gray-500 text-sm">Capacité</th>
                         <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="roomTableBody">
-                    <tr><td colspan="3" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                    <tr><td colspan="6" class="text-center py-4 text-gray-500">Chargement...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -103,16 +106,43 @@
     <div id="addRoomModal" class="fixed inset-0 z-50 hidden">
         <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addRoomModal').classList.add('hidden')"></div>
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
                 <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter une nouvelle salle</h2>
                 <form class="space-y-4" id="formAddRoom">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bâtiment</label>
+                        <select id="codeBatiment" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="A">Bâtiment A</option>
+                            <option value="B">Bâtiment B</option>
+                            <option value="C">Bâtiment C</option>
+                            <option value="D">Bâtiment D</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Étage</label>
+                        <input type="number" id="etage" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="ex: 0 pour RDC, 1, 2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Numéro de Porte</label>
+                        <input type="text" id="numeroPorte" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="ex: 101, 002" />
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la salle</label>
-                        <input type="text" id="nomSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ex: Salle 101" />
+                        <input type="text" id="nomSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="ex: Salle 101" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Capacité</label>
-                        <input type="number" id="capaciteSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ex: 40" />
+                        <input type="number" id="capaciteSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="ex: 40" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type de salle</label>
+                        <select id="typeSalle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="cours">Cours</option>
+                            <option value="tp">TP</option>
+                            <option value="amphi">Amphi</option>
+                            <option value="administration">Administration</option>
+                            <option value="bibliotheque">Bibliothèque</option>
+                        </select>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50" onclick="document.getElementById('addRoomModal').classList.add('hidden')">Annuler</button>
@@ -126,65 +156,121 @@
 
 @section Scripts {
     <script>
-        function loadSalles() {
-            $.get("/api/Salle", function(data) {
-                const tbody = $("#roomTableBody");
-                tbody.empty();
-                if(data.length === 0) {
-                    tbody.append('<tr><td colspan="3" class="text-center py-4 text-gray-500">Aucune salle trouvée.</td></tr>');
+        async function loadSalles() {
+            const tbody = document.getElementById("roomTableBody");
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500"></i> Chargement...</div></td></tr>';
+            if (window.lucide) lucide.createIcons();
+
+            try {
+                const batiment = document.getElementById("filterBatiment").value;
+                const type = document.getElementById("filterType").value;
+                
+                let url = "/api/Salle";
+                const params = [];
+                if (batiment && batiment !== "all") params.push(`batiment=${encodeURIComponent(batiment)}`);
+                if (type && type !== "all") params.push(`type=${encodeURIComponent(type)}`);
+                if (params.length > 0) url += "?" + params.join("&");
+
+                const data = await app.apiGet(url);
+                tbody.innerHTML = "";
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Aucune salle trouvée.</td></tr>';
                     return;
                 }
-                data.forEach(function(s) {
-                    tbody.append(`
-                        <tr class="hover:bg-gray-50/50 transition-colors">
-                            <td class="py-4 px-6 font-semibold text-[#17203A]">${s.NomSalle}</td>
-                            <td class="py-4 px-6">${s.Capacite} places</td>
-                            <td class="py-4 px-6 text-right">
-                                <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none" onclick="deleteSalle(${s.IdSalle})">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `);
-                });
-                lucide.createIcons();
-            });
-        }
 
-        function deleteSalle(id) {
-            if(confirm("Voulez-vous vraiment supprimer cette salle ?")) {
-                $.ajax({
-                    url: '/api/Salle/' + id,
-                    type: 'DELETE',
-                    success: function() { loadSalles(); }
+                // Update Stats dynamically
+                const allSalles = (batiment === "all" && type === "all") ? data : await app.apiGet("/api/Salle");
+                document.getElementById("statTotal").textContent = allSalles.length;
+                document.getElementById("statCours").textContent = allSalles.filter(s => (app.readProp(s, "TypeSalle") || "").toLowerCase() === "cours").length;
+                document.getElementById("statTP").textContent = allSalles.filter(s => (app.readProp(s, "TypeSalle") || "").toLowerCase() === "tp").length;
+                document.getElementById("statAmphi").textContent = allSalles.filter(s => (app.readProp(s, "TypeSalle") || "").toLowerCase() === "amphi").length;
+
+                data.forEach(function(s) {
+                    const id = app.readProp(s, "IdSalle");
+                    const nom = app.escapeHtml(app.readProp(s, "NomSalle"));
+                    const bat = app.escapeHtml(app.readProp(s, "CodeBatiment") || "N/A");
+                    const etage = app.readProp(s, "Etage");
+                    const porte = app.escapeHtml(app.readProp(s, "NumeroPorte") || "N/A");
+                    const t = app.escapeHtml(app.readProp(s, "TypeSalle") || "N/A");
+                    const cap = app.readProp(s, "Capacite");
+
+                    const tr = document.createElement("tr");
+                    tr.className = "hover:bg-gray-50/50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="py-4 px-6 font-semibold text-[#17203A]">${nom}</td>
+                        <td class="py-4 px-6 font-medium text-gray-600">Bâtiment ${bat} (Étage ${etage})</td>
+                        <td class="py-4 px-6 text-gray-600">N° ${porte}</td>
+                        <td class="py-4 px-6"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${t}</span></td>
+                        <td class="py-4 px-6 font-semibold text-gray-700">${cap} places</td>
+                        <td class="py-4 px-6 text-right">
+                            <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="deleteSalle(${id})">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
                 });
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-600 font-bold bg-red-50/30">Erreur lors du chargement des salles: ${app.escapeHtml(err.message)}</td></tr>`;
             }
         }
 
-        $(document).ready(function() {
+        async function deleteSalle(id) {
+            if (confirm("Voulez-vous vraiment supprimer cette salle ?")) {
+                try {
+                    await app.apiDelete('/api/Salle/' + id);
+                    loadSalles();
+                } catch (err) {
+                    alert("Erreur lors de la suppression: " + err.message);
+                }
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
             loadSalles();
             
-            $("#formAddRoom").submit(function(e) {
-                e.preventDefault();
-                const data = {
-                    NomSalle: $("#nomSalle").val(),
-                    Capacite: parseInt($("#capaciteSalle").val())
-                };
-                $.ajax({
-                    url: '/api/Salle',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(data),
-                    success: function() {
-                        $("#addRoomModal").addClass("hidden");
-                        $("#formAddRoom")[0].reset();
+            const form = document.getElementById("formAddRoom");
+            if (form) {
+                form.addEventListener("submit", async function(e) {
+                    e.preventDefault();
+                    
+                    const codeBatiment = document.getElementById("codeBatiment").value;
+                    const etage = parseInt(document.getElementById("etage").value);
+                    const numeroPorte = document.getElementById("numeroPorte").value.trim();
+                    const nomSalle = document.getElementById("nomSalle").value.trim();
+                    const capacite = parseInt(document.getElementById("capaciteSalle").value);
+                    const typeSalle = document.getElementById("typeSalle").value;
+
+                    const data = {
+                        CodeBatiment: codeBatiment,
+                        Etage: etage,
+                        NumeroPorte: numeroPorte,
+                        NomSalle: nomSalle,
+                        Capacite: capacite,
+                        TypeSalle: typeSalle
+                    };
+
+                    try {
+                        const btn = form.querySelector('button[type="submit"]');
+                        btn.disabled = true;
+                        btn.innerHTML = 'Enregistrement...';
+
+                        await app.apiPost('/api/Salle', data);
+                        
+                        document.getElementById("addRoomModal").classList.add("hidden");
+                        form.reset();
                         loadSalles();
-                    },
-                    error: function(err) {
-                        alert("Erreur lors de l'ajout");
+                    } catch (err) {
+                        alert("Erreur lors de l'ajout: " + err.message);
+                    } finally {
+                        const btn = form.querySelector('button[type="submit"]');
+                        btn.disabled = false;
+                        btn.innerHTML = 'Enregistrer';
                     }
                 });
-            });
+            }
         });
     </script>
 }
