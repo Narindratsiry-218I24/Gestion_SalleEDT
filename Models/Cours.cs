@@ -22,7 +22,7 @@ public class Cours
     public int IdClasse { get; set; }
 
     [Column("id_salle")]
-    public int IdSalle { get; set; }
+    public int? IdSalle { get; set; }
 
     [Column("id_semestre")]
     public int IdSemestre { get; set; }

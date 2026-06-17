@@ -1,0 +1,24 @@
+@model Gestion_SalleClasseEDT.Models.Subject
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Créer une matière</h2>
+
+<form method="post" action="/api/Subject">
+    <div>
+        <label>Code</label>
+        <input name="Code" />
+    </div>
+    <div>
+        <label>Label</label>
+        <input name="Label" />
+    </div>
+    <div>
+        <label>Credits</label>
+        <input name="Credits" type="number" />
+    </div>
+    <div>
+        <button type="submit">Créer</button>
+    </div>
+</form>

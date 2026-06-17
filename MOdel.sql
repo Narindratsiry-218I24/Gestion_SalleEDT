@@ -62,7 +62,9 @@ CREATE TABLE MATIERE (
     code_matiere VARCHAR(20),
     nom_matiere VARCHAR(100),
     id_ref_semestre INT REFERENCES REF_SEMESTRE(id_ref_semestre),
-    credit INT
+    credit INT,
+    volume_horaire INT NOT NULL DEFAULT 0,
+    id_professeur_responsable INT REFERENCES PROFESSEUR(id_professeur)
 );
 
 -- 9. PROFESSEUR

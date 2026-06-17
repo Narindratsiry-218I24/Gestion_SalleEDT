@@ -1,0 +1,24 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Emplois du temps (Schedules)</h2>
+
+<div id="schedules">Chargement...</div>
+
+<script>
+fetch('/api/Schedule')
+  .then(r => r.json())
+  .then(data => {
+    const container = document.getElementById('schedules');
+    if (!data || data.length === 0) { container.innerText = 'Aucun créneau.'; return; }
+    const ul = document.createElement('ul');
+    data.forEach(s => {
+      const li = document.createElement('li');
+      li.innerText = `${s.id} - ${s.date} ${s.heureDebut} - ${s.heureFin} (Salle:${s.salleId})`;
+      ul.appendChild(li);
+    });
+    container.innerHTML = '';
+    container.appendChild(ul);
+  });
+</script>

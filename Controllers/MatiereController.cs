@@ -40,6 +40,12 @@ namespace Gestion_SalleClasseEDT.Controllers
         public IActionResult CreateMatiere([FromBody] Matiere matiere)
         {
             if (matiere == null) return BadRequest("Les données de la matière sont vides.");
+            
+            ModelState.Remove("Filiere");
+            ModelState.Remove("RefSemestre");
+            ModelState.Remove("ProfesseurResponsable");
+            ModelState.Remove("Cours");
+
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try

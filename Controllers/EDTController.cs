@@ -28,8 +28,8 @@ namespace Gestion_SalleClasseEDT.Controllers
             var query = db.Cours
                 .Include(c => c.Matiere)
                 .Include(c => c.Professeur)
-                .Include("Classe.Filiere")
-                .Include("Classe.Semestre.RefSemestre")
+                .Include(c => c.Classe).ThenInclude(cl => cl.Filiere).ThenInclude(f => f.Mention)
+                .Include(c => c.Classe).ThenInclude(cl => cl.Semestre).ThenInclude(s => s.RefSemestre).ThenInclude(rs => rs.Niveau)
                 .Include(c => c.Salle)
                 .Include(c => c.Creneaux)
                 .AsQueryable();
@@ -39,15 +39,40 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (salleId.HasValue)  query = query.Where(c => c.IdSalle == salleId);
 
             if (!string.IsNullOrEmpty(cycle) && cycle != "all")
-                query = query.Where(c => c.Classe.Filiere.NomFiliere == cycle);
+                query = query.Where(c => c.Classe.Filiere.NomFiliere.Contains(cycle));
 
             if (!string.IsNullOrEmpty(niveau) && niveau != "all")
-                query = query.Where(c => c.Classe.Semestre.RefSemestre.CodeSemestre == niveau);
+                query = query.Where(c => c.Classe.Semestre.RefSemestre.Niveau.CodeNiveau.Contains(niveau));
 
             if (!string.IsNullOrEmpty(semaineType) && semaineType != "all")
                 query = query.Where(c => c.Creneaux.Any(cr => cr.SemaineType == semaineType));
 
-            return Ok(query.ToList());
+            var coursList = query.ToList();
+
+            var result = coursList.Select(c => new {
+                c.IdCours,
+                c.TypeCours,
+                c.Statut,
+                Matiere = c.Matiere != null ? new { c.Matiere.IdMatiere, c.Matiere.NomMatiere, Couleur = "#3b82f6" } : null,
+                Professeur = c.Professeur != null ? new { c.Professeur.IdProfesseur, c.Professeur.Nom, c.Professeur.Prenom } : null,
+                Classe = c.Classe != null ? new { 
+                    c.Classe.IdClasse, 
+                    c.Classe.NomClasse,
+                    Filiere = c.Classe.Filiere?.NomFiliere,
+                    Mention = c.Classe.Filiere?.Mention?.NomMention,
+                    Niveau = c.Classe.Semestre?.RefSemestre?.Niveau?.CodeNiveau
+                } : null,
+                Salle = c.Salle != null ? new { c.Salle.IdSalle, c.Salle.NomSalle, c.Salle.Capacite } : null,
+                Creneaux = c.Creneaux?.Select(cr => new {
+                    cr.IdCreneau,
+                    cr.JourSemaine,
+                    cr.HeureDebut,
+                    cr.HeureFin,
+                    cr.SemaineType
+                })
+            });
+
+            return Ok(result);
         }
 
         // GET: api/EDT/ParSalle/{id}
@@ -55,14 +80,30 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("ParSalle/{id:int}")]
         public IActionResult GetEDTParSalle(int id)
         {
-            var cours = db.Cours
+            var coursList = db.Cours
                 .Where(c => c.IdSalle == id)
                 .Include(c => c.Matiere)
                 .Include(c => c.Professeur)
                 .Include(c => c.Classe)
                 .Include(c => c.Creneaux)
                 .ToList();
-            return Ok(cours);
+
+            var result = coursList.Select(c => new {
+                c.IdCours,
+                c.TypeCours,
+                c.Statut,
+                Matiere = c.Matiere != null ? new { c.Matiere.IdMatiere, c.Matiere.NomMatiere, Couleur = "#3b82f6" } : null,
+                Professeur = c.Professeur != null ? new { c.Professeur.IdProfesseur, c.Professeur.Nom, c.Professeur.Prenom } : null,
+                Classe = c.Classe != null ? new { c.Classe.IdClasse, c.Classe.NomClasse } : null,
+                Creneaux = c.Creneaux?.Select(cr => new {
+                    cr.IdCreneau,
+                    cr.JourSemaine,
+                    cr.HeureDebut,
+                    cr.HeureFin,
+                    cr.SemaineType
+                })
+            });
+            return Ok(result);
         }
 
         // GET: api/EDT/ParClasse/{id}
@@ -70,14 +111,30 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("ParClasse/{id:int}")]
         public IActionResult GetEDTParClasse(int id)
         {
-            var cours = db.Cours
+            var coursList = db.Cours
                 .Where(c => c.IdClasse == id)
                 .Include(c => c.Matiere)
                 .Include(c => c.Professeur)
                 .Include(c => c.Salle)
                 .Include(c => c.Creneaux)
                 .ToList();
-            return Ok(cours);
+
+            var result = coursList.Select(c => new {
+                c.IdCours,
+                c.TypeCours,
+                c.Statut,
+                Matiere = c.Matiere != null ? new { c.Matiere.IdMatiere, c.Matiere.NomMatiere, Couleur = "#3b82f6" } : null,
+                Professeur = c.Professeur != null ? new { c.Professeur.IdProfesseur, c.Professeur.Nom, c.Professeur.Prenom } : null,
+                Salle = c.Salle != null ? new { c.Salle.IdSalle, c.Salle.NomSalle } : null,
+                Creneaux = c.Creneaux?.Select(cr => new {
+                    cr.IdCreneau,
+                    cr.JourSemaine,
+                    cr.HeureDebut,
+                    cr.HeureFin,
+                    cr.SemaineType
+                })
+            });
+            return Ok(result);
         }
 
         // GET: api/EDT/ParProfesseur/{id}
@@ -85,14 +142,30 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("ParProfesseur/{id:int}")]
         public IActionResult GetEDTParProfesseur(int id)
         {
-            var cours = db.Cours
+            var coursList = db.Cours
                 .Where(c => c.IdProfesseur == id)
                 .Include(c => c.Matiere)
                 .Include(c => c.Classe)
                 .Include(c => c.Salle)
                 .Include(c => c.Creneaux)
                 .ToList();
-            return Ok(cours);
+
+            var result = coursList.Select(c => new {
+                c.IdCours,
+                c.TypeCours,
+                c.Statut,
+                Matiere = c.Matiere != null ? new { c.Matiere.IdMatiere, c.Matiere.NomMatiere, Couleur = "#3b82f6" } : null,
+                Classe = c.Classe != null ? new { c.Classe.IdClasse, c.Classe.NomClasse } : null,
+                Salle = c.Salle != null ? new { c.Salle.IdSalle, c.Salle.NomSalle } : null,
+                Creneaux = c.Creneaux?.Select(cr => new {
+                    cr.IdCreneau,
+                    cr.JourSemaine,
+                    cr.HeureDebut,
+                    cr.HeureFin,
+                    cr.SemaineType
+                })
+            });
+            return Ok(result);
         }
     }
 }

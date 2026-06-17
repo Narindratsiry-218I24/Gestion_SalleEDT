@@ -1,84 +1,63 @@
+@model IEnumerable<Gestion_SalleClasseEDT.Models.Cours>
 @{
-    ViewBag.Title = "Cours";
+    ViewBag.Title = "Planification des Cours";
 }
 
 <div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Cours</h1>
-            <p class="text-gray-500 mt-1">Gérez le catalogue des matières et des cours dispensés.</p>
-        </div>
-        <div class="flex gap-3">
-            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer" onclick="document.getElementById('addCoursModal').classList.remove('hidden')">
-                <i data-lucide="plus" class="w-4 h-4"></i> Nouveau Cours
-            </button>
-        </div>
-    </div>    <!-- Filters -->
-    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100">
-        <div class="flex flex-col gap-1">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Recherche</span>
-            <div class="relative w-[250px]">
-                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                <input type="text" id="searchMatiere" oninput="filterMatieres()" placeholder="Nom ou code..." class="w-full pl-9 pr-3 h-10 bg-gray-50/50 border-none font-medium text-[#17203A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
-            </div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Planification des Cours</h1>
+            <p class="text-gray-500 mt-1">Gérez la planification et l'attribution des salles (A-D) aux cours.</p>
         </div>
     </div>
 
-    <!-- Data Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 border-b border-gray-100">
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code Matière</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Matière</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Filière / Semestre</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Crédits</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100" id="coursTableBody">
-                    <tr><td colspan="5" class="text-center py-4 text-gray-500">Chargement...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <!-- Filter Partial -->
+    <partial name="_Filter" />
 
-    <!-- Add Cours Modal -->
-    <div id="addCoursModal" class="fixed inset-0 z-50 hidden">
-        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addCoursModal').classList.add('hidden')"></div>
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-                <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter un Cours/Matière</h2>
-                <form class="space-y-4" id="formAddCours">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la matière</label>
-                        <input type="text" id="nomMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+    <!-- Table Partial -->
+    <partial name="_CoursTable" model="Model" />
+
+    <!-- CRUD Modal -->
+    <div id="crud-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-black/50 backdrop-blur-sm transition-opacity">
+        <div class="relative p-4 w-full max-w-md max-h-full m-auto mt-20">
+            <div class="relative bg-white rounded-xl shadow-2xl">
+                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        Planifier un cours
+                    </h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center" data-modal-toggle="crud-modal">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <!-- Formulaire de Planification -->
+                <form class="p-4 md:p-5" id="planificationForm">
+                    <div class="grid gap-4 mb-4 grid-cols-2">
+                        <div class="col-span-2">
+                            <label for="idMatiere" class="block mb-2 text-sm font-medium text-gray-900">Matière</label>
+                            <input type="number" name="idMatiere" id="idMatiere" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="ID de la matière" required="">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="idProfesseur" class="block mb-2 text-sm font-medium text-gray-900">Professeur</label>
+                            <input type="number" name="idProfesseur" id="idProfesseur" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="ID Professeur" required="">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="idClasse" class="block mb-2 text-sm font-medium text-gray-900">Classe</label>
+                            <input type="number" name="idClasse" id="idClasse" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="ID Classe" required="">
+                        </div>
+                        <div class="col-span-2">
+                            <label for="debut" class="block mb-2 text-sm font-medium text-gray-900">Date et Heure de Début</label>
+                            <input type="datetime-local" name="debut" id="debut" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required="">
+                        </div>
+                        <div class="col-span-2">
+                            <label for="fin" class="block mb-2 text-sm font-medium text-gray-900">Date et Heure de Fin</label>
+                            <input type="datetime-local" name="fin" id="fin" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required="">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Code Matière</label>
-                        <input type="text" id="codeMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Filière</label>
-                        <select id="idFiliere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="">Chargement des filières...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Semestre</label>
-                        <select id="idRefSemestre" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="">Chargement des semestres...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Crédits</label>
-                        <input type="number" id="credit" value="6" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                    </div>
-                    <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white" onclick="document.getElementById('addCoursModal').classList.add('hidden')">Annuler</button>
-                        <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md">Enregistrer</button>
-                    </div>
+                    <button type="submit" class="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                        <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+                        Planifier avec Auto-Attribution
+                    </button>
                 </form>
             </div>
         </div>
@@ -87,177 +66,65 @@
 
 @section Scripts {
     <script>
-        let allMatieres = [];
-        let filieresList = [];
-        let semestersList = [];
-
-        async function initData() {
-            try {
-                // Fetch filieres
-                const filieres = await app.apiGet('/api/Filiere');
-                filieresList = filieres || [];
-                
-                // Populate filiere dropdown in modal
-                const filiereSelect = document.getElementById("idFiliere");
-                filiereSelect.innerHTML = '<option value="">Choisir une filière...</option>';
-                filieresList.forEach(f => {
-                    const opt = document.createElement("option");
-                    opt.value = app.readProp(f, "IdFiliere");
-                    opt.textContent = `${app.escapeHtml(app.readProp(f, "CodeFiliere") || '')} - ${app.escapeHtml(app.readProp(f, "NomFiliere") || '')}`;
-                    filiereSelect.appendChild(opt);
-                });
-
-                // Fetch classes to extract unique RefSemestre values
-                const classes = await app.apiGet('/api/Classe');
-                const semestersMap = new Map();
-                (classes || []).forEach(c => {
-                    const sem = app.readProp(c, "Semestre");
-                    const refSem = sem ? app.readProp(sem, "RefSemestre") : null;
-                    if (refSem) {
-                        const id = app.readProp(refSem, "IdRefSemestre");
-                        const code = app.readProp(refSem, "CodeSemestre");
-                        if (id && code) semestersMap.set(id, code);
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modal Toggles
+            const modalToggles = document.querySelectorAll('[data-modal-toggle]');
+            modalToggles.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = document.getElementById(btn.getAttribute('data-modal-toggle'));
+                    if(target) {
+                        target.classList.toggle('hidden');
+                        target.classList.toggle('flex');
                     }
                 });
-
-                semestersList = Array.from(semestersMap.entries()).map(([id, code]) => ({ id, code }));
-                semestersList.sort((a, b) => a.code.localeCompare(b.code));
-
-                // Populate semester dropdown in modal
-                const semSelect = document.getElementById("idRefSemestre");
-                semSelect.innerHTML = '<option value="">Choisir un semestre...</option>';
-                semestersList.forEach(s => {
-                    const opt = document.createElement("option");
-                    opt.value = s.id;
-                    opt.textContent = app.escapeHtml(s.code);
-                    semSelect.appendChild(opt);
-                });
-            } catch (err) {
-                console.error("Error loading dropdown data", err);
-            }
-        }
-
-        async function loadCours() {
-            const tbody = document.getElementById("coursTableBody");
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500"></i> Chargement...</div></td></tr>';
-            if (window.lucide) lucide.createIcons();
-
-            try {
-                const data = await app.apiGet("/api/Matiere");
-                allMatieres = data || [];
-                renderMatieres(allMatieres);
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-600 font-bold bg-red-50/30">Erreur lors du chargement des matières: ${app.escapeHtml(err.message)}</td></tr>`;
-            }
-        }
-
-        function renderMatieres(list) {
-            const tbody = document.getElementById("coursTableBody");
-            tbody.innerHTML = "";
-            
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Aucune matière trouvée.</td></tr>';
-                return;
-            }
-
-            list.forEach(function(c) {
-                const id = app.readProp(c, "IdMatiere");
-                const code = app.escapeHtml(app.readProp(c, "CodeMatiere") || 'N/A');
-                const nom = app.escapeHtml(app.readProp(c, "NomMatiere") || '');
-                
-                const filiere = app.readProp(c, "Filiere");
-                const filiereCode = filiere ? app.escapeHtml(app.readProp(filiere, "CodeFiliere") || '') : 'N/A';
-                
-                const sem = app.readProp(c, "RefSemestre");
-                const semCode = sem ? app.escapeHtml(app.readProp(sem, "CodeSemestre") || '') : 'N/A';
-                
-                const credits = app.readProp(c, "Credit") || 0;
-
-                const tr = document.createElement("tr");
-                tr.className = "hover:bg-gray-50/50 transition-colors";
-                tr.innerHTML = `
-                    <td class="py-4 px-6 font-semibold text-[#17203A]">${code}</td>
-                    <td class="py-4 px-6 font-medium text-gray-900">${nom}</td>
-                    <td class="py-4 px-6"><span class="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${filiereCode} / ${semCode}</span></td>
-                    <td class="py-4 px-6 font-semibold text-gray-700">${credits}</td>
-                    <td class="py-4 px-6 text-right">
-                        <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="deleteCours(${id})">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
             });
-            if (window.lucide) lucide.createIcons();
-        }
 
-        function filterMatieres() {
-            const query = document.getElementById("searchMatiere").value.toLowerCase().trim();
-            if (!query) {
-                renderMatieres(allMatieres);
-                return;
-            }
-            const filtered = allMatieres.filter(c => {
-                const nom = (app.readProp(c, "NomMatiere") || "").toLowerCase();
-                const code = (app.readProp(c, "CodeMatiere") || "").toLowerCase();
-                return nom.includes(query) || code.includes(query);
-            });
-            renderMatieres(filtered);
-        }
+            // Form Submit for Auto Planification
+            const form = document.getElementById('planificationForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = form.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Traitement...';
+                if (window.lucide) lucide.createIcons();
 
-        async function deleteCours(id) {
-            if (confirm("Voulez-vous vraiment supprimer ce cours ?")) {
+                const payload = {
+                    IdMatiere: parseInt(document.getElementById('idMatiere').value),
+                    IdProfesseur: parseInt(document.getElementById('idProfesseur').value),
+                    IdClasse: parseInt(document.getElementById('idClasse').value),
+                    TypeCours: "CM",
+                    Statut: "planifié",
+                    IdSemestre: 1
+                };
+
+                const debut = document.getElementById('debut').value;
+                const fin = document.getElementById('fin').value;
+
                 try {
-                    await app.apiDelete('/api/Matiere/' + id);
-                    loadCours();
-                } catch (err) {
-                    alert("Erreur lors de la suppression: " + err.message);
-                }
-            }
-        }
+                    const response = await fetch(`/api/Cours/PlanifierAuto?debut=${encodeURIComponent(debut)}&fin=${encodeURIComponent(fin)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-        document.addEventListener("DOMContentLoaded", async function() {
-            await initData();
-            loadCours();
-            
-            const form = document.getElementById("formAddCours");
-            if (form) {
-                form.addEventListener("submit", async function(e) {
-                    e.preventDefault();
-                    
-                    const nomMatiere = document.getElementById("nomMatiere").value.trim();
-                    const codeMatiere = document.getElementById("codeMatiere").value.trim();
-                    const idFiliere = parseInt(document.getElementById("idFiliere").value);
-                    const idRefSemestre = parseInt(document.getElementById("idRefSemestre").value);
-                    const credit = parseInt(document.getElementById("credit").value);
-
-                    const data = {
-                        NomMatiere: nomMatiere,
-                        CodeMatiere: codeMatiere,
-                        IdFiliere: idFiliere,
-                        IdRefSemestre: idRefSemestre,
-                        Credit: credit
-                    };
-
-                    try {
-                        const btn = form.querySelector('button[type="submit"]');
-                        btn.disabled = true;
-                        btn.innerHTML = 'Enregistrement...';
-
-                        await app.apiPost('/api/Matiere', data);
-                        
-                        document.getElementById("addCoursModal").classList.add("hidden");
-                        form.reset();
-                        loadCours();
-                    } catch (err) {
-                        alert("Erreur lors de l'ajout: " + err.message);
-                    } finally {
-                        const btn = form.querySelector('button[type="submit"]');
-                        btn.disabled = false;
-                        btn.innerHTML = 'Enregistrer';
+                    if(response.ok) {
+                        alert("Cours planifié avec succès ! La salle a été attribuée.");
+                        window.location.reload();
+                    } else {
+                        const err = await response.json();
+                        alert("Erreur de planification: " + (err.Message || "Inconnue"));
                     }
-                });
-            }
+                } catch(err) {
+                    console.error(err);
+                    alert("Erreur réseau ou serveur.");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="calendar" class="w-4 h-4 mr-2"></i> Planifier avec Auto-Attribution';
+                    if (window.lucide) lucide.createIcons();
+                }
+            });
+
+            if (window.lucide) lucide.createIcons();
         });
     </script>
 }

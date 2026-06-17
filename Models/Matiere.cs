@@ -30,12 +30,21 @@ public class Matiere
     [Column("credit")]
     public int Credit { get; set; }
 
+    [Column("volume_horaire")]
+    public int VolumeHoraire { get; set; }
+
+    [Column("id_professeur_responsable")]
+    public int? IdProfesseurResponsable { get; set; }
+
     // Navigation properties
     [ForeignKey("IdFiliere")]
     public virtual Filiere Filiere { get; set; }
 
     [ForeignKey("IdRefSemestre")]
     public virtual RefSemestre RefSemestre { get; set; }
+
+    [ForeignKey("IdProfesseurResponsable")]
+    public virtual Professeur ProfesseurResponsable { get; set; }
 
     public virtual ICollection<Cours> Cours { get; set; }
 }

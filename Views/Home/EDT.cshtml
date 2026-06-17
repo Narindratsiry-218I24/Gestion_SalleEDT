@@ -287,7 +287,13 @@
 
                         creneaux.forEach(function(cr) {
                             totalCreneaux++;
-                            const jour = (app.readProp(cr, "JourSemaine") || "").toLowerCase().trim();
+                            let jour = (app.readProp(cr, "JourSemaine") || "").toLowerCase().trim();
+                            // Map French or English abbreviated days to DAY_MAP
+                            const dayMappings = {
+                                "mon": "lundi", "tue": "mardi", "wed": "mercredi", "thu": "jeudi", "fri": "vendredi",
+                                "lundi": "lundi", "mardi": "mardi", "mercredi": "mercredi", "jeudi": "jeudi", "vendredi": "vendredi"
+                            };
+                            jour = dayMappings[jour] || jour;
                             const dayIndex = DAY_MAP[jour];
                             if (dayIndex === undefined) return;
 

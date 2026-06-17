@@ -1,16 +1,19 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Gestion_SalleClasseEDT.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Gestion_SalleClasseEDT.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly EMITDbContext _context;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, EMITDbContext context)
     {
         _logger = logger;
+        _context = context;
     }
 
     public IActionResult Index()
@@ -45,7 +48,13 @@ public class HomeController : Controller
 
     public IActionResult Cours()
     {
-        return View();
+        var cours = _context.Cours
+            .Include(c => c.Matiere)
+            .Include(c => c.Professeur)
+            .Include(c => c.Classe)
+            .Include(c => c.Salle)
+            .ToList();
+        return View(cours);
     }
 
     public IActionResult EDT()

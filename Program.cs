@@ -1,5 +1,8 @@
 using Gestion_SalleClasseEDT.Models;
+using Gestion_SalleClasseEDT.Services;
 using Microsoft.EntityFrameworkCore;
+
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +13,7 @@ builder.Services.AddDbContext<EMITDbContext>(options =>
         $"Port={Environment.GetEnvironmentVariable("DB_PORT") ?? "5432"};" +
         $"Database={Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB"};" +
         $"User Id={Environment.GetEnvironmentVariable("DB_USER") ?? "postgres"};" +
-        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "tsiririmlay"};"
+        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "kifeko"};"
     )
 );
 
@@ -29,7 +32,27 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
+
+QuestPDF.Settings.License = LicenseType.Community;
+
+builder.Services.AddScoped<IPlanningService, PlanningService>();
+builder.Services.AddScoped<SubjectService>();
+builder.Services.AddScoped<SchedulingService>();
+
 var app = builder.Build();
+
+// Run seed.sql if it exists
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<EMITDbContext>();
+    var seedPath = Path.Combine(Directory.GetCurrentDirectory(), "seed.sql");
+    if (File.Exists(seedPath))
+    {
+        var sql = File.ReadAllText(seedPath);
+        dbContext.Database.ExecuteSqlRaw(sql);
+        Console.WriteLine("seed.sql applied successfully.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -1,0 +1,176 @@
+@* Partial View pour le formulaire de Matière *@
+<form id="matiereForm" class="space-y-4" onsubmit="submitMatiereForm(event)">
+    <input type="hidden" id="idMatiere" name="idMatiere" value="0" />
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Code de la matière -->
+        <div>
+            <label for="codeMatiere" class="block text-sm font-medium text-gray-700">Code Matière <span class="text-red-500">*</span></label>
+            <input type="text" id="codeMatiere" name="codeMatiere" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border" placeholder="Ex: INFO101">
+        </div>
+
+        <!-- Nom de la matière -->
+        <div>
+            <label for="nomMatiere" class="block text-sm font-medium text-gray-700">Nom de la Matière <span class="text-red-500">*</span></label>
+            <input type="text" id="nomMatiere" name="nomMatiere" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border" placeholder="Ex: Algorithmique">
+        </div>
+
+        <!-- Filière -->
+        <div>
+            <label for="idFiliere" class="block text-sm font-medium text-gray-700">Filière <span class="text-red-500">*</span></label>
+            <select id="idFiliere" name="idFiliere" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border bg-white" onchange="onFiliereChange()">
+                <option value="">Sélectionnez une filière</option>
+            </select>
+        </div>
+
+        <!-- Niveau (pour filtrer semestre) -->
+        <div>
+            <label for="idNiveau" class="block text-sm font-medium text-gray-700">Niveau (Filtre)</label>
+            <select id="idNiveau" name="idNiveau" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border bg-white" onchange="onNiveauChange()">
+                <option value="">Tous les niveaux</option>
+            </select>
+        </div>
+
+        <!-- Semestre -->
+        <div>
+            <label for="idRefSemestre" class="block text-sm font-medium text-gray-700">Semestre <span class="text-red-500">*</span></label>
+            <select id="idRefSemestre" name="idRefSemestre" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border bg-white">
+                <option value="">Sélectionnez un semestre</option>
+            </select>
+        </div>
+
+        <!-- Crédits -->
+        <div>
+            <label for="credit" class="block text-sm font-medium text-gray-700">Crédits (ECTS) <span class="text-red-500">*</span></label>
+            <input type="number" id="credit" name="credit" required min="1" max="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border" placeholder="Ex: 5">
+        </div>
+
+        <!-- Volume Horaire -->
+        <div>
+            <label for="volumeHoraire" class="block text-sm font-medium text-gray-700">Volume Horaire <span class="text-red-500">*</span></label>
+            <input type="number" id="volumeHoraire" name="volumeHoraire" required min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border" placeholder="Ex: 40">
+        </div>
+
+        <!-- Professeur Responsable -->
+        <div>
+            <label for="idProfesseurResponsable" class="block text-sm font-medium text-gray-700">Enseignant Responsable</label>
+            <select id="idProfesseurResponsable" name="idProfesseurResponsable" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border bg-white">
+                <option value="">Sélectionnez un professeur</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end pt-4 mt-4 border-t border-gray-100">
+        <button type="button" class="mr-3 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" onclick="closeMatiereModal()">
+            Annuler
+        </button>
+        <button type="submit" class="bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Enregistrer
+        </button>
+    </div>
+</form>
+
+<script>
+    let filieresList = [];
+    let niveauxList = [];
+    let semestresList = [];
+    let profsList = [];
+
+    async function loadMatiereFormData() {
+        try {
+            const [filieres, niveaux, semestres, profs] = await Promise.all([
+                app.apiGet('/api/Filiere'),
+                app.apiGet('/api/Niveau'),
+                app.apiGet('/api/Semestre/RefSemestre'), // endpoint to get all RefSemestre if available, otherwise adjust
+                app.apiGet('/api/Professeur')
+            ]);
+            
+            filieresList = filieres || [];
+            niveauxList = niveaux || [];
+            semestresList = semestres || [];
+            profsList = profs || [];
+
+            populateSelect('idFiliere', filieresList, 'IdFiliere', f => `${f.CodeFiliere} - ${f.NomFiliere}`);
+            populateSelect('idNiveau', niveauxList, 'IdNiveau', n => `${n.CodeNiveau}`);
+            populateSelect('idProfesseurResponsable', profsList, 'IdProfesseur', p => `${p.Nom} ${p.Prenom}`);
+            
+            // Populate semestres
+            populateSelect('idRefSemestre', semestresList, 'IdRefSemestre', s => `${s.CodeSemestre}`);
+        } catch (error) {
+            console.error("Error loading form data", error);
+        }
+    }
+
+    function populateSelect(selectId, list, valueProp, textCallback) {
+        const select = document.getElementById(selectId);
+        // keep first option
+        const firstOption = select.options[0];
+        select.innerHTML = '';
+        select.appendChild(firstOption);
+        list.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = app.readProp(item, valueProp) || item[valueProp];
+            opt.textContent = textCallback(item);
+            select.appendChild(opt);
+        });
+    }
+
+    function onFiliereChange() {
+        // Optionnel : lier la filière avec ses niveaux. 
+        // Selon le modèle actuel, le niveau est lié à la mention.
+    }
+
+    function onNiveauChange() {
+        const niveauId = document.getElementById('idNiveau').value;
+        const selectSemestre = document.getElementById('idRefSemestre');
+        
+        // Reset
+        const firstOption = selectSemestre.options[0];
+        selectSemestre.innerHTML = '';
+        selectSemestre.appendChild(firstOption);
+
+        let filteredSemestres = semestresList;
+        if (niveauId) {
+            filteredSemestres = semestresList.filter(s => (app.readProp(s, "IdNiveau") || s.IdNiveau) == niveauId);
+        }
+
+        filteredSemestres.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = app.readProp(item, 'IdRefSemestre') || item.IdRefSemestre;
+            opt.textContent = app.readProp(item, 'CodeSemestre') || item.CodeSemestre;
+            selectSemestre.appendChild(opt);
+        });
+    }
+
+    async function submitMatiereForm(event) {
+        event.preventDefault();
+        
+        const formData = {
+            IdMatiere: parseInt(document.getElementById('idMatiere').value) || 0,
+            CodeMatiere: document.getElementById('codeMatiere').value,
+            NomMatiere: document.getElementById('nomMatiere').value,
+            IdFiliere: parseInt(document.getElementById('idFiliere').value),
+            IdRefSemestre: parseInt(document.getElementById('idRefSemestre').value),
+            Credit: parseInt(document.getElementById('credit').value),
+            VolumeHoraire: parseInt(document.getElementById('volumeHoraire').value) || 0,
+            IdProfesseurResponsable: document.getElementById('idProfesseurResponsable').value ? parseInt(document.getElementById('idProfesseurResponsable').value) : null
+        };
+
+        try {
+            let res;
+            if (formData.IdMatiere === 0) {
+                res = await app.apiPost('/api/Matiere', formData);
+            } else {
+                res = await app.apiPut(`/api/Matiere/${formData.IdMatiere}`, formData);
+            }
+            // Appeler une fonction de rappel définie dans la vue parent
+            if (typeof onMatiereSaved === 'function') {
+                onMatiereSaved(res);
+            }
+            closeMatiereModal();
+        } catch (error) {
+            alert("Erreur lors de l'enregistrement de la matière : " + error.message);
+        }
+    }
+</script>

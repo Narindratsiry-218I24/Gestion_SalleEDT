@@ -30,7 +30,7 @@ namespace Gestion_SalleClasseEDT.Models
         var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
         var database = Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
-        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "tsiririmlay";
+        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "kifeko";
 
         return $"Server={server};Port={port};Database={database};User Id={user};Password={password};";
     }
@@ -51,13 +51,27 @@ namespace Gestion_SalleClasseEDT.Models
     public DbSet<Utilisateur> Utilisateurs { get; set; }
     public DbSet<DemandeEdt> DemandesEdt { get; set; }
     public DbSet<PropositionAdmin> PropositionsAdmin { get; set; }
+    public DbSet<Subject> Subjects { get; set; }
+    public DbSet<Schedule> Schedules { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Default schema for PostgreSQL is usually "public"
         modelBuilder.HasDefaultSchema("public");
 
-        // Additional configurations if needed
+        // Additional configurations
+        modelBuilder.Entity<Subject>(b =>
+        {
+            b.HasIndex(s => s.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<Schedule>(b =>
+        {
+            b.HasOne(s => s.Subject).WithMany();
+            b.HasOne(s => s.Professeur).WithMany();
+            b.HasOne(s => s.Salle).WithMany();
+        });
 
         base.OnModelCreating(modelBuilder);
     }

@@ -1,0 +1,28 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Sujets (Subjects)</h2>
+
+<p>
+    <a href="/Subject/Create">Créer une matière</a>
+</p>
+
+<div id="subject-list">Chargement...</div>
+
+<script>
+fetch('/api/Subject')
+  .then(r => r.json())
+  .then(data => {
+    const container = document.getElementById('subject-list');
+    if (!data || data.length === 0) { container.innerText = 'Aucune matière.'; return; }
+    const ul = document.createElement('ul');
+    data.forEach(s => {
+      const li = document.createElement('li');
+      li.innerText = `${s.id} - ${s.code} - ${s.label}`;
+      ul.appendChild(li);
+    });
+    container.innerHTML = '';
+    container.appendChild(ul);
+  });
+</script>

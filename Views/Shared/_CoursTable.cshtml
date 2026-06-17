@@ -1,0 +1,88 @@
+@model IEnumerable<Gestion_SalleClasseEDT.Models.Cours>
+
+<div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden shadow-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-300">
+            <thead class="text-xs uppercase bg-white/5 text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-4">Matière / Type</th>
+                    <th scope="col" class="px-6 py-4">Professeur</th>
+                    <th scope="col" class="px-6 py-4">Classe</th>
+                    <th scope="col" class="px-6 py-4">Salle & Créneaux</th>
+                    <th scope="col" class="px-6 py-4">Statut</th>
+                    <th scope="col" class="px-6 py-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var cours in Model)
+                {
+                    <tr class="border-b border-white/10 hover:bg-white/5 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-white mb-1">@(cours.Matiere?.NomMatiere ?? "N/A")</div>
+                            <div class="text-xs text-gray-400 flex items-center gap-1">
+                                <span class="px-1.5 py-0.5 rounded-sm bg-white/10 text-gray-300">@cours.TypeCours</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-[#17203A] flex items-center justify-center text-xs font-bold text-blue-400">
+                                    @(cours.Professeur?.Nom?.FirstOrDefault().ToString() ?? "?")
+                                </div>
+                                <span>@(cours.Professeur?.Nom ?? "N/A") @(cours.Professeur?.Prenom)</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-200">@(cours.Classe?.NomClasse ?? "N/A")</span>
+                                <span class="text-xs text-gray-500">@(cours.Classe?.Filiere?.NomFiliere ?? "")</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2 text-blue-300">
+                                    <i data-lucide="building" class="w-4 h-4"></i>
+                                    <span class="font-medium">@(cours.Salle?.NomSalle ?? "Non assignée")</span>
+                                </div>
+                                @if(cours.Creneaux != null && cours.Creneaux.Any())
+                                {
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                    @foreach(var cr in cours.Creneaux)
+                                    {
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">
+                                            <i data-lucide="calendar" class="w-3 h-3"></i>
+                                            @cr.JourSemaine @cr.HeureDebut.ToString(@"hh\:mm") - @cr.HeureFin.ToString(@"hh\:mm")
+                                        </span>
+                                    }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-xs text-amber-500/80 italic">Aucun créneau</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @{
+                                var bgStatut = cours.Statut == "Planifié" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/20" : 
+                                              (cours.Statut == "En cours" ? "bg-blue-500/20 text-blue-400 border-blue-500/20" : "bg-gray-500/20 text-gray-400 border-gray-500/20");
+                            }
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium border @bgStatut">
+                                @cours.Statut
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-colors" title="Modifier">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button class="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors" title="Supprimer">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
