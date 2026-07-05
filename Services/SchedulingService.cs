@@ -38,9 +38,7 @@ namespace Gestion_SalleClasseEDT.Services
                 var conflitProf = await _context.Schedules
                     .AnyAsync(s => s.ProfesseurId == schedule.ProfesseurId
                         && s.Date.Date == schedule.Date.Date
-                        && ((debut >= s.HeureDebut && debut < s.HeureFin)
-                            || (fin > s.HeureDebut && fin <= s.HeureFin)
-                            || (debut <= s.HeureDebut && fin >= s.HeureFin)));
+                        && (debut < s.HeureFin && fin > s.HeureDebut));
 
                 if (conflitProf) throw new Exception("Le professeur a déjà un cours à cet horaire.");
             }
@@ -51,9 +49,7 @@ namespace Gestion_SalleClasseEDT.Services
                 var conflitSalle = await _context.Schedules
                     .AnyAsync(s => s.SalleId == schedule.SalleId
                         && s.Date.Date == schedule.Date.Date
-                        && ((debut >= s.HeureDebut && debut < s.HeureFin)
-                            || (fin > s.HeureDebut && fin <= s.HeureFin)
-                            || (debut <= s.HeureDebut && fin >= s.HeureFin)));
+                        && (debut < s.HeureFin && fin > s.HeureDebut));
 
                 if (conflitSalle) throw new Exception("La salle est occupée à cet horaire.");
             }

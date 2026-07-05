@@ -30,7 +30,20 @@ namespace Gestion_SalleClasseEDT.Services
                 var heureDebut = debut.TimeOfDay;
                 var heureFin = fin.TimeOfDay;
 
-                // Validation of compatibility matter/class
+                if (cours.IdAffectation.HasValue)
+                {
+                    var affectation = await _context.AffectationsMatieres.FindAsync(cours.IdAffectation.Value);
+                    if (affectation == null || !affectation.EstActif)
+                    {
+                        throw new PlanningException("L'affectation de matiere est introuvable ou inactive.");
+                    }
+
+                    cours.IdMatiere = affectation.IdMatiere;
+                    cours.IdProfesseur = affectation.IdProfesseur;
+                    cours.IdClasse = affectation.IdClasse;
+                    cours.IdSemestre = affectation.IdSemestre;
+                }
+
                 var matiere = await _context.Matieres.FindAsync(cours.IdMatiere);
                 var classe = await _context.Classes.FindAsync(cours.IdClasse);
                 
@@ -44,9 +57,7 @@ namespace Gestion_SalleClasseEDT.Services
                     .Include(c => c.Cours)
                     .AnyAsync(c => c.Cours.IdProfesseur == cours.IdProfesseur
                         && c.JourSemaine == jour
-                        && ((heureDebut >= c.HeureDebut && heureDebut < c.HeureFin)
-                         || (heureFin > c.HeureDebut && heureFin <= c.HeureFin)
-                         || (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)));
+                        && (heureDebut < c.HeureFin && heureFin > c.HeureDebut));
                          
                 if (conflitProf) throw new PlanningException("Le professeur a déjà un cours à cet horaire.");
 
@@ -55,9 +66,7 @@ namespace Gestion_SalleClasseEDT.Services
                     .Include(c => c.Cours)
                     .AnyAsync(c => c.Cours.IdClasse == cours.IdClasse
                         && c.JourSemaine == jour
-                        && ((heureDebut >= c.HeureDebut && heureDebut < c.HeureFin)
-                         || (heureFin > c.HeureDebut && heureFin <= c.HeureFin)
-                         || (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)));
+                        && (heureDebut < c.HeureFin && heureFin > c.HeureDebut));
 
                 if (conflitClasse) throw new PlanningException("La classe a déjà un cours à cet horaire.");
 
@@ -144,6 +153,8 @@ namespace Gestion_SalleClasseEDT.Services
                     .ThenInclude(c => c.Professeur)
                 .Include(c => c.Cours)
                     .ThenInclude(c => c.Classe)
+                .Include(c => c.Cours)
+                    .ThenInclude(c => c.AffectationMatiere)
                 .ToListAsync();
         }
     }

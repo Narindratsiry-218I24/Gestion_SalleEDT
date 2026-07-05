@@ -1,0 +1,95 @@
+@model Gestion_SalleClasseEDT.Models.Professeur
+
+@{
+    ViewData["Title"] = "Ajouter un Professeur";
+}
+
+<div class="max-w-7xl mx-auto py-8">
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Ajouter un professeur</h1>
+            <p class="text-sm text-gray-500 mt-2">Renseignez les informations pour créer un nouveau profil enseignant.</p>
+        </div>
+        <a asp-action="Index" class="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:text-blue-600 transition-all">
+            <i data-lucide="arrow-left" class="h-4 w-4"></i> Retour
+        </a>
+    </div>
+
+    <form asp-action="Create" enctype="multipart/form-data" method="post" class="bg-white rounded-3xl shadow-xl shadow-gray-200/40 border border-gray-100 overflow-hidden">
+        <div class="grid lg:grid-cols-12">
+            
+            <!-- COLONNE GAUCHE (Photo & CV) -->
+            <div class="lg:col-span-4 bg-gray-50/50 p-8 sm:p-10 border-b lg:border-b-0 lg:border-r border-gray-100 flex flex-col items-center">
+                <!-- Photo Upload -->
+                <div class="relative mb-8 group">
+                    <div class="h-44 w-44 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center relative transition-transform group-hover:scale-105" id="photoPreviewContainer">
+                        <i data-lucide="user" class="h-20 w-20 text-gray-300"></i>
+                        <img id="photoPreview" alt="Aperçu" class="hidden absolute inset-0 w-full h-full object-cover" />
+                    </div>
+                    <label for="photoInput" class="absolute bottom-2 right-2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-orange-500 text-white shadow-xl hover:bg-orange-600 hover:scale-110 transition-all" title="Uploader une photo">
+                        <span class="sr-only">Uploader une photo</span>
+                        <i data-lucide="camera" class="h-5 w-5"></i>
+                        <input type="file" asp-for="photoFile" id="photoInput" class="hidden" accept="image/*" aria-label="Uploader une photo" onchange="previewImage(this)" />
+                    </label>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-1" id="displayName">Nouveau Professeur</h3>
+                <p class="text-xs text-gray-500 mb-10 text-center">Enseignant</p>
+
+                <!-- Navigation Tabs Style from Design -->
+                <div class="w-full flex flex-col gap-2">
+                    <div class="flex items-center gap-3 bg-orange-50 text-orange-500 font-semibold px-5 py-3 rounded-2xl w-full">
+                        <i data-lucide="user" class="h-5 w-5"></i>
+                        Personal Information
+                    </div>
+                    <div class="flex items-center gap-3 text-gray-500 font-medium px-5 py-3 rounded-2xl w-full">
+                        <i data-lucide="lock" class="h-5 w-5"></i>
+                        Login & Password
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLONNE DROITE (Formulaire) -->
+            <div class="lg:col-span-8 p-8 sm:p-12 space-y-10">
+                @await Html.PartialAsync("_Form", Model)
+
+                <div class="flex items-center justify-end gap-4 pt-8">
+                    <a asp-action="Index" class="inline-flex justify-center items-center rounded-xl bg-gray-200 px-8 py-3 text-sm font-bold text-gray-700 hover:bg-gray-300 transition-all">
+                        Annuler
+                    </a>
+                    <button type="submit" class="inline-flex justify-center items-center rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all" style="background-color:#2563eb;color:#ffffff;">
+                        <i data-lucide="save" class="h-4 w-4 mr-2"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function updateName() {
+            const prenom = document.getElementById('Prenom').value;
+            const nom = document.getElementById('Nom').value;
+            const displayName = document.getElementById('displayName');
+            
+            if (prenom || nom) {
+                displayName.textContent = `${prenom} ${nom}`.trim();
+            } else {
+                displayName.textContent = 'Nouveau Professeur';
+            }
+        }
+    </script>
+}

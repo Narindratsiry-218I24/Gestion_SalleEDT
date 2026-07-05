@@ -47,5 +47,6 @@ public class Matiere
     public virtual Professeur ProfesseurResponsable { get; set; }
 
     public virtual ICollection<Cours> Cours { get; set; }
+    public virtual ICollection<AffectationMatiere> AffectationsMatieres { get; set; }
 }
 }

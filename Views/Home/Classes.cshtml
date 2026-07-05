@@ -1,0 +1,353 @@
+@{
+    ViewBag.Title = "Classes";
+}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+            <h1 class="m-0 text-3xl font-black tracking-tight text-[#17203A]">Classes par annee</h1>
+            <p class="mt-1 text-sm text-gray-500">Une classe couvre l'annee complete; les matieres sont affectees par semestre.</p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <select id="anneeFilter" class="h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#5C8ABF]/30"></select>
+            <button type="button" onclick="openClasseModal()" class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#17203A] px-4 text-sm font-semibold text-white hover:bg-[#243052]">
+                <i data-lucide="plus" class="h-4 w-4"></i><span>Classe</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+            <p class="m-0 text-xs font-bold uppercase tracking-wider text-gray-400">Classes</p>
+            <p id="statClasses" class="m-0 mt-1 text-2xl font-black text-[#17203A]">--</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+            <p class="m-0 text-xs font-bold uppercase tracking-wider text-gray-400">Affectations</p>
+            <p id="statAffectations" class="m-0 mt-1 text-2xl font-black text-[#17203A]">--</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+            <p class="m-0 text-xs font-bold uppercase tracking-wider text-gray-400">Heures prevues</p>
+            <p id="statHeures" class="m-0 mt-1 text-2xl font-black text-[#17203A]">--</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+            <p class="m-0 text-xs font-bold uppercase tracking-wider text-gray-400">Cours generes</p>
+            <p id="statCours" class="m-0 mt-1 text-2xl font-black text-[#17203A]">--</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[360px_1fr]">
+        <section class="rounded-lg border border-gray-100 bg-white shadow-sm">
+            <div class="border-b border-gray-100 p-4">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                    <input id="classeSearch" oninput="renderClasses()" type="search" placeholder="Rechercher une classe..." class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#5C8ABF]/30" />
+                </div>
+            </div>
+            <div id="classesList" class="max-h-[620px] divide-y divide-gray-100 overflow-y-auto"></div>
+        </section>
+
+        <section class="rounded-lg border border-gray-100 bg-white shadow-sm">
+            <div id="classeDetails" class="min-h-[620px] p-5">
+                <div class="flex h-full min-h-[520px] items-center justify-center text-sm text-gray-500">Selectionnez une classe.</div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div id="classeModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/50 p-4">
+    <form onsubmit="submitClasse(event)" class="w-full max-w-lg rounded-lg bg-white p-5 shadow-xl">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="m-0 text-lg font-bold text-[#17203A]">Nouvelle classe annuelle</h2>
+            <button type="button" onclick="closeModal('classeModal')" class="rounded-md p-2 text-gray-500 hover:bg-gray-100"><i data-lucide="x" class="h-4 w-4"></i></button>
+        </div>
+        <div class="grid gap-4">
+            <label class="text-sm font-semibold text-gray-700">Nom
+                <input id="classeNom" required maxlength="100" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" placeholder="L1-G1" />
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Code
+                <input id="classeCode" maxlength="20" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" placeholder="L1-G1" />
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Filiere
+                <select id="classeFiliere" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Annee academique
+                <select id="classeAnnee" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
+            </label>
+        </div>
+        <div class="mt-5 flex justify-end gap-2">
+            <button type="button" onclick="closeModal('classeModal')" class="h-10 rounded-md border border-gray-200 px-4 text-sm font-semibold text-gray-700">Annuler</button>
+            <button type="submit" class="h-10 rounded-md bg-[#17203A] px-4 text-sm font-semibold text-white">Enregistrer</button>
+        </div>
+    </form>
+</div>
+
+<div id="affectationModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/50 p-4">
+    <form onsubmit="submitAffectation(event)" class="w-full max-w-2xl rounded-lg bg-white p-5 shadow-xl">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="m-0 text-lg font-bold text-[#17203A]">Ajouter une affectation</h2>
+            <button type="button" onclick="closeModal('affectationModal')" class="rounded-md p-2 text-gray-500 hover:bg-gray-100"><i data-lucide="x" class="h-4 w-4"></i></button>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+            <label class="text-sm font-semibold text-gray-700">Semestre
+                <select id="affSemestre" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Matiere
+                <select id="affMatiere" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Professeur
+                <select id="affProfesseur" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Volume total
+                <input id="affVolume" required min="1" type="number" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" />
+            </label>
+            <label class="text-sm font-semibold text-gray-700">CM
+                <input id="affCm" min="0" type="number" value="0" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" />
+            </label>
+            <label class="text-sm font-semibold text-gray-700">TD
+                <input id="affTd" min="0" type="number" value="0" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" />
+            </label>
+            <label class="text-sm font-semibold text-gray-700">TP
+                <input id="affTp" min="0" type="number" value="0" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" />
+            </label>
+            <label class="text-sm font-semibold text-gray-700">Commentaire
+                <input id="affCommentaire" class="mt-1 h-10 w-full rounded-md border border-gray-200 px-3 text-sm" />
+            </label>
+        </div>
+        <div class="mt-5 flex justify-end gap-2">
+            <button type="button" onclick="closeModal('affectationModal')" class="h-10 rounded-md border border-gray-200 px-4 text-sm font-semibold text-gray-700">Annuler</button>
+            <button type="submit" class="h-10 rounded-md bg-[#17203A] px-4 text-sm font-semibold text-white">Enregistrer</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        let annees = [], filieres = [], classes = [], semestres = [], matieres = [], professeurs = [], affectations = [], cours = [];
+        let selectedClasseId = null;
+
+        const prop = (o, n) => app.readProp(o, n);
+        const esc = v => app.escapeHtml(v ?? "");
+
+        async function loadClassesPage() {
+            [annees, filieres, matieres, professeurs, cours] = await Promise.all([
+                app.apiGet('/api/AnneeAcademique'),
+                app.apiGet('/api/Filiere'),
+                app.apiGet('/api/Matiere'),
+                app.apiGet('/api/Professeur'),
+                app.apiGet('/api/Cours')
+            ]);
+
+            fillSelect('anneeFilter', annees, 'IdAnnee', a => prop(a, 'Libelle'));
+            fillSelect('classeAnnee', annees, 'IdAnnee', a => prop(a, 'Libelle'));
+            fillSelect('classeFiliere', filieres, 'IdFiliere', f => prop(f, 'NomFiliere'));
+            fillSelect('affProfesseur', professeurs, 'IdProfesseur', p => `${prop(p, 'Nom')} ${prop(p, 'Prenom') || ''}`.trim());
+
+            document.getElementById('anneeFilter').addEventListener('change', refreshByYear);
+            await refreshByYear();
+        }
+
+        async function refreshByYear() {
+            const anneeId = document.getElementById('anneeFilter').value;
+            [classes, semestres, affectations] = await Promise.all([
+                app.apiGet(`/api/Classe?anneeId=${anneeId}`),
+                app.apiGet(`/api/Semestre?anneeId=${anneeId}`),
+                app.apiGet('/api/AffectationMatiere')
+            ]);
+            selectedClasseId = classes[0] ? prop(classes[0], 'IdClasse') : null;
+            renderClasses();
+            renderDetails();
+            updateStats();
+        }
+
+        function fillSelect(id, items, valueName, textFn) {
+            const select = document.getElementById(id);
+            select.innerHTML = (items || []).map(item => `<option value="${prop(item, valueName)}">${esc(textFn(item))}</option>`).join('');
+        }
+
+        function renderClasses() {
+            const q = document.getElementById('classeSearch').value.toLowerCase();
+            const list = document.getElementById('classesList');
+            const rows = classes.filter(c => (prop(c, 'NomClasse') || '').toLowerCase().includes(q));
+            if (!rows.length) {
+                list.innerHTML = '<div class="p-6 text-center text-sm text-gray-500">Aucune classe.</div>';
+                return;
+            }
+            list.innerHTML = rows.map(c => {
+                const id = prop(c, 'IdClasse');
+                const active = id == selectedClasseId;
+                const count = affectations.filter(a => prop(a, 'IdClasse') == id && prop(a, 'EstActif') !== false).length;
+                return `
+                    <button type="button" onclick="selectClasse(${id})" class="block w-full p-4 text-left transition ${active ? 'bg-[#EAF2FA]' : 'hover:bg-gray-50'}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="m-0 font-bold text-[#17203A]">${esc(prop(c, 'NomClasse'))}</p>
+                                <p class="m-0 mt-1 text-xs text-gray-500">${esc(prop(prop(c, 'Filiere'), 'NomFiliere'))}</p>
+                            </div>
+                            <span class="rounded-md bg-white px-2 py-1 text-xs font-bold text-[#5C8ABF] ring-1 ring-gray-100">${count}</span>
+                        </div>
+                    </button>`;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function selectClasse(id) {
+            selectedClasseId = id;
+            renderClasses();
+            renderDetails();
+        }
+
+        function renderDetails() {
+            const container = document.getElementById('classeDetails');
+            const classe = classes.find(c => prop(c, 'IdClasse') == selectedClasseId);
+            if (!classe) {
+                container.innerHTML = '<div class="flex h-full min-h-[520px] items-center justify-center text-sm text-gray-500">Selectionnez une classe.</div>';
+                return;
+            }
+
+            const semestreBlocks = semestres.map(s => renderSemestreBlock(classe, s)).join('');
+            container.innerHTML = `
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                        <p class="m-0 text-xs font-bold uppercase tracking-wider text-gray-400">${esc(prop(prop(classe, 'AnneeAcademique'), 'Libelle'))}</p>
+                        <h2 class="m-0 mt-1 text-2xl font-black text-[#17203A]">${esc(prop(classe, 'NomClasse'))}</h2>
+                        <p class="m-0 mt-1 text-sm text-gray-500">${esc(prop(prop(classe, 'Filiere'), 'NomFiliere'))}</p>
+                    </div>
+                    <button type="button" onclick="openAffectationModal()" class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#5C8ABF] px-4 text-sm font-semibold text-white hover:bg-[#4d7daf]">
+                        <i data-lucide="plus" class="h-4 w-4"></i><span>Affectation</span>
+                    </button>
+                </div>
+                <div class="mt-5 grid gap-4 xl:grid-cols-2">${semestreBlocks}</div>`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderSemestreBlock(classe, semestre) {
+            const semestreId = prop(semestre, 'IdSemestre');
+            const rows = affectations.filter(a => prop(a, 'IdClasse') == prop(classe, 'IdClasse') && prop(a, 'IdSemestre') == semestreId && prop(a, 'EstActif') !== false);
+            const total = rows.reduce((sum, a) => sum + Number(prop(a, 'VolumeHoraireTotal') || 0), 0);
+            const code = prop(prop(semestre, 'RefSemestre'), 'CodeSemestre');
+            return `
+                <div class="rounded-lg border border-gray-100">
+                    <div class="flex items-center justify-between border-b border-gray-100 p-4">
+                        <div>
+                            <h3 class="m-0 text-base font-black text-[#17203A]">${esc(code)}</h3>
+                            <p class="m-0 text-xs text-gray-500">${total} h prevues</p>
+                        </div>
+                        <button type="button" onclick="generateSemester(${semestreId})" class="rounded-md border border-gray-200 p-2 text-gray-600 hover:bg-gray-50" title="Generer les cours">
+                            <i data-lucide="calendar-plus" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        ${rows.length ? rows.map(renderAffectationRow).join('') : '<div class="p-4 text-sm text-gray-500">Aucune matiere affectee.</div>'}
+                    </div>
+                </div>`;
+        }
+
+        function renderAffectationRow(a) {
+            const prof = prop(a, 'Professeur');
+            return `
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="m-0 font-semibold text-[#17203A]">${esc(prop(prop(a, 'Matiere'), 'NomMatiere'))}</p>
+                            <p class="m-0 mt-1 text-xs text-gray-500">${esc(prop(prof, 'Nom'))} ${esc(prop(prof, 'Prenom'))}</p>
+                        </div>
+                        <button type="button" onclick="generateAffectation(${prop(a, 'IdAffectation')})" class="rounded-md bg-gray-50 p-2 text-[#5C8ABF] hover:bg-[#EAF2FA]" title="Generer les cours">
+                            <i data-lucide="calendar-plus" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                        <span class="rounded bg-blue-50 px-2 py-1 text-blue-700">${prop(a, 'VolumeHoraireTotal')}h</span>
+                        <span class="rounded bg-gray-50 px-2 py-1 text-gray-600">CM ${prop(a, 'HeuresCm') || 0}</span>
+                        <span class="rounded bg-gray-50 px-2 py-1 text-gray-600">TD ${prop(a, 'HeuresTd') || 0}</span>
+                        <span class="rounded bg-gray-50 px-2 py-1 text-gray-600">TP ${prop(a, 'HeuresTp') || 0}</span>
+                    </div>
+                </div>`;
+        }
+
+        function updateStats() {
+            const visibleAffects = affectations.filter(a => classes.some(c => prop(c, 'IdClasse') == prop(a, 'IdClasse')) && prop(a, 'EstActif') !== false);
+            const visibleClassIds = classes.map(c => prop(c, 'IdClasse'));
+            document.getElementById('statClasses').textContent = classes.length;
+            document.getElementById('statAffectations').textContent = visibleAffects.length;
+            document.getElementById('statHeures').textContent = visibleAffects.reduce((sum, a) => sum + Number(prop(a, 'VolumeHoraireTotal') || 0), 0);
+            document.getElementById('statCours').textContent = cours.filter(c => visibleClassIds.includes(prop(c, 'IdClasse'))).length;
+        }
+
+        function openClasseModal() {
+            document.getElementById('classeAnnee').value = document.getElementById('anneeFilter').value;
+            openModal('classeModal');
+        }
+
+        function openAffectationModal() {
+            const classe = classes.find(c => prop(c, 'IdClasse') == selectedClasseId);
+            if (!classe) return;
+            const filiereId = prop(classe, 'IdFiliere');
+            fillSelect('affSemestre', semestres, 'IdSemestre', s => prop(prop(s, 'RefSemestre'), 'CodeSemestre'));
+            fillSelect('affMatiere', matieres.filter(m => prop(m, 'IdFiliere') == filiereId), 'IdMatiere', m => prop(m, 'NomMatiere'));
+            openModal('affectationModal');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+        }
+
+        async function submitClasse(event) {
+            event.preventDefault();
+            await app.apiPost('/api/Classe', {
+                IdFiliere: Number(document.getElementById('classeFiliere').value),
+                IdAnneeAcademique: Number(document.getElementById('classeAnnee').value),
+                NomClasse: document.getElementById('classeNom').value,
+                CodeClasse: document.getElementById('classeCode').value || document.getElementById('classeNom').value
+            });
+            closeModal('classeModal');
+            await refreshByYear();
+        }
+
+        async function submitAffectation(event) {
+            event.preventDefault();
+            const semestre = semestres.find(s => prop(s, 'IdSemestre') == document.getElementById('affSemestre').value);
+            await app.apiPost('/api/AffectationMatiere', {
+                IdClasse: Number(selectedClasseId),
+                IdMatiere: Number(document.getElementById('affMatiere').value),
+                IdProfesseur: Number(document.getElementById('affProfesseur').value),
+                IdSemestre: Number(document.getElementById('affSemestre').value),
+                VolumeHoraireTotal: Number(document.getElementById('affVolume').value),
+                HeuresCm: Number(document.getElementById('affCm').value || 0),
+                HeuresTd: Number(document.getElementById('affTd').value || 0),
+                HeuresTp: Number(document.getElementById('affTp').value || 0),
+                EstActif: true,
+                DateDebut: prop(semestre, 'DateDebut'),
+                DateFin: prop(semestre, 'DateFin'),
+                Commentaire: document.getElementById('affCommentaire').value
+            });
+            closeModal('affectationModal');
+            await refreshByYear();
+        }
+
+        async function generateAffectation(id) {
+            await app.apiPost(`/api/AffectationMatiere/${id}/GenererCours`, {});
+            cours = await app.apiGet('/api/Cours');
+            updateStats();
+            renderDetails();
+        }
+
+        async function generateSemester(semestreId) {
+            const targets = affectations.filter(a => prop(a, 'IdClasse') == selectedClasseId && prop(a, 'IdSemestre') == semestreId && prop(a, 'EstActif') !== false);
+            for (const a of targets) {
+                await app.apiPost(`/api/AffectationMatiere/${prop(a, 'IdAffectation')}/GenererCours`, {});
+            }
+            cours = await app.apiGet('/api/Cours');
+            updateStats();
+            renderDetails();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadClassesPage);
+    </script>
+}

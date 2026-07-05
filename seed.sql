@@ -99,18 +99,18 @@ INSERT INTO public.semestre (id_semestre, id_ref_semestre, id_annee, date_debut,
 ON CONFLICT (id_semestre) DO NOTHING;
 
 -- 8. Seed CLASSE
-INSERT INTO public.classe (id_classe, id_filiere, id_semestre, nom_classe) VALUES
+INSERT INTO public.classe (id_classe, id_filiere, id_annee_academique, nom_classe) VALUES
 -- Info
 (1, 1, 1, 'L1 DA2I S1'),
-(2, 4, 7, 'M1 M2I S7'),
-(3, 5, 7, 'M1 SDIA S7')
+(2, 4, 1, 'M1 M2I S7'),
+(3, 5, 1, 'M1 SDIA S7')
 ON CONFLICT (id_classe) DO NOTHING;
 
 -- 9. Seed PROFESSEUR
-INSERT INTO public.professeur (id_professeur, nom, prenom, email, telephone) VALUES
-(1, 'Randriana', 'Aristhène', 'a.randriana@emit.edu', '+261 34 00 000 01'),
-(2, 'Rakoto', 'Jean', 'j.rakoto@emit.edu', '+261 34 00 000 02')
-ON CONFLICT (id_professeur) DO NOTHING;
+INSERT INTO public.professeur (id_professeur, matricule, nom, prenom, email, telephone) VALUES
+(1, 'PROF-0001', 'Randriana', 'Aristhène', 'a.randriana@emit.edu', '+261 34 00 000 01'),
+(2, 'PROF-0002', 'Rakoto', 'Jean', 'j.rakoto@emit.edu', '+261 34 00 000 02')
+ON CONFLICT (id_professeur) DO UPDATE SET matricule = EXCLUDED.matricule;
 
 -- 10. Seed UTILISATEUR
 INSERT INTO public.utilisateur (id_utilisateur, nom, prenom, email, role) VALUES

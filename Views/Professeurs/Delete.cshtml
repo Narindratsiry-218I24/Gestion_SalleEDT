@@ -1,0 +1,23 @@
+@model Gestion_SalleClasseEDT.Models.Professeur
+
+@{
+    ViewData["Title"] = "Supprimer professeur";
+}
+
+<h1>Supprimer professeur</h1>
+
+<div>
+    <h4>Êtes-vous sûr de vouloir supprimer ce professeur ?</h4>
+    <dl class="row">
+        <dt class="col-sm-2">Nom</dt>
+        <dd class="col-sm-10">@Model.Nom @Model.Prenom</dd>
+        <dt class="col-sm-2">Email</dt>
+        <dd class="col-sm-10">@Model.Email</dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="IdProfesseur" />
+        <button type="submit" class="btn btn-danger">Supprimer</button>
+        <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>

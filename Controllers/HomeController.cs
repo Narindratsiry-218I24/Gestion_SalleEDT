@@ -82,6 +82,11 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Classes()
+    {
+        return View();
+    }
+
     public IActionResult Validation()
     {
         return View();

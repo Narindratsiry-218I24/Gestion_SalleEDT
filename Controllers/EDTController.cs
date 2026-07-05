@@ -29,7 +29,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(c => c.Matiere)
                 .Include(c => c.Professeur)
                 .Include(c => c.Classe).ThenInclude(cl => cl.Filiere).ThenInclude(f => f.Mention)
-                .Include(c => c.Classe).ThenInclude(cl => cl.Semestre).ThenInclude(s => s.RefSemestre).ThenInclude(rs => rs.Niveau)
+                .Include(c => c.Classe).ThenInclude(cl => cl.AnneeAcademique)
+                .Include(c => c.Semestre).ThenInclude(s => s.RefSemestre).ThenInclude(rs => rs.Niveau)
+                .Include(c => c.AffectationMatiere)
                 .Include(c => c.Salle)
                 .Include(c => c.Creneaux)
                 .AsQueryable();
@@ -42,7 +44,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 query = query.Where(c => c.Classe.Filiere.NomFiliere.Contains(cycle));
 
             if (!string.IsNullOrEmpty(niveau) && niveau != "all")
-                query = query.Where(c => c.Classe.Semestre.RefSemestre.Niveau.CodeNiveau.Contains(niveau));
+                query = query.Where(c => c.Semestre.RefSemestre.Niveau.CodeNiveau.Contains(niveau));
 
             if (!string.IsNullOrEmpty(semaineType) && semaineType != "all")
                 query = query.Where(c => c.Creneaux.Any(cr => cr.SemaineType == semaineType));
@@ -60,7 +62,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                     c.Classe.NomClasse,
                     Filiere = c.Classe.Filiere?.NomFiliere,
                     Mention = c.Classe.Filiere?.Mention?.NomMention,
-                    Niveau = c.Classe.Semestre?.RefSemestre?.Niveau?.CodeNiveau
+                    Annee = c.Classe.AnneeAcademique?.Libelle,
+                    Niveau = c.Semestre?.RefSemestre?.Niveau?.CodeNiveau,
+                    Semestre = c.Semestre?.RefSemestre?.CodeSemestre
                 } : null,
                 Salle = c.Salle != null ? new { c.Salle.IdSalle, c.Salle.NomSalle, c.Salle.Capacite } : null,
                 Creneaux = c.Creneaux?.Select(cr => new {

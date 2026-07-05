@@ -3,6 +3,7 @@ using System;
 using Gestion_SalleClasseEDT.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gestion_SalleClasseEDT.Migrations
 {
     [DbContext(typeof(EMITDbContext))]
-    partial class EMITDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702221428_ClasseAnnuelleAffectationMatiere")]
+    partial class ClasseAnnuelleAffectationMatiere
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -706,8 +709,7 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("IdUtilisateur")
-                        .IsUnique();
+                    b.HasIndex("IdUtilisateur");
 
                     b.HasIndex("Matricule")
                         .IsUnique();
@@ -990,14 +992,6 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdUtilisateur"));
 
-                    b.Property<DateTime>("DateCreation")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date_creation");
-
-                    b.Property<DateTime?>("DateDerniereConnexion")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date_derniere_connexion");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1010,15 +1004,6 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("nom");
 
-                    b.Property<string>("PasswordHash")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("password_hash");
-
-                    b.Property<bool>("PremierLogin")
-                        .HasColumnType("boolean")
-                        .HasColumnName("premier_login");
-
                     b.Property<string>("Prenom")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1030,21 +1015,6 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("role");
-
-                    b.Property<string>("StatutCompte")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("statut_compte");
-
-                    b.Property<string>("TokenActivation")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("token_activation");
-
-                    b.Property<DateTime?>("TokenExpiration")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("token_expiration");
 
                     b.HasKey("IdUtilisateur");
 
@@ -1275,8 +1245,8 @@ namespace Gestion_SalleClasseEDT.Migrations
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Professeur", b =>
                 {
                     b.HasOne("Gestion_SalleClasseEDT.Models.Utilisateur", "Utilisateur")
-                        .WithOne("Professeur")
-                        .HasForeignKey("Gestion_SalleClasseEDT.Models.Professeur", "IdUtilisateur");
+                        .WithMany()
+                        .HasForeignKey("IdUtilisateur");
 
                     b.Navigation("Utilisateur");
                 });
@@ -1465,11 +1435,6 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Navigation("AffectationsMatieres");
 
                     b.Navigation("Cours");
-                });
-
-            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Utilisateur", b =>
-                {
-                    b.Navigation("Professeur");
                 });
 #pragma warning restore 612, 618
         }

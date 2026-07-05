@@ -82,9 +82,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 var sallesOccupeesIds = db.Creneaux
                     .Include(c => c.Cours)
                     .Where(c => c.JourSemaine == jour && 
-                               ((heureDebut >= c.HeureDebut && heureDebut < c.HeureFin) ||
-                                (heureFin > c.HeureDebut && heureFin <= c.HeureFin) ||
-                                (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)))
+                               ((heureDebut < c.HeureFin && heureFin > c.HeureDebut)))
                     .Where(c => c.Cours.IdSalle != null)
                     .Select(c => c.Cours.IdSalle)
                     .ToList();
@@ -198,9 +196,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                         c.Cours.IdSalle == cours.IdSalle &&
                         c.JourSemaine == creneau.JourSemaine &&
                         c.IdCours != cours.IdCours &&
-                        ((creneau.HeureDebut >= c.HeureDebut && creneau.HeureDebut < c.HeureFin) ||
-                         (creneau.HeureFin > c.HeureDebut && creneau.HeureFin <= c.HeureFin) ||
-                         (creneau.HeureDebut <= c.HeureDebut && creneau.HeureFin >= c.HeureFin))
+                        (creneau.HeureDebut < c.HeureFin && creneau.HeureFin > c.HeureDebut)
                     );
                     if (cSalle != null)
                         return Ok(new { HasConflict = true, Message = $"La salle est occupée par {cSalle.Cours.Matiere.NomMatiere}." });

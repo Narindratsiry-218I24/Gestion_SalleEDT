@@ -33,7 +33,7 @@ public class Semestre
     [ForeignKey("IdAnnee")]
     public virtual AnneeAcademique AnneeAcademique { get; set; }
 
-    public virtual ICollection<Classe> Classes { get; set; }
+    public virtual ICollection<AffectationMatiere> AffectationsMatieres { get; set; }
     public virtual ICollection<Cours> Cours { get; set; }
 }
 }

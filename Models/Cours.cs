@@ -27,6 +27,9 @@ public class Cours
     [Column("id_semestre")]
     public int IdSemestre { get; set; }
 
+    [Column("id_affectation")]
+    public int? IdAffectation { get; set; }
+
     [Required]
     [StringLength(10)]
     [Column("type_cours")]
@@ -51,6 +54,9 @@ public class Cours
 
     [ForeignKey("IdSemestre")]
     public virtual Semestre Semestre { get; set; }
+
+    [ForeignKey("IdAffectation")]
+    public virtual AffectationMatiere AffectationMatiere { get; set; }
 
     public virtual ICollection<Creneau> Creneaux { get; set; }
     public virtual ICollection<DemandeEdt> DemandesEdt { get; set; }

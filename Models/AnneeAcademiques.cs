@@ -27,5 +27,6 @@ public class AnneeAcademique
 
     // Navigation properties
     public virtual ICollection<Semestre> Semestres { get; set; }
+    public virtual ICollection<Classe> Classes { get; set; }
 }
 }
