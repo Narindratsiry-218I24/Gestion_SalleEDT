@@ -13,7 +13,7 @@ builder.Services.AddDbContext<EMITDbContext>(options =>
         $"Port={Environment.GetEnvironmentVariable("DB_PORT") ?? "5432"};" +
         $"Database={Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB"};" +
         $"User Id={Environment.GetEnvironmentVariable("DB_USER") ?? "postgres"};" +
-        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "kifeko"};"
+        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "fanomezantsoa"};"
     )
 );
 

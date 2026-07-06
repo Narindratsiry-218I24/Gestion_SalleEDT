@@ -51,7 +51,16 @@ namespace Gestion_SalleClasseEDT.Controllers
 
         [HttpGet]
         [Route("")]
-        public IActionResult GetDemandes()
+        public IActionResult GetDemandes(
+            [FromQuery] string? statut,
+            [FromQuery] string? typeDemande,
+            [FromQuery] int? idMention,
+            [FromQuery] int? idNiveau,
+            [FromQuery] int? idFiliere,
+            [FromQuery] int? idClasse,
+            [FromQuery] int? idMatiere,
+            [FromQuery] string? search,
+            [FromQuery] int? take)
         {
             var ctx = UserContextHelper.FromRequest(ControllerContext);
             var query = db.DemandesEdt
@@ -67,7 +76,90 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (ctx.IsAuthenticated && ctx.Role == "demandeur")
                 query = query.Where(d => d.IdDemandeur == ctx.UserId!.Value);
 
+            if (!string.IsNullOrWhiteSpace(statut))
+            {
+                var statutNormalized = NormalizeStatut(statut);
+                query = query.Where(d => d.Statut == statutNormalized);
+            }
+
+            if (!string.IsNullOrWhiteSpace(typeDemande))
+            {
+                var typeNormalized = typeDemande.Trim().ToLower();
+                query = query.Where(d => d.TypeDemande.ToLower() == typeNormalized);
+            }
+
+            if (idMention.HasValue)
+            {
+                query = query.Where(d =>
+                    (d.Niveau != null && d.Niveau.IdMention == idMention.Value) ||
+                    (d.Classe != null && d.Classe.Filiere.IdMention == idMention.Value) ||
+                    (d.Matiere != null && d.Matiere.Filiere.IdMention == idMention.Value));
+            }
+
+            if (idNiveau.HasValue)
+            {
+                query = query.Where(d =>
+                    d.IdNiveau == idNiveau.Value ||
+                    (d.Classe != null && d.Classe.Semestre.RefSemestre.IdNiveau == idNiveau.Value) ||
+                    (d.Matiere != null && d.Matiere.RefSemestre.IdNiveau == idNiveau.Value));
+            }
+
+            if (idFiliere.HasValue)
+            {
+                query = query.Where(d =>
+                    (d.Classe != null && d.Classe.IdFiliere == idFiliere.Value) ||
+                    (d.Matiere != null && d.Matiere.IdFiliere == idFiliere.Value));
+            }
+
+            if (idClasse.HasValue)
+                query = query.Where(d => d.IdClasse == idClasse.Value);
+
+            if (idMatiere.HasValue)
+                query = query.Where(d => d.IdMatiere == idMatiere.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(d =>
+                    d.TypeDemande.ToLower().Contains(term) ||
+                    d.Statut.ToLower().Contains(term) ||
+                    (d.Justification != null && d.Justification.ToLower().Contains(term)) ||
+                    (d.Classe != null && d.Classe.NomClasse.ToLower().Contains(term)) ||
+                    (d.Matiere != null && d.Matiere.NomMatiere.ToLower().Contains(term)) ||
+                    (d.Salle != null && d.Salle.NomSalle.ToLower().Contains(term)));
+            }
+
+            query = query.OrderByDescending(d => d.IdDemande);
+
+            if (take.HasValue && take.Value > 0)
+                query = query.Take(Math.Min(take.Value, 100));
+
             return Ok(query.ToList());
+        }
+
+        [HttpGet]
+        [Route("Notifications")]
+        public IActionResult GetNotifications([FromQuery] int take = 5)
+        {
+            var demandes = db.DemandesEdt
+                .Include(d => d.Classe)
+                .Include(d => d.Matiere)
+                .Include(d => d.Salle)
+                .OrderByDescending(d => d.IdDemande)
+                .Take(Math.Clamp(take, 1, 20))
+                .Select(d => new
+                {
+                    d.IdDemande,
+                    d.TypeDemande,
+                    d.Statut,
+                    d.Justification,
+                    Classe = d.Classe != null ? d.Classe.NomClasse : null,
+                    Matiere = d.Matiere != null ? d.Matiere.NomMatiere : null,
+                    Salle = d.Salle != null ? d.Salle.NomSalle : null
+                })
+                .ToList();
+
+            return Ok(demandes);
         }
 
         [HttpGet]

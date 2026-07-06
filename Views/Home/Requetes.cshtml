@@ -1,59 +1,174 @@
 @{
-    ViewBag.Title = "Requêtes";
+    ViewBag.Title = "Requetes";
 }
 
 <div class="space-y-8 animate-in fade-in duration-500">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail des Requêtes</h1>
-            <p class="text-gray-500 mt-1">Gérez et suivez vos modifications d'emploi du temps ou réservations de salles.</p>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail des Requ&ecirc;tes</h1>
+            <p class="text-gray-500 mt-1">Gerez et suivez vos modifications d'emploi du temps ou reservations de salles.</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div class="lg:col-span-8" id="app-root">
-            <!-- React App will mount here -->
             <div class="flex justify-center items-center py-24 bg-white rounded-xl shadow-sm border border-gray-100">
                 <i data-lucide="loader-2" class="w-8 h-8 text-[#17203A] animate-spin"></i>
                 <span class="ml-2 text-gray-500 font-bold">Chargement de l'application...</span>
             </div>
         </div>
-        
-        <div class="lg:col-span-4">
+
+        <div class="lg:col-span-4" id="notifications-root">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 class="font-bold text-[#17203A] mb-4 m-0">Mes Dernières Demandes</h3>
-                <div class="space-y-4">
-                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 mt-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold px-2 py-1 bg-amber-100 text-amber-700 rounded-md">En attente</span>
-                            <span class="text-xs text-gray-400">Il y a 2h</span>
-                        </div>
-                        <p class="font-bold text-sm text-[#17203A] m-0">Déplacement de cours - L1 Info</p>
-                        <p class="text-xs text-gray-500 mt-1 m-0">Algorithmique 1</p>
-                    </div>
-                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 mt-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded-md">Validé</span>
-                            <span class="text-xs text-gray-400">Hier</span>
-                        </div>
-                        <p class="font-bold text-sm text-[#17203A] m-0">Réservation de salle</p>
-                        <p class="text-xs text-gray-500 mt-1 m-0">Labo Info 1</p>
-                    </div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-[#17203A] m-0">Notifications</h3>
+                    <i data-lucide="loader-2" class="w-4 h-4 text-gray-400 animate-spin"></i>
                 </div>
+                <p class="text-sm text-gray-500 m-0">Chargement des notifications...</p>
             </div>
         </div>
     </div>
 </div>
 
 @section scripts {
-    <!-- Babel & React CDNs -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@@babel/standalone/babel.min.js"></script>
-    
+
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useMemo } = React;
         const API_BASE = '/api';
+        const seenStorageKey = 'requetes-notification-seen-at';
+
+        function getSeenMap() {
+            try {
+                return JSON.parse(localStorage.getItem(seenStorageKey) || '{}');
+            } catch {
+                return {};
+            }
+        }
+
+        function saveSeenMap(value) {
+            localStorage.setItem(seenStorageKey, JSON.stringify(value));
+        }
+
+        function relativeTimeFrom(dateValue, now = new Date()) {
+            const diffMs = Math.max(0, now - new Date(dateValue));
+            const minutes = Math.floor(diffMs / 60000);
+            if (minutes < 1) return "A l'instant";
+            if (minutes < 60) return `Il y a ${minutes} min`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `Il y a ${hours} h`;
+            const days = Math.floor(hours / 24);
+            return days === 1 ? 'Hier' : `Il y a ${days} jours`;
+        }
+
+        function statusLabel(statut) {
+            const value = (statut || '').toLowerCase();
+            const labels = {
+                en_attente_admin: 'En attente',
+                en_attente_info: 'Suspendue',
+                proposee_prof: 'Proposee',
+                contre_proposition_prof: 'Contre-proposition',
+                modif_acceptee_prof: 'Acceptee prof',
+                acceptee: 'Validee',
+                refusee: 'Refusee'
+            };
+            return labels[value] || statut || 'Inconnu';
+        }
+
+        function statusClasses(statut) {
+            const value = (statut || '').toLowerCase();
+            if (value === 'acceptee' || value === 'modif_acceptee_prof') return 'bg-green-100 text-green-700';
+            if (value === 'refusee') return 'bg-red-100 text-red-700';
+            if (value === 'en_attente_info') return 'bg-slate-100 text-slate-700';
+            if (value === 'proposee_prof' || value === 'contre_proposition_prof') return 'bg-blue-100 text-blue-700';
+            return 'bg-amber-100 text-amber-700';
+        }
+
+        function typeLabel(type) {
+            const value = (type || '').toLowerCase();
+            if (value === 'reservation_salle') return 'Reservation de salle';
+            if (value === 'modification_cours') return 'Modification de cours';
+            if (value === 'examen') return 'Examen';
+            return type || 'Demande';
+        }
+
+        function buildQuery(filters) {
+            const params = new URLSearchParams();
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') params.set(key, value);
+            });
+            const query = params.toString();
+            return query ? `?${query}` : '';
+        }
+
+        function NotificationsPanel() {
+            const [notifications, setNotifications] = useState([]);
+            const [now, setNow] = useState(new Date());
+            const [isLoading, setIsLoading] = useState(true);
+
+            const loadNotifications = async () => {
+                const response = await fetch(`${API_BASE}/DemandeEDT/Notifications?take=6`);
+                const data = await response.json();
+                const seenMap = getSeenMap();
+                const currentIso = new Date().toISOString();
+
+                data.forEach(item => {
+                    const key = String(item.IdDemande);
+                    if (!seenMap[key]) seenMap[key] = currentIso;
+                });
+
+                saveSeenMap(seenMap);
+                setNotifications(data.map(item => ({
+                    ...item,
+                    SeenAt: seenMap[String(item.IdDemande)]
+                })));
+                setIsLoading(false);
+            };
+
+            useEffect(() => {
+                loadNotifications();
+                const poll = setInterval(loadNotifications, 10000);
+                const clock = setInterval(() => setNow(new Date()), 60000);
+                return () => {
+                    clearInterval(poll);
+                    clearInterval(clock);
+                };
+            }, []);
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-[#17203A] m-0">Notifications</h3>
+                        <span className="flex h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_0_4px_rgba(34,197,94,0.12)]"></span>
+                    </div>
+
+                    {isLoading ? (
+                        <p className="text-sm text-gray-500 m-0">Chargement...</p>
+                    ) : notifications.length === 0 ? (
+                        <p className="text-sm text-gray-500 m-0">Aucune notification pour le moment.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {notifications.map(item => (
+                                <div key={item.IdDemande} className="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                                    <div className="flex justify-between items-start gap-3 mb-2">
+                                        <span className={`text-xs font-bold px-2 py-1 rounded-md ${statusClasses(item.Statut)}`}>
+                                            {statusLabel(item.Statut)}
+                                        </span>
+                                        <span className="text-xs text-gray-400 whitespace-nowrap">{relativeTimeFrom(item.SeenAt, now)}</span>
+                                    </div>
+                                    <p className="font-bold text-sm text-[#17203A] m-0">{typeLabel(item.TypeDemande)}</p>
+                                    <p className="text-xs text-gray-500 mt-1 m-0">
+                                        {[item.Classe, item.Matiere, item.Salle].filter(Boolean).join(' - ') || item.Justification || `Demande #${item.IdDemande}`}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         function RequestApp() {
             const [mentions, setMentions] = useState([]);
@@ -61,6 +176,11 @@
             const [filieres, setFilieres] = useState([]);
             const [classes, setClasses] = useState([]);
             const [matieres, setMatieres] = useState([]);
+            const [demandes, setDemandes] = useState([]);
+            const [isLoadingDemandes, setIsLoadingDemandes] = useState(false);
+            const [search, setSearch] = useState("");
+            const [statusFilter, setStatusFilter] = useState("");
+            const [typeFilter, setTypeFilter] = useState("");
 
             const [selectedMention, setSelectedMention] = useState("");
             const [selectedNiveau, setSelectedNiveau] = useState("");
@@ -69,7 +189,6 @@
             const [selectedMatiere, setSelectedMatiere] = useState("");
 
             useEffect(() => {
-                // Fetch data
                 Promise.all([
                     fetch(API_BASE + '/Niveau').then(r => r.json()),
                     fetch(API_BASE + '/Classe').then(r => r.json()),
@@ -92,101 +211,197 @@
                 });
             }, []);
 
-            const filteredNiveaux = niveaux.filter(n => selectedMention && n.IdMention == selectedMention);
-            const filteredFilieres = filieres.filter(f => selectedMention && selectedNiveau && f.IdMention == selectedMention && classes.some(c => c.IdFiliere == f.IdFiliere && c.Semestre?.RefSemestre?.IdNiveau == selectedNiveau));
-            const filteredClasses = classes.filter(c => selectedFiliere && selectedNiveau && c.IdFiliere == selectedFiliere && c.Semestre?.RefSemestre?.IdNiveau == selectedNiveau);
-            const filteredMatieres = matieres.filter(m => selectedFiliere && selectedNiveau && m.IdFiliere == selectedFiliere && m.RefSemestre?.IdNiveau == selectedNiveau);
+            const filteredNiveaux = useMemo(
+                () => niveaux.filter(n => selectedMention && n.IdMention == selectedMention),
+                [niveaux, selectedMention]
+            );
+            const filteredFilieres = useMemo(
+                () => filieres.filter(f => selectedMention && selectedNiveau && f.IdMention == selectedMention && classes.some(c => c.IdFiliere == f.IdFiliere && c.Semestre?.RefSemestre?.IdNiveau == selectedNiveau)),
+                [filieres, classes, selectedMention, selectedNiveau]
+            );
+            const filteredClasses = useMemo(
+                () => classes.filter(c => selectedFiliere && selectedNiveau && c.IdFiliere == selectedFiliere && c.Semestre?.RefSemestre?.IdNiveau == selectedNiveau),
+                [classes, selectedFiliere, selectedNiveau]
+            );
+            const filteredMatieres = useMemo(
+                () => matieres.filter(m => selectedFiliere && selectedNiveau && m.IdFiliere == selectedFiliere && m.RefSemestre?.IdNiveau == selectedNiveau),
+                [matieres, selectedFiliere, selectedNiveau]
+            );
+
+            const requestFilters = useMemo(() => ({
+                statut: statusFilter,
+                typeDemande: typeFilter,
+                idMention: selectedMention,
+                idNiveau: selectedNiveau,
+                idFiliere: selectedFiliere,
+                idClasse: selectedClasse,
+                idMatiere: selectedMatiere,
+                search,
+                take: 50
+            }), [statusFilter, typeFilter, selectedMention, selectedNiveau, selectedFiliere, selectedClasse, selectedMatiere, search]);
+
+            const loadDemandes = async () => {
+                setIsLoadingDemandes(true);
+                try {
+                    const response = await fetch(`${API_BASE}/DemandeEDT${buildQuery(requestFilters)}`);
+                    setDemandes(await response.json());
+                } finally {
+                    setIsLoadingDemandes(false);
+                }
+            };
+
+            useEffect(() => {
+                loadDemandes();
+            }, [requestFilters]);
+
+            const submitDemande = async () => {
+                if (!selectedClasse || !selectedMatiere) {
+                    alert('Choisissez une classe et une matiere avant d envoyer la demande.');
+                    return;
+                }
+
+                const payload = {
+                    IdDemandeur: 1,
+                    IdClasse: Number(selectedClasse),
+                    IdMatiere: Number(selectedMatiere),
+                    IdNiveau: Number(selectedNiveau),
+                    TypeDemande: typeFilter || 'modification_cours',
+                    Statut: 'en_attente_admin',
+                    Justification: 'Demande creee depuis le portail'
+                };
+
+                const response = await fetch(`${API_BASE}/DemandeEDT/Creer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    alert(`Impossible d envoyer la demande: ${error}`);
+                    return;
+                }
+
+                await loadDemandes();
+                alert('Demande envoyee.');
+            };
 
             return (
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-6 text-[#17203A]">Nouvelle Demande</h2>
-                    
-                    {/* Mention & Niveau */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Mention</label>
+                <div className="space-y-6">
+                    <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                        <h2 className="text-xl font-bold mb-6 text-[#17203A]">Nouvelle Demande</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Mention</label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {mentions.map(m => (
+                                        <button key={m.IdMention} onClick={() => { setSelectedMention(m.IdMention); setSelectedNiveau(""); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedMention == m.IdMention ? 'bg-[#17203A] border-[#17203A] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}>
+                                            {m.CodeMention || m.NomMention}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Niveau</label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {!selectedMention ? <span className="text-sm text-gray-400 italic">Choisissez une mention</span> : filteredNiveaux.map(n => (
+                                        <button key={n.IdNiveau} onClick={() => { setSelectedNiveau(n.IdNiveau); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedNiveau == n.IdNiveau ? 'bg-[#5C8ABF] border-[#5C8ABF] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}>
+                                            {n.CodeNiveau}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">3. Filiere</label>
                             <div className="flex flex-wrap gap-2 mt-2">
-                                {mentions.map(m => (
-                                    <button 
-                                        key={m.IdMention} 
-                                        onClick={() => { setSelectedMention(m.IdMention); setSelectedNiveau(""); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedMention == m.IdMention ? 'bg-[#17203A] border-[#17203A] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                    >
-                                        {m.CodeMention || m.NomMention}
+                                {!selectedNiveau ? <span className="text-sm text-gray-400 italic">Choisissez un niveau</span> : filteredFilieres.map(f => (
+                                    <button key={f.IdFiliere} onClick={() => { setSelectedFiliere(f.IdFiliere); setSelectedClasse(""); setSelectedMatiere(""); }} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedFiliere == f.IdFiliere ? 'bg-[#6F7A2D] border-[#6F7A2D] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}>
+                                        {f.CodeFiliere || f.NomFiliere}
                                     </button>
                                 ))}
                             </div>
                         </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Niveau</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {!selectedMention ? <span className="text-sm text-gray-400 italic">Choisissez une mention</span> : filteredNiveaux.map(n => (
-                                    <button 
-                                        key={n.IdNiveau} 
-                                        onClick={() => { setSelectedNiveau(n.IdNiveau); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedNiveau == n.IdNiveau ? 'bg-[#5C8ABF] border-[#5C8ABF] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                    >
-                                        {n.CodeNiveau}
-                                    </button>
-                                ))}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. Classe</label>
+                                <select value={selectedClasse} onChange={e => { setSelectedClasse(e.target.value); setSelectedMatiere(""); }} disabled={!selectedFiliere} className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                                    <option value="">Choisir Classe...</option>
+                                    {filteredClasses.map(c => <option key={c.IdClasse} value={c.IdClasse}>{c.NomClasse}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">5. Matiere</label>
+                                <select value={selectedMatiere} onChange={e => setSelectedMatiere(e.target.value)} disabled={!selectedClasse} className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                                    <option value="">Choisir Matiere...</option>
+                                    {filteredMatieres.map(m => <option key={m.IdMatiere} value={m.IdMatiere}>{m.NomMatiere}</option>)}
+                                </select>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Filiere */}
-                    <div className="mb-6">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">3. Filière</label>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                            {!selectedNiveau ? <span className="text-sm text-gray-400 italic">Choisissez un niveau</span> : filteredFilieres.map(f => (
-                                <button 
-                                    key={f.IdFiliere} 
-                                    onClick={() => { setSelectedFiliere(f.IdFiliere); setSelectedClasse(""); setSelectedMatiere(""); }}
-                                    className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedFiliere == f.IdFiliere ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                >
-                                    {f.CodeFiliere || f.NomFiliere}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Classe & Matiere */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. Classe</label>
-                            <select 
-                                value={selectedClasse} 
-                                onChange={e => { setSelectedClasse(e.target.value); setSelectedMatiere(""); }} 
-                                disabled={!selectedFiliere}
-                                className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
-                            >
-                                <option value="">Choisir Classe...</option>
-                                {filteredClasses.map(c => <option key={c.IdClasse} value={c.IdClasse}>{c.NomClasse}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">5. Matière</label>
-                            <select 
-                                value={selectedMatiere} 
-                                onChange={e => setSelectedMatiere(e.target.value)} 
-                                disabled={!selectedClasse}
-                                className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
-                            >
-                                <option value="">Choisir Matière...</option>
-                                {filteredMatieres.map(m => <option key={m.IdMatiere} value={m.IdMatiere}>{m.NomMatiere}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="mt-8">
-                        <button className="w-full bg-[#17203A] hover:bg-[#12192B] text-white font-bold h-14 rounded-xl transition-colors border-none cursor-pointer" onClick={() => alert("Soumission en cours...")}>
+                        <button className="w-full bg-[#17203A] hover:bg-[#12192B] text-white font-bold h-14 rounded-xl transition-colors border-none cursor-pointer" onClick={submitDemande}>
                             Envoyer la Demande
                         </button>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-5">
+                            <div>
+                                <h2 className="text-lg font-bold text-[#17203A] m-0">Demandes filtrees</h2>
+                                <p className="text-sm text-gray-500 mt-1 m-0">Les filtres de mention, niveau, filiere, classe et matiere s'appliquent aussi ici.</p>
+                            </div>
+                            <button onClick={() => { setSearch(""); setStatusFilter(""); setTypeFilter(""); setSelectedMention(""); setSelectedNiveau(""); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }} className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-sm font-bold text-gray-600 hover:bg-gray-50">
+                                Reinitialiser
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche..." className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                                <option value="">Tous les statuts</option>
+                                <option value="en_attente_admin">En attente</option>
+                                <option value="proposee_prof">Proposee</option>
+                                <option value="acceptee">Validee</option>
+                                <option value="refusee">Refusee</option>
+                            </select>
+                            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                                <option value="">Tous les types</option>
+                                <option value="modification_cours">Modification de cours</option>
+                                <option value="reservation_salle">Reservation de salle</option>
+                                <option value="examen">Examen</option>
+                            </select>
+                        </div>
+
+                        {isLoadingDemandes ? (
+                            <p className="text-sm text-gray-500 m-0">Chargement des demandes...</p>
+                        ) : demandes.length === 0 ? (
+                            <p className="text-sm text-gray-500 m-0">Aucune demande ne correspond aux filtres.</p>
+                        ) : (
+                            <div className="overflow-hidden rounded-lg border border-gray-100">
+                                {demandes.map(item => (
+                                    <div key={item.IdDemande} className="flex flex-col gap-3 border-b border-gray-100 p-4 last:border-b-0 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <p className="font-bold text-sm text-[#17203A] m-0">{typeLabel(item.TypeDemande)}</p>
+                                            <p className="text-xs text-gray-500 mt-1 m-0">
+                                                {[item.Classe?.NomClasse, item.Matiere?.NomMatiere, item.Salle?.NomSalle].filter(Boolean).join(' - ') || item.Justification || `Demande #${item.IdDemande}`}
+                                            </p>
+                                        </div>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded-md self-start md:self-auto ${statusClasses(item.Statut)}`}>
+                                            {statusLabel(item.Statut)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('app-root'));
-        root.render(<RequestApp />);
+        ReactDOM.createRoot(document.getElementById('app-root')).render(<RequestApp />);
+        ReactDOM.createRoot(document.getElementById('notifications-root')).render(<NotificationsPanel />);
     </script>
 }
