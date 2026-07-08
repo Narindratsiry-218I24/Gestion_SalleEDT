@@ -63,6 +63,9 @@
                     <a asp-controller="Home" asp-action="Structures" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "structures" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
                         <i data-lucide="network" class="h-5 w-5"></i><span>Structures</span>
                     </a>
+                    <a asp-controller="Home" asp-action="Matieres" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "matieres" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="book-open" class="h-5 w-5"></i><span>Matières</span>
+                    </a>
                     <a asp-controller="Home" asp-action="Cours" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "cours" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
                         <i data-lucide="clipboard-list" class="h-5 w-5"></i><span>Cours</span>
                     </a>
@@ -98,19 +101,11 @@
                         <button id="menuButton" type="button" class="rounded-lg p-2 text-[#17203A] hover:bg-gray-100 lg:hidden">
                             <i data-lucide="menu" class="h-5 w-5"></i>
                         </button>
-                        <img src="~/images/emit-logo.png" asp-append-version="true" alt="EMIT" class="hidden h-9 w-auto object-contain md:block" />
                         <h2 class="truncate text-lg font-bold text-[#17203A] lg:text-xl">@title</h2>
-                        <div class="relative hidden w-full max-w-md md:block">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
-                            <input type="search" placeholder="Rechercher une demande, une salle..." class="h-10 w-full rounded-md border-0 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-700 outline-none ring-1 ring-transparent transition focus:ring-[#17203A]/20" />
-                        </div>
                     </div>
 
                     <div class="flex items-center gap-2 lg:gap-4">
-                        <button type="button" class="hidden items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:flex">
-                            <span id="userRoleLabel">Role</span><i data-lucide="chevron-down" class="h-4 w-4"></i>
-                        </button>
-                        <div class="flex items-center gap-2 border-l border-gray-200 pl-3">
+                        <div class="flex items-center gap-2 pl-3">
                             <button type="button" class="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-[#17203A]"><i data-lucide="bell" class="h-5 w-5"></i></button>
                             <button type="button" class="hidden rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-[#17203A] sm:block"><i data-lucide="help-circle" class="h-5 w-5"></i></button>
                             <a asp-controller="Home" asp-action="Parametres" class="flex items-center gap-3 rounded-full p-1 no-underline hover:bg-gray-100">
@@ -156,9 +151,12 @@
                     const fullName = [user.Prenom || user.prenom, user.Nom || user.nom].filter(Boolean).join(" ") || user.Email || user.email || "Utilisateur";
                     const email = user.Email || user.email || "connecté";
                     const role = user.Role || user.role || "Role";
-                    document.getElementById("userNameLabel").textContent = fullName;
-                    document.getElementById("userEmailLabel").textContent = email;
-                    document.getElementById("userRoleLabel").textContent = role;
+                    const userNameLabel = document.getElementById("userNameLabel");
+                    if (userNameLabel) userNameLabel.textContent = fullName;
+                    const userEmailLabel = document.getElementById("userEmailLabel");
+                    if (userEmailLabel) userEmailLabel.textContent = email;
+                    const userRoleLabel = document.getElementById("userRoleLabel");
+                    if (userRoleLabel) userRoleLabel.textContent = role;
                 } catch {
                     localStorage.removeItem("user");
                     window.location.replace("/Home/Connexion");

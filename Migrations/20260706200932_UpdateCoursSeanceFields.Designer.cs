@@ -3,6 +3,7 @@ using System;
 using Gestion_SalleClasseEDT.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gestion_SalleClasseEDT.Migrations
 {
     [DbContext(typeof(EMITDbContext))]
-    partial class EMITDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260706200932_UpdateCoursSeanceFields")]
+    partial class UpdateCoursSeanceFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

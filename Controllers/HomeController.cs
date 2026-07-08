@@ -51,8 +51,8 @@ public class HomeController : Controller
         var cours = _context.Cours
             .Include(c => c.Matiere)
             .Include(c => c.Professeur)
-            .Include(c => c.Classe)
-            .Include(c => c.Salle)
+            .Include(c => c.Classe).ThenInclude(cl => cl.Filiere)
+            .Include(c => c.Seances)
             .ToList();
         return View(cours);
     }
@@ -82,9 +82,27 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Matieres()
+    {
+        return View();
+    }
+
     public IActionResult Validation()
     {
         return View();
+    }
+
+    public IActionResult CourseDetails(int id)
+    {
+        var course = _context.Cours
+            .Include(c => c.Matiere)
+            .Include(c => c.Professeur)
+            .Include(c => c.Classe)
+            .Include(c => c.Seances).ThenInclude(s => s.Salle)
+            .FirstOrDefault(c => c.IdCours == id);
+        
+        if (course == null) return NotFound();
+        return View(course);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

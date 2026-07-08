@@ -7,7 +7,8 @@ namespace Gestion_SalleClasseEDT.Services
 {
     public interface IPlanningService
     {
-        Task<Cours> PlanifierCoursAsync(Cours cours, DateTime debut, DateTime fin);
-        Task<IEnumerable<Creneau>> ObtenirEmploisDuTempsAsync();
+        Task<Cours> PlanifierCourseAsync(Cours course);
+        Task<Seance> PlanifierSeanceAsync(int courseId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? salleId, int? groupeId);
+        Task<IEnumerable<Seance>> ObtenirEmploisDuTempsAsync();
     }
 }

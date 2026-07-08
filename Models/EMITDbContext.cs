@@ -47,6 +47,8 @@ namespace Gestion_SalleClasseEDT.Models
     public DbSet<Salle> Salles { get; set; }
     public DbSet<DisponibiliteProf> DisponibilitesProf { get; set; }
     public DbSet<Cours> Cours { get; set; }
+    public DbSet<Seance> Seances { get; set; }
+    public DbSet<Groupe> Groupes { get; set; }
     public DbSet<Creneau> Creneaux { get; set; }
     public DbSet<Utilisateur> Utilisateurs { get; set; }
     public DbSet<DemandeEdt> DemandesEdt { get; set; }
@@ -72,6 +74,12 @@ namespace Gestion_SalleClasseEDT.Models
             b.HasOne(s => s.Professeur).WithMany();
             b.HasOne(s => s.Salle).WithMany();
         });
+
+        modelBuilder.Entity<Cours>()
+            .HasMany(c => c.Seances)
+            .WithOne(s => s.Cours)
+            .HasForeignKey(s => s.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         base.OnModelCreating(modelBuilder);
     }
