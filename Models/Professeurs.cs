@@ -18,72 +18,74 @@ namespace Gestion_SalleClasseEDT.Models
         [Required]
         [StringLength(50)]
         [Column("nom")]
-        public string Nom { get; set; }
+        public string Nom { get; set; } = string.Empty;
 
         [Required]
         [StringLength(50)]
         [Column("prenom")]
-        public string Prenom { get; set; }
+        public string Prenom { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
         [Column("email")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [StringLength(20)]
         [Column("telephone")]
-        public string Telephone { get; set; }
+        public string Telephone { get; set; } = string.Empty;
 
         [StringLength(20)]
         [Column("grade")]
-        public string Grade {get ; set ;}
+        public string Grade {get ; set ;} = string.Empty;
 
         [StringLength(50)]
         [Column("matricule")]
-        public string Matricule { get; set; }
+        public string Matricule { get; set; } = string.Empty;
 
         [StringLength(10)]
         [Column("titre")]
-        public string Titre { get; set; }
+        public string Titre { get; set; } = string.Empty;
 
         [StringLength(20)]
         [Column("telephone_portable")]
-        public string TelephonePortable { get; set; }
+        public string TelephonePortable { get; set; } = string.Empty;
 
         [StringLength(100)]
         [Column("specialite")]
-        public string Specialite { get; set; }
+        public string Specialite { get; set; } = string.Empty;
 
         [Column("specialites_secondaires", TypeName = "jsonb")]
-        public string SpecialitesSecondaires { get; set; }
-
-        [StringLength(100)]
-        [Column("departement")]
-        public string Departement { get; set; }
+        public string SpecialitesSecondaires { get; set; } = "[]";
 
         [Column("date_embauche")]
         public DateTime? DateEmbauche { get; set; }
 
         [StringLength(50)]
         [Column("statut")]
-        public string Statut { get; set; }
+        public string Statut { get; set; } = string.Empty;
 
         [StringLength(255)]
         [Column("photo_url")]
-        public string PhotoUrl { get; set; }
+        public string PhotoUrl { get; set; } = string.Empty;
 
         [Column("biographie", TypeName = "text")]
-        public string Biographie { get; set; }
+        public string Biographie { get; set; } = string.Empty;
 
         [StringLength(255)]
         [Column("cv_url")]
-        public string CvUrl { get; set; }
+        public string CvUrl { get; set; } = string.Empty;
 
         [Column("id_utilisateur")]
         public int? IdUtilisateur { get; set; }
 
         [ForeignKey("IdUtilisateur")]
         public virtual Utilisateur Utilisateur { get; set; }
+
+        [Column("id_annee_academique")]
+        public int? IdAnneeAcademique { get; set; }
+
+        [ForeignKey("IdAnneeAcademique")]
+        public virtual AnneeAcademique AnneeAcademique { get; set; }
 
         [Column("capacite_horaire_max")]
         public int CapaciteHoraireMax { get; set; } = 20;

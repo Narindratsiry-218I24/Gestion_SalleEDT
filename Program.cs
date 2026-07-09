@@ -44,27 +44,15 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 // Register application services
 builder.Services.AddScoped<IPlanningService, PlanningService>();
-builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IClasseGenerationService, ClasseGenerationService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddHttpContextAccessor();
 
 
 var app = builder.Build();
-
-// Run seed.sql if it exists
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<EMITDbContext>();
-    var seedPath = Path.Combine(Directory.GetCurrentDirectory(), "seed.sql");
-    if (File.Exists(seedPath))
-    {
-        var sql = File.ReadAllText(seedPath);
-        dbContext.Database.ExecuteSqlRaw(sql);
-        Console.WriteLine("seed.sql applied successfully.");
-    }
-}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

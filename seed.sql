@@ -99,11 +99,11 @@ INSERT INTO public.semestre (id_semestre, id_ref_semestre, id_annee, date_debut,
 ON CONFLICT (id_semestre) DO NOTHING;
 
 -- 8. Seed CLASSE
-INSERT INTO public.classe (id_classe, id_filiere, id_annee_academique, nom_classe) VALUES
+INSERT INTO public.classe (id_classe, id_filiere, id_annee_academique, nom_classe, id_niveau) VALUES
 -- Info
-(1, 1, 1, 'L1 DA2I S1'),
-(2, 4, 1, 'M1 M2I S7'),
-(3, 5, 1, 'M1 SDIA S7')
+(1, 1, 1, 'L1 DA2I S1', 1),
+(2, 4, 1, 'M1 M2I S7', 4),
+(3, 5, 1, 'M1 SDIA S7', 4)
 ON CONFLICT (id_classe) DO NOTHING;
 
 -- 9. Seed PROFESSEUR
@@ -119,3 +119,14 @@ ON CONFLICT (id_utilisateur) DO NOTHING;
 
 ALTER TABLE matiere ADD COLUMN IF NOT EXISTS volume_horaire INT NOT NULL DEFAULT 0;
 ALTER TABLE matiere ADD COLUMN IF NOT EXISTS id_professeur_responsable INT REFERENCES professeur(id_professeur);
+
+-- 9. Nettoyer les anciennes classes
+TRUNCATE public.classe RESTART IDENTITY CASCADE;
+
+-- 10. Cr�er les classes pour l'ann�e 2025-2026
+-- Ces classes seront g�n�r�es automatiquement par le syst�me
+-- Mais on peut en ajouter manuellement si besoin
+
+-- 11. Mettre � jour les s�quences
+SELECT setval('public.classe_id_classe_seq', (SELECT COALESCE(MAX(id_classe), 0) + 1 FROM public.classe), false);
+

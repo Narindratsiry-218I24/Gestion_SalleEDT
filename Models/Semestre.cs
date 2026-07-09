@@ -27,7 +27,7 @@ public class Semestre
     public DateTime DateFin { get; set; }
 
     [Column("est_archivee")]
-    public bool EstArchivee { get; set; }
+    public bool EstArchivee { get; set; } = false;
 
     // Navigation properties
     [ForeignKey("IdRefSemestre")]

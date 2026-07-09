@@ -6,15 +6,16 @@
 <section>
     <h3 class="text-2xl font-bold text-gray-900 mb-6">Personal Information</h3>
     
-    <div class="flex items-center gap-6 mb-6">
-        <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="Gender" value="Male" class="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300" checked>
-            <span class="text-sm font-medium text-gray-700">Male</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="Gender" value="Female" class="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300">
-            <span class="text-sm font-medium text-gray-700">Female</span>
-        </label>
+    <div class="mb-6">
+        <label asp-for="Titre" class="text-sm font-medium text-gray-500 mb-1 block">Titre</label>
+        <select asp-for="Titre" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-orange-500">
+            <option value="">Sélectionner...</option>
+            <option value="M.">M.</option>
+            <option value="Mme">Mme</option>
+            <option value="Dr">Dr</option>
+            <option value="Prof">Prof</option>
+        </select>
+        <span asp-validation-for="Titre" class="text-xs text-red-500 mt-1 block"></span>
     </div>
 
     <div class="grid gap-6 sm:grid-cols-2 mb-6">
@@ -99,11 +100,11 @@
     <div class="grid gap-6 sm:grid-cols-2 mb-6">
         <div>
             <label asp-for="Telephone" class="text-sm font-medium text-gray-500 mb-1 block">Téléphone</label>
-            <input asp-for="Telephone" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="(405) 555-0128" />
+            <input asp-for="Telephone" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="+261 20 22 123 45" />
         </div>
         <div>
-            <label asp-for="DateEmbauche" class="text-sm font-medium text-gray-500 mb-1 block">Date d'embauche</label>
-            <input asp-for="DateEmbauche" type="date" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" />
+            <label asp-for="TelephonePortable" class="text-sm font-medium text-gray-500 mb-1 block">Téléphone Portable</label>
+            <input asp-for="TelephonePortable" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="+261 34 00 000 00" />
         </div>
     </div>
 
@@ -113,8 +114,8 @@
             <input asp-for="Specialite" type="text" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="Ex: Informatique, Management, Communication..." />
         </div>
         <div>
-            <label asp-for="Departement" class="text-sm font-medium text-gray-500 mb-1 block">Département</label>
-            <input asp-for="Departement" type="text" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="Ex: Département Informatique..." />
+            <label asp-for="DateEmbauche" class="text-sm font-medium text-gray-500 mb-1 block">Date d'embauche</label>
+            <input asp-for="DateEmbauche" type="date" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" />
         </div>
     </div>
 

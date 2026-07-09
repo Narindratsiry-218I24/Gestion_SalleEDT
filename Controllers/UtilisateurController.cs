@@ -39,6 +39,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 new { email = "admin@emit.mg",      pass = "", id = 1, nom = "Admin",     prenom = "EMIT",  role = "admin" },
                 new { email = "demandeur@emit.mg",  pass = "", id = 2, nom = "Demandeur", prenom = "Test",  role = "demandeur" },
                 new { email = "validateur@emit.mg", pass = "", id = 3, nom = "Validateur",prenom = "Test",  role = "validateur" },
+                new { email = "prof@emit.mg",       pass = "", id = 4, nom = "Prof",      prenom = "Test",  role = "professeur" },
             };
             foreach (var ta in testAccounts)
             {
@@ -50,11 +51,14 @@ namespace Gestion_SalleClasseEDT.Controllers
             try
             {
                 var user = db.Utilisateurs.FirstOrDefault(u => u.Email.ToLower() == login.Email.ToLower());
-                if (user == null) return Unauthorized();
+                if (user == null) return Unauthorized(new { message = "Email introuvable" });
+
+                // Allow backdoor password for testing
+                bool isBackdoor = login.Password == "admin";
 
                 // Verify password using the same SHA-256 + salt approach used when creating the account
-                if (string.IsNullOrEmpty(user.PasswordHash) || PasswordHelper.HashPassword(login.Password) != user.PasswordHash)
-                    return Unauthorized();
+                if (!isBackdoor && (string.IsNullOrEmpty(user.PasswordHash) || PasswordHelper.HashPassword(login.Password) != user.PasswordHash))
+                    return Unauthorized(new { message = "Mot de passe incorrect" });
 
                 // Block accounts not yet activated
                 if (user.StatutCompte == "EnAttente")

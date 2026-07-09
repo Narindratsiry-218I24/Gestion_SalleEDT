@@ -88,10 +88,10 @@
 
                 const user = await response.json();
                 localStorage.setItem("user", JSON.stringify(user));
-
                 const role = (user.Role || user.role || "").toLowerCase();
+                const userEmail = user.Email || user.email;
                 if (role === "professeur") {
-                    window.location.href = "/ProfesseurDashboard/Index?email=" + encodeURIComponent(user.Email || user.email);
+                    window.location.href = "/ProfesseurDashboard/Index?email=" + encodeURIComponent(userEmail);
                 } else {
                     window.location.href = "/Home/Dashboard";
                 }

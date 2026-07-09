@@ -178,5 +178,43 @@ namespace Gestion_SalleClasseEDT.Controllers
             db.SaveChanges();
             return Ok(cours);
         }
+
+        [HttpGet]
+        [Route("ParProfesseur/{professeurId:int}")]
+        public IActionResult GetAffectationsParProfesseur(int professeurId, int? anneeId = null)
+        {
+            var query = db.AffectationsMatieres
+                .Include(a => a.Classe)
+                    .ThenInclude(c => c.AnneeAcademique)
+                .Include(a => a.Classe)
+                    .ThenInclude(c => c.Filiere)
+                .Include(a => a.Matiere)
+                .Include(a => a.Semestre)
+                    .ThenInclude(s => s.RefSemestre)
+                .Where(a => a.IdProfesseur == professeurId && a.EstActif)
+                .AsQueryable();
+
+            if (anneeId.HasValue)
+            {
+                query = query.Where(a => a.Classe.IdAnneeAcademique == anneeId.Value);
+            }
+
+            var result = query.Select(a => new
+            {
+                a.IdAffectation,
+                Classe = a.Classe.NomClasse,
+                Filiere = a.Classe.Filiere.NomFiliere,
+                Matiere = a.Matiere.NomMatiere,
+                Semestre = a.Semestre.RefSemestre.CodeSemestre,
+                Annee = a.Classe.AnneeAcademique.Libelle,
+                a.VolumeHoraireTotal,
+                a.HeuresCm,
+                a.HeuresTd,
+                a.HeuresTp,
+                a.EstActif
+            }).ToList();
+
+            return Ok(result);
+        }
     }
 }

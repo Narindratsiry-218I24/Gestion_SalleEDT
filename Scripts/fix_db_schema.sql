@@ -71,4 +71,4 @@ UPDATE public.utilisateur
 SET statut_compte = 'Actif', premier_login = FALSE
 WHERE statut_compte IS NULL OR statut_compte = '';
 
-RAISE NOTICE 'Schéma mis à jour avec succès.';
+SELECT 'Schéma mis à jour avec succès.' AS statut;

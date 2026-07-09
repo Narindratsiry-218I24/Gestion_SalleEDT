@@ -111,6 +111,10 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdAnnee"));
 
+                    b.Property<DateTime?>("DateArchivage")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_archivage");
+
                     b.Property<DateTime>("DateDebutAnnee")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_debut_annee");
@@ -118,6 +122,14 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Property<DateTime>("DateFinAnnee")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_fin_annee");
+
+                    b.Property<bool>("EstActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_active");
+
+                    b.Property<bool>("EstArchivee")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_archivee");
 
                     b.Property<string>("Libelle")
                         .IsRequired()
@@ -189,6 +201,10 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code_classe");
 
+                    b.Property<bool>("EstArchivee")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_archivee");
+
                     b.Property<int>("IdAnneeAcademique")
                         .HasColumnType("integer")
                         .HasColumnName("id_annee_academique");
@@ -196,6 +212,10 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Property<int>("IdFiliere")
                         .HasColumnType("integer")
                         .HasColumnName("id_filiere");
+
+                    b.Property<int>("IdNiveau")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_niveau");
 
                     b.Property<string>("NomClasse")
                         .IsRequired()
@@ -206,6 +226,8 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.HasKey("IdClasse");
 
                     b.HasIndex("IdFiliere");
+
+                    b.HasIndex("IdNiveau");
 
                     b.HasIndex("IdAnneeAcademique", "CodeClasse")
                         .IsUnique();
@@ -642,12 +664,6 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_modification");
 
-                    b.Property<string>("Departement")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("departement");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -669,6 +685,10 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Property<int>("HeuresEffectuees")
                         .HasColumnType("integer")
                         .HasColumnName("heures_effectuees");
+
+                    b.Property<int?>("IdAnneeAcademique")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_annee_academique");
 
                     b.Property<int?>("IdUtilisateur")
                         .HasColumnType("integer")
@@ -737,6 +757,8 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("IdAnneeAcademique");
 
                     b.HasIndex("IdUtilisateur")
                         .IsUnique();
@@ -986,6 +1008,10 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_fin");
 
+                    b.Property<bool>("EstArchivee")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_archivee");
+
                     b.Property<int>("IdAnnee")
                         .HasColumnType("integer")
                         .HasColumnName("id_annee");
@@ -1196,9 +1222,17 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Niveau", "Niveau")
+                        .WithMany()
+                        .HasForeignKey("IdNiveau")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("AnneeAcademique");
 
                     b.Navigation("Filiere");
+
+                    b.Navigation("Niveau");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Cours", b =>
@@ -1372,9 +1406,15 @@ namespace Gestion_SalleClasseEDT.Migrations
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Professeur", b =>
                 {
+                    b.HasOne("Gestion_SalleClasseEDT.Models.AnneeAcademique", "AnneeAcademique")
+                        .WithMany("Professeurs")
+                        .HasForeignKey("IdAnneeAcademique");
+
                     b.HasOne("Gestion_SalleClasseEDT.Models.Utilisateur", "Utilisateur")
                         .WithOne("Professeur")
                         .HasForeignKey("Gestion_SalleClasseEDT.Models.Professeur", "IdUtilisateur");
+
+                    b.Navigation("AnneeAcademique");
 
                     b.Navigation("Utilisateur");
                 });
@@ -1525,6 +1565,8 @@ namespace Gestion_SalleClasseEDT.Migrations
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.AnneeAcademique", b =>
                 {
                     b.Navigation("Classes");
+
+                    b.Navigation("Professeurs");
 
                     b.Navigation("Semestres");
                 });

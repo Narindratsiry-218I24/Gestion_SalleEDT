@@ -68,6 +68,43 @@ namespace Gestion_SalleClasseEDT.Controllers
             return CreatedAtAction(nameof(GetClasse), new { id = classe.IdClasse }, classe);
         }
 
+        [HttpPost]
+        [Route("CreerPourAnnee")]
+        public IActionResult CreerPourAnnee([FromBody] CreateClasseDto dto)
+        {
+            var annee = db.AnneesAcademiques.Find(dto.IdAnneeAcademique);
+            if (annee == null) return NotFound("Année académique introuvable");
+
+            var filiere = db.Filieres.Find(dto.IdFiliere);
+            if (filiere == null) return NotFound("Filière introuvable");
+
+            var existe = db.Classes.Any(c => c.IdAnneeAcademique == dto.IdAnneeAcademique && c.CodeClasse == dto.CodeClasse);
+            if (existe) return BadRequest("Cette classe existe déjà pour cette année");
+
+            var classe = new Classe
+            {
+                IdFiliere = dto.IdFiliere,
+                IdNiveau = dto.IdNiveau,
+                IdAnneeAcademique = dto.IdAnneeAcademique,
+                NomClasse = dto.NomClasse,
+                CodeClasse = dto.CodeClasse,
+                EstArchivee = false
+            };
+
+            db.Classes.Add(classe);
+            db.SaveChanges();
+            return Ok(classe);
+        }
+
+        public class CreateClasseDto
+        {
+            public int IdFiliere { get; set; }
+            public int IdNiveau { get; set; }
+            public int IdAnneeAcademique { get; set; }
+            public string NomClasse { get; set; }
+            public string CodeClasse { get; set; }
+        }
+
         [HttpPut]
         [Route("{id:int}")]
         public IActionResult UpdateClasse(int id, [FromBody] Classe classe)

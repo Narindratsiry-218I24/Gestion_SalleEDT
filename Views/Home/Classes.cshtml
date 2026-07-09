@@ -70,6 +70,9 @@
             <label class="text-sm font-semibold text-gray-700">Filiere
                 <select id="classeFiliere" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
             </label>
+            <label class="text-sm font-semibold text-gray-700">Niveau
+                <select id="classeNiveau" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
+            </label>
             <label class="text-sm font-semibold text-gray-700">Annee academique
                 <select id="classeAnnee" required class="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"></select>
             </label>
@@ -122,16 +125,17 @@
 
 @section Scripts {
     <script>
-        let annees = [], filieres = [], classes = [], semestres = [], matieres = [], professeurs = [], affectations = [], cours = [];
+        let annees = [], filieres = [], niveaux = [], classes = [], semestres = [], matieres = [], professeurs = [], affectations = [], cours = [];
         let selectedClasseId = null;
 
         const prop = (o, n) => app.readProp(o, n);
         const esc = v => app.escapeHtml(v ?? "");
 
         async function loadClassesPage() {
-            [annees, filieres, matieres, professeurs, cours] = await Promise.all([
+            [annees, filieres, niveaux, matieres, professeurs, cours] = await Promise.all([
                 app.apiGet('/api/AnneeAcademique'),
                 app.apiGet('/api/Filiere'),
+                app.apiGet('/api/Niveau'),
                 app.apiGet('/api/Matiere'),
                 app.apiGet('/api/Professeur'),
                 app.apiGet('/api/Cours')
@@ -140,6 +144,7 @@
             fillSelect('anneeFilter', annees, 'IdAnnee', a => prop(a, 'Libelle'));
             fillSelect('classeAnnee', annees, 'IdAnnee', a => prop(a, 'Libelle'));
             fillSelect('classeFiliere', filieres, 'IdFiliere', f => prop(f, 'NomFiliere'));
+            fillSelect('classeNiveau', niveaux, 'IdNiveau', n => prop(n, 'CodeNiveau'));
             fillSelect('affProfesseur', professeurs, 'IdProfesseur', p => `${prop(p, 'Nom')} ${prop(p, 'Prenom') || ''}`.trim());
 
             document.getElementById('anneeFilter').addEventListener('change', refreshByYear);
@@ -302,6 +307,7 @@
             event.preventDefault();
             await app.apiPost('/api/Classe', {
                 IdFiliere: Number(document.getElementById('classeFiliere').value),
+                IdNiveau: Number(document.getElementById('classeNiveau').value),
                 IdAnneeAcademique: Number(document.getElementById('classeAnnee').value),
                 NomClasse: document.getElementById('classeNom').value,
                 CodeClasse: document.getElementById('classeCode').value || document.getElementById('classeNom').value

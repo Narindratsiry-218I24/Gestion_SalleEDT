@@ -87,7 +87,8 @@ namespace Gestion_SalleClasseEDT.Controllers
                 return Json(new { success = false, message = "Cet email est déjà utilisé." });
 
             var code = new Random().Next(100000, 999999).ToString();
-            _verificationCodes[email] = (code, DateTime.UtcNow.AddMinutes(15));
+            var emailKey = email.Trim().ToLowerInvariant();
+            _verificationCodes[emailKey] = (code, DateTime.UtcNow.AddMinutes(15));
 
             try
             {
@@ -130,11 +131,23 @@ namespace Gestion_SalleClasseEDT.Controllers
                 return View(professeur);
             }
 
-            // Vérifier le code de vérification
-            if (!_verificationCodes.TryGetValue(professeur.Email, out var val) || val.code != VerificationCode || val.expiry < DateTime.UtcNow)
+            // Vérification OTP : optionnelle — si un code a été envoyé et est présent, on le valide
+            // Si aucun code n'a été envoyé (pas de SMTP ou admin choisit de sauter), on continue quand même
+            bool otpVerified = false;
+            if (!string.IsNullOrWhiteSpace(VerificationCode))
             {
-                ModelState.AddModelError("VerificationCode", "Code de vérification invalide ou expiré. Veuillez renvoyer le code.");
-                return View(professeur);
+                var emailKey = professeur.Email?.Trim().ToLowerInvariant() ?? "";
+                if (_verificationCodes.TryGetValue(emailKey, out var val) &&
+                    val.code == VerificationCode.Trim() && val.expiry >= DateTime.UtcNow)
+                {
+                    otpVerified = true;
+                    _verificationCodes.TryRemove(emailKey, out _);
+                }
+                else
+                {
+                    ModelState.AddModelError("VerificationCode", "Code de vérification invalide ou expiré. Veuillez renvoyer le code.");
+                    return View(professeur);
+                }
             }
 
             // Validate files
@@ -187,6 +200,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             await _db.SaveChangesAsync(); // Obtenir l'ID
 
             // ── 3. Lier le professeur au compte utilisateur ───────────
+            professeur.IdProfesseur = utilisateur.IdUtilisateur; // FORCER LE MÊME ID
             professeur.IdUtilisateur = utilisateur.IdUtilisateur;
             professeur.DateCreation  = DateTime.UtcNow;
             if (professeur.CapaciteHoraireMax == 0) professeur.CapaciteHoraireMax = 20;
@@ -218,6 +232,9 @@ namespace Gestion_SalleClasseEDT.Controllers
             {
                 professeur.Biographie = "";
             }
+            if (professeur.Grade == null) professeur.Grade = "";
+            if (professeur.Specialite == null) professeur.Specialite = "";
+            if (professeur.Statut == null) professeur.Statut = "";
 
             // Fix Npgsql UTC DateTime restriction for DateEmbauche
             if (professeur.DateEmbauche.HasValue && professeur.DateEmbauche.Value.Kind == DateTimeKind.Unspecified)
@@ -517,17 +534,16 @@ namespace Gestion_SalleClasseEDT.Controllers
                     existingProfesseur.CvUrl = $"/uploads/professeurs/{professeur.IdProfesseur}/{fileName}";
                 }
 
-                existingProfesseur.Matricule            = professeur.Matricule;
-                existingProfesseur.Titre                = professeur.Titre;
+                existingProfesseur.Matricule            = professeur.Matricule ?? "";
+                existingProfesseur.Titre                = professeur.Titre ?? "";
                 existingProfesseur.Nom                  = professeur.Nom;
                 existingProfesseur.Prenom               = professeur.Prenom;
                 existingProfesseur.Email                = professeur.Email;
                 existingProfesseur.Telephone            = professeur.Telephone;
-                existingProfesseur.TelephonePortable    = professeur.TelephonePortable;
-                existingProfesseur.Grade                = professeur.Grade;
-                existingProfesseur.Departement          = professeur.Departement;
-                existingProfesseur.Specialite           = professeur.Specialite;
-                existingProfesseur.SpecialitesSecondaires = professeur.SpecialitesSecondaires;
+                existingProfesseur.TelephonePortable    = professeur.TelephonePortable ?? "";
+                existingProfesseur.Grade                = professeur.Grade ?? "";
+                existingProfesseur.Specialite           = professeur.Specialite ?? "";
+                existingProfesseur.SpecialitesSecondaires = professeur.SpecialitesSecondaires ?? "[]";
                 
                 // Fix Npgsql UTC DateTime restriction for DateEmbauche
                 if (professeur.DateEmbauche.HasValue && professeur.DateEmbauche.Value.Kind == DateTimeKind.Unspecified)
@@ -539,9 +555,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                     existingProfesseur.DateEmbauche = professeur.DateEmbauche;
                 }
 
-                existingProfesseur.Statut               = professeur.Statut;
+                existingProfesseur.Statut               = professeur.Statut ?? "";
                 existingProfesseur.CapaciteHoraireMax   = professeur.CapaciteHoraireMax;
-                existingProfesseur.Biographie           = professeur.Biographie;
+                existingProfesseur.Biographie           = professeur.Biographie ?? "";
                 existingProfesseur.DateModification     = DateTime.UtcNow;
 
                 _db.Update(existingProfesseur);

@@ -15,6 +15,9 @@ public class Classe
     [Column("id_filiere")]
     public int IdFiliere { get; set; }
 
+    [Column("id_niveau")]
+    public int IdNiveau { get; set; }
+
     [Column("id_annee_academique")]
     public int IdAnneeAcademique { get; set; }
 
@@ -27,11 +30,8 @@ public class Classe
     [Column("code_classe")]
     public string? CodeClasse { get; set; }
 
-    [Column("id_niveau")]
-    public int? IdNiveau { get; set; }
-
     [Column("est_archivee")]
-    public bool EstArchivee { get; set; }
+    public bool EstArchivee { get; set; } = false;
 
     // Navigation properties
     [ForeignKey("IdFiliere")]
@@ -41,7 +41,7 @@ public class Classe
     public virtual AnneeAcademique AnneeAcademique { get; set; }
 
     [ForeignKey("IdNiveau")]
-    public virtual Niveau? Niveau { get; set; }
+    public virtual Niveau Niveau { get; set; }
 
     // Ajouté pour compatibilité avec Semestre
     [NotMapped]

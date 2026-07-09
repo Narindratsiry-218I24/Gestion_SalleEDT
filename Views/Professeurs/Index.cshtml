@@ -31,50 +31,57 @@
 <div class="max-w-7xl mx-auto py-8">
     <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-            <h1 class="text-3xl font-bold text-[#17203A]">Liste des professeurs</h1>
-            <p class="text-gray-500 mt-1">Gérez le personnel enseignant de l'établissement.</p>
+            <h1 class="text-3xl font-bold text-[#17203A]">Gestion des Professeurs</h1>
+            <p class="text-gray-500 mt-1">Consultez, recherchez et gérez tous les professeurs de l'établissement.</p>
         </div>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div class="grid gap-3 sm:grid-cols-3">
-                <div class="relative">
-                    <label for="searchInput" class="sr-only">Rechercher un professeur</label>
-                    <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="searchInput" placeholder="Rechercher un professeur..." class="h-10 w-full rounded-md border-gray-300 pl-10 pr-4 text-sm focus:border-blue-500 focus:ring-blue-500" onkeyup="filterProfesseurs()" />
-                </div>
-                <div>
-                    <label for="gradeFilter" class="sr-only">Filtrer par grade</label>
-                    <select id="gradeFilter" class="h-10 w-full rounded-md border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500" onchange="filterProfesseurs()">
-                        <option value="">Tous les grades</option>
-                        <option>Docteur</option>
-                        <option>Professeur</option>
-                        <option>Maître de conférences</option>
-                        <option>Assistant</option>
-                        <option>Vacataire</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="statusFilter" class="sr-only">Filtrer par statut</label>
-                    <select id="statusFilter" class="h-10 w-full rounded-md border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500" onchange="filterProfesseurs()">
-                        <option value="">Tous les statuts</option>
-                        <option>Actif</option>
-                        <option>En congé</option>
-                        <option>Inactif</option>
-                    </select>
-                </div>
+        <div class="flex w-full flex-wrap items-center gap-3">
+            <div class="relative flex-shrink-0">
+                <label for="searchInput" class="sr-only">Rechercher (Nom, Email ou Matricule)</label>
+                <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" placeholder="Nom, Email ou Matricule" class="h-10 rounded-md border border-gray-300 pl-10 pr-4 text-sm focus:border-blue-500 focus:ring-blue-500 w-full lg:w-[360px]" />
             </div>
 
-            <div class="inline-flex overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
-                <button type="button" onclick="toggleView('table')" class="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50" id="tableViewBtn">
-                    <i data-lucide="table" class="h-4 w-4 inline-block mr-1"></i> Tableau
-                </button>
-                <button type="button" onclick="toggleView('cards')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50" id="cardViewBtn">
-                    <i data-lucide="layout-grid" class="h-4 w-4 inline-block mr-1"></i> Cartes
-                </button>
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <select id="specialiteFilter" class="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 w-48">
+                    <option value="">Toutes les spécialités</option>
+                    @foreach (var s in Model.Select(m => m.Specialite).Where(x => !string.IsNullOrEmpty(x)).Distinct()) { <option>@s</option> }
+                </select>
+                <select id="gradeFilter" class="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 w-48">
+                    <option value="">Tous les grades</option>
+                    @foreach (var g in Model.Select(m => m.Grade).Where(x => !string.IsNullOrEmpty(x)).Distinct()) { <option>@g</option> }
+                </select>
+                <select id="statusFilter" class="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 w-48">
+                    <option value="">Tous les statuts</option>
+                    <option>Actif</option>
+                    <option>En congé</option>
+                    <option>Inactif</option>
+                </select>
             </div>
 
-            <a asp-action="Create" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
-                <i data-lucide="plus" class="h-4 w-4"></i> Ajouter
-            </a>
+            <div class="ml-auto flex items-center gap-2">
+                <div class="inline-flex overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm" role="tablist" aria-label="View toggle">
+                    <button type="button" onclick="toggleView('table')" class="h-10 px-4 text-sm font-medium text-blue-600 bg-blue-50 flex items-center gap-2" id="tableViewBtn" title="Vue Tableau">
+                        <i data-lucide="table" class="h-4 w-4"></i> Tableau
+                    </button>
+                    <button type="button" onclick="toggleView('cards')" class="h-10 px-4 text-sm font-medium text-gray-500 hover:bg-gray-50 flex items-center gap-2" id="cardViewBtn" title="Vue Cartes">
+                        <i data-lucide="layout-grid" class="h-4 w-4"></i> Cartes
+                    </button>
+                </div>
+
+                <button type="button" onclick="applyFilters()" class="h-10 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" title="Rechercher">
+                    <i data-lucide="search" class="h-4 w-4"></i>
+                </button>
+                <button type="button" onclick="resetFilters()" class="h-10 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" title="Réinitialiser">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                </button>
+                <button type="button" onclick="exportCSV()" class="h-10 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" title="Exporter">
+                    <i data-lucide="download" class="h-4 w-4"></i>
+                </button>
+
+                <a asp-action="Create" class="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700" title="Ajouter un professeur">
+                    <i data-lucide="plus" class="h-4 w-4"></i>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -84,17 +91,17 @@
 
     <!-- TABLE VIEW -->
     <div id="tableView" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table class="min-w-full divide-y divide-gray-200 table-fixed">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Photo</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Matricule</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nom Complet</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Grade</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Spécialité</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Statut Prof.</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Compte</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:80px;">Photo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:12%;">Matricule</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:22%;">Nom Complet</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:12%;">Grade</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:20%;">Spécialité</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:8%;">Statut Prof.</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" style="width:8%;">Compte</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500" style="width:80px;">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white" id="tableBody">
@@ -109,8 +116,7 @@
                         p.Telephone,
                         p.TelephonePortable,
                         p.Grade,
-                        p.Departement,
-                        p.Specialite,
+                                                p.Specialite,
                         p.Statut,
                         p.PhotoUrl,
                         p.Biographie,
@@ -130,8 +136,8 @@
                                      p.Statut == "En congé" ? "⚠️" :
                                      "❌";
 
-                    <tr class="prof-item" data-prof-id="@p.IdProfesseur" data-grade="@(p.Grade?.ToLower() ?? "")" data-status="@(p.Statut?.ToLower() ?? "")" data-prof-json='@Html.Raw(profData)' data-search="@(p.Nom + " " + p.Prenom + " " + p.Matricule + " " + p.Email + " " + p.Specialite + " " + p.Grade)">
-                        <td class="px-6 py-4 whitespace-nowrap">
+                    <tr class="prof-item" data-prof-id="@p.IdProfesseur" data-grade="@(p.Grade?.ToLower() ?? "")" data-status="@(p.Statut?.ToLower() ?? "")" data-specialite="@(p.Specialite ?? "")" data-prof-json='@Html.Raw(profData)' data-search="@(p.Nom + " " + p.Prenom + " " + p.Matricule + " " + p.Email + " " + p.Specialite + " " + p.Grade)">
+                        <td class="px-4 py-4 whitespace-nowrap">
                             @if (!string.IsNullOrEmpty(p.PhotoUrl))
                             {
                                 <img src="@p.PhotoUrl" alt="Profil de @p.Nom @p.Prenom" class="h-10 w-10 rounded-full object-cover shadow-sm" />
@@ -143,11 +149,11 @@
                                 </div>
                             }
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@p.Matricule</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">@p.Nom @p.Prenom</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">@p.Grade</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">@p.Specialite</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@p.Matricule</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 truncate">@p.Nom @p.Prenom</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">@p.Grade</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 truncate">@p.Specialite</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm">
                             <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium @statusClass">
                                 @statusIcon @p.Statut
                             </span>
@@ -165,39 +171,39 @@
                                             statutCompte == "Desactive" ? "🚫" : "—";
                             var compteLabel = statutCompte == "EnAttente" ? "En attente" : statutCompte;
                         }
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm">
                             <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium @compteClass">
                                 @compteIcon @compteLabel
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div class="flex justify-end gap-1">
-                                <button type="button" onclick="openDetailModal(@p.IdProfesseur)" class="rounded p-1.5 text-blue-600 hover:bg-blue-50" title="Détails">
-                                    <i data-lucide="eye" class="h-4 w-4"></i>
+                        <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end items-center gap-2">
+                                <button type="button" onclick="openDetailModal(@p.IdProfesseur)" class="h-8 w-8 flex items-center justify-center rounded-md text-blue-600 hover:bg-blue-50" title="Détails">
+                                    <i data-lucide="eye" class="h-4 w-4" aria-hidden="true"></i>
                                 </button>
-                                <a asp-action="Edit" asp-route-id="@p.IdProfesseur" class="rounded p-1.5 text-yellow-600 hover:bg-yellow-50" title="Modifier">
-                                    <i data-lucide="edit" class="h-4 w-4"></i>
+                                <a asp-action="Edit" asp-route-id="@p.IdProfesseur" class="h-8 w-8 flex items-center justify-center rounded-md text-yellow-600 hover:bg-yellow-50" title="Modifier">
+                                    <i data-lucide="edit" class="h-4 w-4" aria-hidden="true"></i>
                                 </a>
                                 @if (p.Utilisateur != null && statutCompte == "EnAttente")
                                 {
-                                    <button type="button" onclick="renvoyerEmail(@p.IdProfesseur)" class="rounded p-1.5 text-indigo-600 hover:bg-indigo-50" title="Renvoyer l'email d'activation">
-                                        <i data-lucide="send" class="h-4 w-4"></i>
+                                    <button type="button" onclick="renvoyerEmail(@p.IdProfesseur)" class="h-8 w-8 flex items-center justify-center rounded-md text-indigo-600 hover:bg-indigo-50" title="Renvoyer l'email d'activation">
+                                        <i data-lucide="send" class="h-4 w-4" aria-hidden="true"></i>
                                     </button>
                                 }
                                 @if (p.Utilisateur != null && statutCompte == "Actif")
                                 {
-                                    <button type="button" onclick="changerStatut(@p.IdProfesseur, 'Suspendu')" class="rounded p-1.5 text-orange-600 hover:bg-orange-50" title="Suspendre le compte">
-                                        <i data-lucide="pause-circle" class="h-4 w-4"></i>
+                                    <button type="button" onclick="changerStatut(@p.IdProfesseur, 'Suspendu')" class="h-8 w-8 flex items-center justify-center rounded-md text-orange-600 hover:bg-orange-50" title="Suspendre le compte">
+                                        <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>
                                     </button>
                                 }
                                 @if (p.Utilisateur != null && (statutCompte == "Suspendu" || statutCompte == "Desactive"))
                                 {
-                                    <button type="button" onclick="changerStatut(@p.IdProfesseur, 'Actif')" class="rounded p-1.5 text-green-600 hover:bg-green-50" title="Réactiver le compte">
-                                        <i data-lucide="play-circle" class="h-4 w-4"></i>
+                                    <button type="button" onclick="changerStatut(@p.IdProfesseur, 'Actif')" class="h-8 w-8 flex items-center justify-center rounded-md text-green-600 hover:bg-green-50" title="Réactiver le compte">
+                                        <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>
                                     </button>
                                 }
-                                <button type="button" onclick="confirmDelete(@p.IdProfesseur)" class="rounded p-1.5 text-red-600 hover:bg-red-50" title="Supprimer">
-                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                <button type="button" onclick="confirmDelete(@p.IdProfesseur)" class="h-8 w-8 flex items-center justify-center rounded-md text-red-600 hover:bg-red-50" title="Supprimer">
+                                    <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </td>
@@ -213,14 +219,14 @@
         {
             var profData = JsonSerializer.Serialize(new {
                 p.IdProfesseur, p.Matricule, p.Nom, p.Prenom, p.Email, p.Telephone, p.TelephonePortable,
-                p.Grade, p.Departement, p.Specialite, p.Statut, p.PhotoUrl, p.Biographie, p.CvUrl,
+                p.Grade,  p.Specialite, p.Statut, p.PhotoUrl, p.Biographie, p.CvUrl,
                 Titre = p.Titre, DateEmbauche = p.DateEmbauche?.ToString("dd/MM/yyyy"),
                 CapaciteHoraireMax = p.CapaciteHoraireMax, HeuresEffectuees = p.HeuresEffectuees
             });
 
             var statusIcon = p.Statut == "Actif" ? "✅" : p.Statut == "En congé" ? "⚠️" : "❌";
 
-            <div class="prof-card group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md" data-prof-id="@p.IdProfesseur" data-grade="@(p.Grade?.ToLower() ?? "")" data-status="@(p.Statut?.ToLower() ?? "")" data-prof-json='@Html.Raw(profData)' data-search="@(p.Nom + " " + p.Prenom + " " + p.Matricule + " " + p.Email + " " + p.Specialite + " " + p.Grade)">
+            <div class="prof-card group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md" data-prof-id="@p.IdProfesseur" data-grade="@(p.Grade?.ToLower() ?? "")" data-status="@(p.Statut?.ToLower() ?? "")" data-specialite="@(p.Specialite ?? "")" data-prof-json='@Html.Raw(profData)' data-search="@(p.Nom + " " + p.Prenom + " " + p.Matricule + " " + p.Email + " " + p.Specialite + " " + p.Grade)">
                 <div class="mb-4 flex items-start justify-between">
                     <div class="relative h-16 w-16 overflow-hidden rounded-full border-2 border-gray-100 bg-gray-50">
                         @if (!string.IsNullOrEmpty(p.PhotoUrl))
@@ -247,12 +253,16 @@
                     <p class="text-xs text-gray-400">Matricule: <span class="font-medium text-gray-700">@p.Matricule</span></p>
                 </div>
                 <div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
-                    <button type="button" onclick="openDetailModal(@p.IdProfesseur)" class="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                    <button type="button" onclick="openDetailModal(@p.IdProfesseur)" class="h-9 inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-blue-600 shadow-sm hover:bg-gray-50">
                         <i data-lucide="eye" class="h-4 w-4"></i> Détails
                     </button>
-                    <div class="flex gap-2 text-gray-400">
-                        <a asp-action="Edit" asp-route-id="@p.IdProfesseur" class="hover:text-yellow-600 transition"><i data-lucide="edit" class="h-4 w-4"></i></a>
-                        <button type="button" onclick="confirmDelete(@p.IdProfesseur)" class="hover:text-red-600 transition"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                    <div class="flex items-center gap-2">
+                        <a asp-action="Edit" asp-route-id="@p.IdProfesseur" class="h-9 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 text-sm text-yellow-600 shadow-sm hover:bg-gray-50" title="Modifier">
+                            <i data-lucide="edit" class="h-4 w-4"></i>
+                        </a>
+                        <button type="button" onclick="confirmDelete(@p.IdProfesseur)" class="h-9 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 text-sm text-red-600 shadow-sm hover:bg-red-50" title="Supprimer">
+                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -324,7 +334,7 @@
                             <dl class="space-y-2 text-sm">
                                 <div class="grid grid-cols-3"><dt class="text-gray-500">Matricule</dt><dd class="col-span-2 font-medium text-gray-900" id="modalMatricule"></dd></div>
                                 <div class="grid grid-cols-3"><dt class="text-gray-500">Spécialité</dt><dd class="col-span-2 font-medium text-gray-900" id="modalSpecialite"></dd></div>
-                                <div class="grid grid-cols-3"><dt class="text-gray-500">Département</dt><dd class="col-span-2 font-medium text-gray-900" id="modalDepartement"></dd></div>
+                                
                                 <div class="grid grid-cols-3"><dt class="text-gray-500">Embauche</dt><dd class="col-span-2 font-medium text-gray-900" id="modalEmbauche"></dd></div>
                             </dl>
                         </div>
@@ -397,225 +407,232 @@
 
 @section Scripts {
     <script>
-        // Toggle Views
+        // Toggle Views & Pagination
         let currentView = 'table';
+        let currentPage = 1;
+        let pageSize = 10;
         function toggleView(view) {
             currentView = view;
-            
             const tableEl = document.getElementById('tableView');
             const cardEl = document.getElementById('cardView');
             const tableBtn = document.getElementById('tableViewBtn');
             const cardBtn = document.getElementById('cardViewBtn');
-            
             if (view === 'table') {
                 tableEl.classList.remove('hidden');
                 cardEl.classList.add('hidden');
-                tableBtn.classList.replace('text-gray-500', 'text-blue-600');
-                tableBtn.classList.replace('hover:bg-gray-50', 'bg-blue-50');
-                cardBtn.classList.replace('text-blue-600', 'text-gray-500');
-                cardBtn.classList.replace('bg-blue-50', 'hover:bg-gray-50');
             } else {
                 tableEl.classList.add('hidden');
                 cardEl.classList.remove('hidden');
-                cardBtn.classList.replace('text-gray-500', 'text-blue-600');
-                cardBtn.classList.replace('hover:bg-gray-50', 'bg-blue-50');
-                tableBtn.classList.replace('text-blue-600', 'text-gray-500');
-                tableBtn.classList.replace('bg-blue-50', 'hover:bg-gray-50');
             }
+            if (window.lucide) lucide.createIcons();
+            applyFilters();
         }
 
-        // Search Filter
-        function filterProfesseurs() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const grade = document.getElementById('gradeFilter').value.toLowerCase();
-            const status = document.getElementById('statusFilter').value.toLowerCase();
-            let visibleCount = 0;
+        function applyFilters() {
+            const query = (document.getElementById('searchInput').value || '').toLowerCase();
+            const grade = (document.getElementById('gradeFilter').value || '').toLowerCase();
+            const status = (document.getElementById('statusFilter').value || '').toLowerCase();
+            const spec = (document.getElementById('specialiteFilter').value || '').toLowerCase();
 
-            document.querySelectorAll('[data-prof-id]').forEach(el => {
-                const searchData = el.getAttribute('data-search').toLowerCase();
+            const tableRows = Array.from(document.querySelectorAll('#tableBody .prof-item'));
+            const cards = Array.from(document.querySelectorAll('#cardView .prof-card'));
+
+            function matchEl(el) {
+                const searchData = (el.getAttribute('data-search') || '').toLowerCase();
                 const rowGrade = (el.getAttribute('data-grade') || '').toLowerCase();
                 const rowStatus = (el.getAttribute('data-status') || '').toLowerCase();
-                const matchSearch = searchData.includes(query);
+                const rowSpec = (el.getAttribute('data-specialite') || '').toLowerCase();
+                const matchSearch = !query || searchData.includes(query);
                 const matchGrade = !grade || rowGrade === grade;
                 const matchStatus = !status || rowStatus === status;
+                const matchSpec = !spec || rowSpec === spec;
+                return matchSearch && matchGrade && matchStatus && matchSpec;
+            }
 
-                const visible = matchSearch && matchGrade && matchStatus;
-                el.style.display = visible ? '' : 'none';
-                if (visible) visibleCount++;
-            });
+            // Apply visibility
+            tableRows.forEach(r => r.style.display = matchEl(r) ? '' : 'none');
+            cards.forEach(c => c.style.display = matchEl(c) ? '' : 'none');
 
-            document.getElementById('noResultsMessage').classList.toggle('hidden', visibleCount > 0);
+            // Determine pagination on current view
+            currentPage = 1;
+            renderPage();
+
+            const totalVisible = (currentView === 'table') ? tableRows.filter(r => r.style.display !== 'none').length : cards.filter(c => c.style.display !== 'none').length;
+            document.getElementById('noResultsMessage').classList.toggle('hidden', totalVisible > 0);
+            document.getElementById('totalCount')?.textContent = totalVisible;
         }
 
-        // Detail Modal
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('gradeFilter').selectedIndex = 0;
+            document.getElementById('statusFilter').selectedIndex = 0;
+            document.getElementById('specialiteFilter').selectedIndex = 0;
+            applyFilters();
+        }
+
+        // Pagination helpers
+        function renderPage() {
+            const sizeSelect = document.getElementById('pageSizeSelect');
+            pageSize = parseInt(sizeSelect?.value || '10');
+
+            const rows = Array.from(document.querySelectorAll(currentView === 'table' ? '#tableBody .prof-item' : '#cardView .prof-card'))
+                .filter(el => el.style.display !== 'none');
+
+            const total = rows.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            // hide all then show slice
+            rows.forEach((r, idx) => { r.style.display = (idx >= (currentPage - 1) * pageSize && idx < currentPage * pageSize) ? '' : 'none'; });
+
+            renderPaginationControls(total, totalPages);
+            const start = total === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+            const end = Math.min(total, currentPage * pageSize);
+            document.getElementById('pageInfo')?.textContent = `Page ${currentPage} sur ${totalPages}`;
+            document.getElementById('totalRecords')?.textContent = total;
+            document.getElementById('rangeInfo')?.textContent = `${start} à ${end}`;
+            document.getElementById('rangeTotal')?.textContent = total;
+        }
+
+        function renderPaginationControls(total, totalPages) {
+            const container = document.getElementById('paginationControls');
+            if (!container) return;
+            // Build buttons: First Prev [pages] Next Last
+            container.innerHTML = '';
+
+            function btn(label, disabled, onclick) {
+                const b = document.createElement('button');
+                b.className = 'inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50';
+                b.textContent = label;
+                if (disabled) b.disabled = true; else b.onclick = onclick;
+                return b;
+            }
+
+            container.appendChild(btn('« Première', currentPage === 1, () => { currentPage = 1; renderPage(); }));
+            container.appendChild(btn('‹ Préc.', currentPage === 1, () => { currentPage = Math.max(1, currentPage - 1); renderPage(); }));
+
+            // page numbers (compact)
+            const start = Math.max(1, currentPage - 2);
+            const end = Math.min(totalPages, start + 4);
+            for (let i = start; i <= end; i++) {
+                const p = document.createElement('button');
+                p.className = 'inline-flex items-center gap-2 rounded-md border px-3 py-1 text-sm mx-0.5 ' + (i === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50');
+                p.textContent = i;
+                p.onclick = () => { currentPage = i; renderPage(); };
+                container.appendChild(p);
+            }
+
+            container.appendChild(btn('Suiv. ›', currentPage === totalPages, () => { currentPage = Math.min(totalPages, currentPage + 1); renderPage(); }));
+            container.appendChild(btn('Dernière »', currentPage === totalPages, () => { currentPage = totalPages; renderPage(); }));
+        }
+
+        // Export filtered items to CSV
+        function exportCSV() {
+            const rows = Array.from(document.querySelectorAll(currentView === 'table' ? '#tableBody .prof-item' : '#cardView .prof-card'))
+                .filter(el => el.style.display !== 'none')
+                .map(el => JSON.parse(el.dataset.profJson));
+            if (rows.length === 0) { Swal.fire('Aucun enregistrement', 'Aucun professeur correspondant à l\'export.', 'info'); return; }
+
+            const headers = ['Matricule','Nom','Prénom','Email','Téléphone','Grade','Département','Spécialité','Statut','DateEmbauche'];
+            const csv = [headers.join(',')].concat(rows.map(r => [r.Matricule||'', r.Nom||'', r.Prenom||'', r.Email||'', r.Telephone||'', r.Grade||'', r.Specialite||'', r.Statut||'', r.DateEmbauche||''].map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')) ).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'professeurs_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+
+        // Reuse existing detail modal functions (openDetailModal, closeDetailModal) and other actions
+        // (they remain defined below in the file) -- but ensure pagination integration on load
+
+        // Detail Modal (populate and open)
         function openDetailModal(id) {
             const professor = Array.from(document.querySelectorAll('[data-prof-id]')).find(el => el.dataset.profId === id.toString());
             if (!professor) return;
-
             const detail = JSON.parse(professor.dataset.profJson);
-            
             document.getElementById('modalFullNameTitle').textContent = `${detail.Nom} ${detail.Prenom}`;
             document.getElementById('modalFullName').textContent = `${detail.Nom} ${detail.Prenom}`;
             document.getElementById('modalGradeTitle').textContent = `${detail.Titre || ''} ${detail.Grade || ''}`.trim();
             document.getElementById('modalTitre').textContent = detail.Titre || '-';
-            
             document.getElementById('modalMatricule').textContent = detail.Matricule || '-';
             document.getElementById('modalSpecialite').textContent = detail.Specialite || '-';
-            document.getElementById('modalDepartement').textContent = detail.Departement || '-';
-            document.getElementById('modalEmbauche').textContent = detail.DateEmbauche || '-';
             
+            document.getElementById('modalEmbauche').textContent = detail.DateEmbauche || '-';
             document.getElementById('modalEmail').textContent = detail.Email || '-';
             document.getElementById('modalTelFixe').textContent = detail.Telephone || '-';
             document.getElementById('modalTelPort').textContent = detail.TelephonePortable || '-';
-            
             document.getElementById('modalBio').textContent = detail.Biographie || 'Aucune biographie renseignée.';
-            
-            // Photo
             const photoContainer = document.getElementById('modalPhotoContainer');
-            if (detail.PhotoUrl) {
-                photoContainer.innerHTML = `<img src="${detail.PhotoUrl}" class="h-full w-full object-cover" />`;
-            } else {
-                photoContainer.innerHTML = `<div class="flex h-full w-full items-center justify-center text-4xl font-bold text-blue-600 bg-blue-50">${detail.Nom.charAt(0)}</div>`;
-            }
-
-            // Statut Badge
+            if (detail.PhotoUrl) photoContainer.innerHTML = `<img src="${detail.PhotoUrl}" class="h-full w-full object-cover" />`; else photoContainer.innerHTML = `<div class="flex h-full w-full items-center justify-center text-4xl font-bold text-blue-600 bg-blue-50">${detail.Nom.charAt(0)}</div>`;
             const badge = document.getElementById('modalStatusBadge');
-            if (detail.Statut === "Actif") {
-                badge.className = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800";
-                badge.textContent = "✅ Actif";
-            } else if (detail.Statut === "En congé") {
-                badge.className = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800";
-                badge.textContent = "⚠️ En congé";
-            } else {
-                badge.className = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800";
-                badge.textContent = "❌ Inactif";
-            }
-
-            // Stats
+            if (detail.Statut === "Actif") { badge.className = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800"; badge.textContent = "✅ Actif"; }
+            else if (detail.Statut === "En congé") { badge.className = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800"; badge.textContent = "⚠️ En congé"; }
+            else { badge.className = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800"; badge.textContent = "❌ Inactif"; }
             document.getElementById('modalHeures').textContent = detail.HeuresEffectuees || 0;
             document.getElementById('modalCapacite').textContent = detail.CapaciteHoraireMax || 20;
-            let percent = 0;
-            if (detail.CapaciteHoraireMax > 0) {
-                percent = Math.min(100, Math.round(((detail.HeuresEffectuees || 0) / detail.CapaciteHoraireMax) * 100));
-            }
+            let percent = 0; if (detail.CapaciteHoraireMax > 0) percent = Math.min(100, Math.round(((detail.HeuresEffectuees || 0) / detail.CapaciteHoraireMax) * 100));
             document.getElementById('modalProgress').style.width = percent + '%';
-            if (percent > 100) document.getElementById('modalProgress').classList.replace('bg-blue-500', 'bg-red-500');
-            else document.getElementById('modalProgress').classList.replace('bg-red-500', 'bg-blue-500');
-
-            // CV
+            if (percent > 100) document.getElementById('modalProgress').classList.replace('bg-blue-500', 'bg-red-500'); else { try { document.getElementById('modalProgress').classList.replace('bg-red-500', 'bg-blue-500'); } catch {} }
             const cvContainer = document.getElementById('modalCvContainer');
-            if (detail.CvUrl) {
-                cvContainer.innerHTML = `
-                    <a href="${detail.CvUrl}" target="_blank" class="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 transition">
-                        <div class="rounded bg-blue-100 p-2 text-blue-600"><i data-lucide="file-text" class="h-4 w-4"></i></div>
-                        <div class="flex-1"><p class="text-sm font-medium text-gray-900">Curriculum Vitae</p><p class="text-xs text-gray-500">PDF Document</p></div>
-                        <i data-lucide="download" class="h-4 w-4 text-gray-400"></i>
-                    </a>`;
-            } else {
-                cvContainer.innerHTML = `<p class="text-sm text-gray-500 italic">Aucun document joint</p>`;
-            }
-
-            // Actions
+            if (detail.CvUrl) { cvContainer.innerHTML = `<a href="${detail.CvUrl}" target="_blank" class="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 transition"><div class="rounded bg-blue-100 p-2 text-blue-600"><i data-lucide="file-text" class="h-4 w-4"></i></div><div class="flex-1"><p class="text-sm font-medium text-gray-900">Curriculum Vitae</p><p class="text-xs text-gray-500">PDF Document</p></div><i data-lucide="download" class="h-4 w-4 text-gray-400"></i></a>`; }
+            else { cvContainer.innerHTML = `<p class="text-sm text-gray-500 italic">Aucun document joint</p>`; }
             document.getElementById('modalEditLink').href = `/Professeurs/Edit/${detail.IdProfesseur}`;
             document.getElementById('modalDeleteBtn').onclick = () => confirmDelete(detail.IdProfesseur);
-
-            document.getElementById('detailModal').classList.remove('hidden');
-            if (window.lucide) lucide.createIcons();
+            document.getElementById('detailModal').classList.remove('hidden'); if (window.lucide) lucide.createIcons();
         }
 
-        function closeDetailModal() {
-            document.getElementById('detailModal').classList.add('hidden');
-        }
+        function closeDetailModal() { document.getElementById('detailModal').classList.add('hidden'); }
 
         // SweetAlert2 Delete Confirmation
         function confirmDelete(id) {
-            Swal.fire({
-                title: 'Êtes-vous sûr ?',
-                text: "Cette action est irréversible !",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Oui, supprimer !',
-                cancelButtonText: 'Annuler'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('deleteId').value = id;
-                    document.getElementById('deleteForm').submit();
-                }
-            });
+            Swal.fire({ title: 'Êtes-vous sûr ?', text: "Cette action est irréversible !", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Oui, supprimer !', cancelButtonText: 'Annuler' }).then((result) => { if (result.isConfirmed) { document.getElementById('deleteId').value = id; document.getElementById('deleteForm').submit(); } });
         }
 
         // Renvoyer email d'activation
         function renvoyerEmail(id) {
-            Swal.fire({
-                title: 'Renvoyer l\'email ?',
-                text: 'Un nouveau mot de passe temporaire sera généré et envoyé au professeur.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#4f46e5',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Oui, renvoyer',
-                cancelButtonText: 'Annuler'
-            }).then(async (result) => {
-                if (!result.isConfirmed) return;
-                Swal.fire({ title: 'Envoi en cours...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                try {
-                    const resp = await fetch(`/Professeurs/RenvoyerEmail`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('[name=__RequestVerificationToken]')?.value || '' },
-                        body: JSON.stringify(id)
-                    });
-                    const data = await resp.json();
-                    Swal.fire({ icon: data.success ? 'success' : 'error', title: data.success ? 'Email envoyé !' : 'Erreur', text: data.message, confirmButtonColor: data.success ? '#16a34a' : '#d33' });
-                } catch (e) {
-                    Swal.fire({ icon: 'error', title: 'Erreur réseau', text: e.message });
-                }
+            Swal.fire({ title: 'Renvoyer l\'email ?', text: 'Un nouveau mot de passe temporaire sera généré et envoyé au professeur.', icon: 'question', showCancelButton: true, confirmButtonColor: '#4f46e5', cancelButtonColor: '#6b7280', confirmButtonText: 'Oui, renvoyer', cancelButtonText: 'Annuler' }).then(async (result) => {
+                if (!result.isConfirmed) return; Swal.fire({ title: 'Envoi en cours...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try { const resp = await fetch(`/Professeurs/RenvoyerEmail`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('[name=__RequestVerificationToken]')?.value || '' }, body: JSON.stringify(id) }); const data = await resp.json(); Swal.fire({ icon: data.success ? 'success' : 'error', title: data.success ? 'Email envoyé !' : 'Erreur', text: data.message, confirmButtonColor: data.success ? '#16a34a' : '#d33' }); }
+                catch (e) { Swal.fire({ icon: 'error', title: 'Erreur réseau', text: e.message }); }
             });
         }
 
         // Changer statut du compte
         function changerStatut(id, statut) {
             const labels = { Suspendu: 'Suspendre', Actif: 'Réactiver', Desactive: 'Désactiver' };
-            Swal.fire({
-                title: `${labels[statut] || statut} le compte ?`,
-                icon: statut === 'Actif' ? 'question' : 'warning',
-                showCancelButton: true,
-                confirmButtonColor: statut === 'Actif' ? '#16a34a' : '#ea580c',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: `Oui, ${labels[statut] || statut}`,
-                cancelButtonText: 'Annuler'
-            }).then(async (result) => {
-                if (!result.isConfirmed) return;
-                try {
-                    const formData = new FormData();
-                    formData.append('id', id);
-                    formData.append('statut', statut);
-                    const token = document.querySelector('[name=__RequestVerificationToken]')?.value || '';
-                    formData.append('__RequestVerificationToken', token);
-                    const resp = await fetch(`/Professeurs/ChangerStatutCompte`, { method: 'POST', body: formData });
-                    const data = await resp.json();
-                    if (data.success) {
-                        Swal.fire({ icon: 'success', title: 'Mis à jour', text: data.message, timer: 1500, showConfirmButton: false })
-                            .then(() => window.location.reload());
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Erreur', text: data.message });
-                    }
-                } catch (e) {
-                    Swal.fire({ icon: 'error', title: 'Erreur réseau', text: e.message });
-                }
+            Swal.fire({ title: `${labels[statut] || statut} le compte ?`, icon: statut === 'Actif' ? 'question' : 'warning', showCancelButton: true, confirmButtonColor: statut === 'Actif' ? '#16a34a' : '#ea580c', cancelButtonColor: '#6b7280', confirmButtonText: `Oui, ${labels[statut] || statut}`, cancelButtonText: 'Annuler' }).then(async (result) => {
+                if (!result.isConfirmed) return; try { const formData = new FormData(); formData.append('id', id); formData.append('statut', statut); const token = document.querySelector('[name=__RequestVerificationToken]')?.value || ''; formData.append('__RequestVerificationToken', token); const resp = await fetch(`/Professeurs/ChangerStatutCompte`, { method: 'POST', body: formData }); const data = await resp.json(); if (data.success) { Swal.fire({ icon: 'success', title: 'Mis à jour', text: data.message, timer: 1500, showConfirmButton: false }).then(() => window.location.reload()); } else { Swal.fire({ icon: 'error', title: 'Erreur', text: data.message }); } }
+                catch (e) { Swal.fire({ icon: 'error', title: 'Erreur réseau', text: e.message }); }
             });
         }
-        
+
         // Modal Click Outside to Close
-        document.getElementById('detailModal').addEventListener('click', function(e) {
-            if(e.target === this) {
-                closeDetailModal();
-            }
-        });
+        document.getElementById('detailModal').addEventListener('click', function(e) { if(e.target === this) closeDetailModal(); });
 
         window.addEventListener('load', function() {
-            filterProfesseurs();
+            // insert pagination UI
+            const pagWrapper = document.createElement('div');
+            pagWrapper.className = 'mt-4 flex items-center justify-between gap-4';
+            pagWrapper.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <label class="text-sm text-gray-600">Éléments par page :</label>
+                    <select id="pageSizeSelect" class="h-8 rounded-md border border-gray-200 px-2 text-sm" onchange="renderPage()">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <div class="text-sm text-gray-600">Total : <span id="totalCount">0</span></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="paginationControls" class="inline-flex items-center gap-1"></div>
+                    <div id="pageInfo" class="text-sm text-gray-600 ml-3">Page 1 sur 1</div>
+                    <div class="text-sm text-gray-600 ml-4">Enregistrements : <span id="totalRecords">0</span></div>
+                    <div class="text-sm text-gray-600 ml-6">Affichage : <span id="rangeInfo">0 à 0</span> sur <span id="rangeTotal">0</span> professeurs</div>
+                </div>`;
+
+            document.querySelector('.max-w-7xl')?.appendChild(pagWrapper);
+            // choose view based on device width (mobile -> cards)
+            if (window.innerWidth <= 768) toggleView('cards'); else applyFilters();
+            if (window.lucide) lucide.createIcons();
         });
     </script>
 }
