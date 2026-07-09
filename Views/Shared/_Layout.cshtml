@@ -47,7 +47,7 @@
                     </a>
                 </div>
 
-                <nav class="flex-1 space-y-1 px-4">
+                <nav id="navAdmin" class="flex-1 space-y-1 px-4 hidden">
                     <a asp-controller="Home" asp-action="Dashboard" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "dashboard" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
                         <i data-lucide="layout-dashboard" class="h-5 w-5"></i><span>Tableau de bord</span>
                     </a>
@@ -74,9 +74,30 @@
                     </a>
                 </nav>
 
+                <nav id="navProfesseur" class="flex-1 space-y-1 px-4 hidden">
+                    <a asp-controller="ProfesseurDashboard" asp-action="Index" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "professeurdashboard" && action == "index" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="layout-dashboard" class="h-5 w-5"></i><span>Espace Enseignant</span>
+                    </a>
+                    <a asp-controller="ProfesseurDashboard" asp-action="Agenda" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "professeurdashboard" && action == "agenda" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="calendar-range" class="h-5 w-5"></i><span>Mon Agenda</span>
+                    </a>
+                    <a asp-controller="ProfesseurDashboard" asp-action="MesCours" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "professeurdashboard" && action == "mescours" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="graduation-cap" class="h-5 w-5"></i><span>Mes Cours</span>
+                    </a>
+                    <a asp-controller="ProfesseurDashboard" asp-action="Calendrier" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "professeurdashboard" && action == "calendrier" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="calendar" class="h-5 w-5"></i><span>Calendrier</span>
+                    </a>
+                    <a asp-controller="ProfesseurDashboard" asp-action="Disponibilites" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "professeurdashboard" && action == "disponibilites" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="clock-4" class="h-5 w-5"></i><span>Mes Disponibilités</span>
+                    </a>
+                    <a asp-controller="ProfesseurDashboard" asp-action="MesDemandes" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "professeurdashboard" && action == "mesdemandes" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="list-checks" class="h-5 w-5"></i><span>Mes Demandes</span>
+                    </a>
+                </nav>
+
                 <div class="space-y-4 px-4 py-6">
-                    <a asp-controller="Home" asp-action="Requetes" class="flex w-full items-center justify-start gap-3 rounded-lg bg-[#5C8ABF] px-4 py-3 text-sm font-semibold text-white no-underline transition hover:bg-[#4d7daf]">
-                        <i data-lucide="plus" class="h-5 w-5"></i><span>Nouvelle Requête</span>
+                    <a id="newRequestCta" asp-controller="Home" asp-action="Requetes" class="flex w-full items-center justify-start gap-3 rounded-lg bg-[#5C8ABF] px-4 py-3 text-sm font-semibold text-white no-underline transition hover:bg-[#4d7daf]">
+                        <i data-lucide="plus" class="h-5 w-5"></i><span id="newRequestCtaText">Nouvelle Requête</span>
                     </a>
 
                     <div class="space-y-1 border-t border-white/10 pt-4">
@@ -139,7 +160,7 @@
             const logoutButton = document.getElementById("logoutButton");
             const userRaw = localStorage.getItem("user");
 
-            if (shell) {
+             if (shell) {
                 if (!userRaw) {
                     window.location.replace("/Home/Connexion");
                     return;
@@ -149,14 +170,40 @@
                     const user = JSON.parse(userRaw);
                     const fullName = [user.Prenom || user.prenom, user.Nom || user.nom].filter(Boolean).join(" ") || user.Email || user.email || "Utilisateur";
                     const email = user.Email || user.email || "connecté";
-                    const role = user.Role || user.role || "Role";
+                    const role = (user.Role || user.role || "Role").toLowerCase();
                     const userNameLabel = document.getElementById("userNameLabel");
                     if (userNameLabel) userNameLabel.textContent = fullName;
                     const userEmailLabel = document.getElementById("userEmailLabel");
                     if (userEmailLabel) userEmailLabel.textContent = email;
                     const userRoleLabel = document.getElementById("userRoleLabel");
                     if (userRoleLabel) userRoleLabel.textContent = role;
-                } catch {
+
+                    if (role === "professeur") {
+                        document.getElementById("navProfesseur")?.classList.remove("hidden");
+                        document.getElementById("navAdmin")?.classList.add("hidden");
+                        
+                        const reqLink = document.getElementById("newRequestCta");
+                        if (reqLink) {
+                            reqLink.setAttribute("href", "/ProfesseurDashboard/NouvelleDemande?email=" + encodeURIComponent(email));
+                        }
+                        const reqText = document.getElementById("newRequestCtaText");
+                        if (reqText) {
+                            reqText.textContent = "Nouvelle Demande";
+                        }
+                        
+                        document.querySelectorAll("#navProfesseur a").forEach(link => {
+                            const href = link.getAttribute("href");
+                            if (href && !href.includes("email=")) {
+                                const separator = href.includes("?") ? "&" : "?";
+                                link.setAttribute("href", href + separator + "email=" + encodeURIComponent(email));
+                            }
+                        });
+                    } else {
+                        document.getElementById("navAdmin")?.classList.remove("hidden");
+                        document.getElementById("navProfesseur")?.classList.add("hidden");
+                    }
+                } catch (e) {
+                    console.error("Error parsing user role:", e);
                     localStorage.removeItem("user");
                     window.location.replace("/Home/Connexion");
                     return;

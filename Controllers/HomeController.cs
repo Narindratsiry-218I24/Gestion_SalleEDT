@@ -52,7 +52,6 @@ public class HomeController : Controller
             .Include(c => c.Matiere)
             .Include(c => c.Professeur)
             .Include(c => c.Classe).ThenInclude(cl => cl.Filiere)
-            .Include(c => c.Seances)
             .ToList();
         return View(cours);
     }

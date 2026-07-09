@@ -27,12 +27,25 @@ public class Classe
     [Column("code_classe")]
     public string? CodeClasse { get; set; }
 
+    [Column("id_niveau")]
+    public int? IdNiveau { get; set; }
+
+    [Column("est_archivee")]
+    public bool EstArchivee { get; set; }
+
     // Navigation properties
     [ForeignKey("IdFiliere")]
     public virtual Filiere Filiere { get; set; }
 
     [ForeignKey("IdAnneeAcademique")]
     public virtual AnneeAcademique AnneeAcademique { get; set; }
+
+    [ForeignKey("IdNiveau")]
+    public virtual Niveau? Niveau { get; set; }
+
+    // Ajouté pour compatibilité avec Semestre
+    [NotMapped]
+    public virtual Semestre? Semestre { get; set; }
 
     public virtual ICollection<AffectationMatiere> AffectationsMatieres { get; set; }
     public virtual ICollection<Cours> Cours { get; set; }

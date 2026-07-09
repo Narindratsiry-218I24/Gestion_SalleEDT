@@ -75,7 +75,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 return BadRequest(new { Message = "Erreur de validation: " + string.Join(", ", errors) });
             }
 
-            var result = await _planningService.PlanifierCourseAsync(course);
+            var result = await _planningService.PlanifierCoursAsync(course);
             return Ok(result);
         }
 
@@ -175,7 +175,7 @@ namespace Gestion_SalleClasseEDT.Controllers
         {
             try
             {
-                var result = await _planningService.PlanifierCoursAsync(cours, debut, fin);
+                var result = await _planningService.PlanifierCoursAsync(cours);
                 return Ok(result);
             }
             catch (PlanningException ex)

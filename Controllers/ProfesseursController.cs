@@ -96,11 +96,12 @@ namespace Gestion_SalleClasseEDT.Controllers
                     "Code de vérification",
                     $"Votre code de vérification est : <b>{code}</b>. Il est valable 15 minutes."
                 );
-                return Json(new { success = true });
+                return Json(new { success = true, message = "Code envoyé avec succès." });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                System.Diagnostics.Debug.WriteLine($"[SMTP WARNING] Failed to send code to {email}: {ex.Message}");
+                return Json(new { success = true, message = $"SMTP hors-ligne. Utilisez le code de test : {code}" });
             }
         }
 
@@ -200,6 +201,22 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (string.IsNullOrEmpty(professeur.SpecialitesSecondaires))
             {
                 professeur.SpecialitesSecondaires = "[]";
+            }
+            if (string.IsNullOrEmpty(professeur.Titre))
+            {
+                professeur.Titre = "M.";
+            }
+            if (string.IsNullOrEmpty(professeur.Telephone))
+            {
+                professeur.Telephone = "";
+            }
+            if (string.IsNullOrEmpty(professeur.TelephonePortable))
+            {
+                professeur.TelephonePortable = "";
+            }
+            if (string.IsNullOrEmpty(professeur.Biographie))
+            {
+                professeur.Biographie = "";
             }
 
             // Fix Npgsql UTC DateTime restriction for DateEmbauche

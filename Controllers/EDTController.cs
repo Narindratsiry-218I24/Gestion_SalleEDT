@@ -22,26 +22,26 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("")]
         public IActionResult GetHebdomadaire(
             int? classeId = null, int? profId = null, int? salleId = null,
-            string? cycle = null, string? niveau = null)
+            string? cycle = null, string? niveau = null, string? semaineType = null)
         {
             var query = db.Cours
                 .Include(c => c.Matiere)
                 .Include(c => c.Professeur)
                 .Include(c => c.Classe).ThenInclude(cl => cl.Filiere).ThenInclude(f => f.Mention)
-                .Include(c => c.Classe).ThenInclude(cl => cl.Semestre).ThenInclude(s => s.RefSemestre).ThenInclude(rs => rs.Niveau)
+                .Include(c => c.Classe).ThenInclude(cl => cl.Niveau)
                 .Include(c => c.Salle)
                 .Include(c => c.Creneaux)
                 .AsQueryable();
 
-            if (classeId.HasValue) query = query.Where(s => s.Cours.IdClasse == classeId);
-            if (profId.HasValue)   query = query.Where(s => s.Cours.IdProfesseur == profId);
-            if (salleId.HasValue)  query = query.Where(s => s.SalleId == salleId);
+            if (classeId.HasValue) query = query.Where(c => c.IdClasse == classeId);
+            if (profId.HasValue)   query = query.Where(c => c.IdProfesseur == profId);
+            if (salleId.HasValue)  query = query.Where(c => c.IdSalle == salleId);
 
             if (!string.IsNullOrEmpty(cycle) && cycle != "all")
-                query = query.Where(s => s.Cours.Classe.Filiere.NomFiliere.Contains(cycle));
+                query = query.Where(c => c.Classe.Filiere.NomFiliere.Contains(cycle));
 
             if (!string.IsNullOrEmpty(niveau) && niveau != "all")
-                query = query.Where(c => c.Classe.Semestre.RefSemestre.Niveau.CodeNiveau.Contains(niveau));
+                query = query.Where(c => c.Classe.Niveau.CodeNiveau.Contains(niveau));
 
             if (!string.IsNullOrEmpty(semaineType) && semaineType != "all")
                 query = query.Where(c => c.Creneaux.Any(cr => cr.SemaineType == semaineType));
@@ -59,7 +59,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                     c.Classe.NomClasse,
                     Filiere = c.Classe.Filiere?.NomFiliere,
                     Mention = c.Classe.Filiere?.Mention?.NomMention,
-                    Niveau = c.Classe.Semestre?.RefSemestre?.Niveau?.CodeNiveau
+                    Niveau = c.Classe.Niveau?.CodeNiveau
                 } : null,
                 Salle = c.Salle != null ? new { c.Salle.IdSalle, c.Salle.NomSalle, c.Salle.Capacite } : null,
                 Creneaux = c.Creneaux?.Select(cr => new {

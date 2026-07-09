@@ -28,6 +28,9 @@ namespace Gestion_SalleClasseEDT.Models
     [Column("id_semestre")]
     public int IdSemestre { get; set; }
 
+        [Column("id_affectation")]
+        public int? IdAffectation { get; set; }
+
         [Column("volume_hours")]
         public int VolumeHours { get; set; }
 
@@ -61,6 +64,9 @@ namespace Gestion_SalleClasseEDT.Models
 
     [ForeignKey("IdSemestre")]
     public virtual Semestre Semestre { get; set; }
+
+        [ForeignKey("IdAffectation")]
+        public virtual AffectationMatiere? AffectationMatiere { get; set; }
 
         public virtual ICollection<Creneau>? Creneaux { get; set; }
         public virtual ICollection<DemandeEdt>? DemandesEdt { get; set; }

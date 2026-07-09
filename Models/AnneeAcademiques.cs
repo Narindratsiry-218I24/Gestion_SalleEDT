@@ -25,6 +25,15 @@ public class AnneeAcademique
     [Column("date_fin_annee")]
     public DateTime DateFinAnnee { get; set; }
 
+    [Column("est_archivee")]
+    public bool EstArchivee { get; set; }
+
+    [Column("date_archivage")]
+    public DateTime? DateArchivage { get; set; }
+
+    [Column("est_active")]
+    public bool EstActive { get; set; } = true;
+
     // Navigation properties
     public virtual ICollection<Semestre> Semestres { get; set; }
     public virtual ICollection<Classe> Classes { get; set; }

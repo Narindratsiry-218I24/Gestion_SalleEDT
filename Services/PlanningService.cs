@@ -23,7 +23,7 @@ namespace Gestion_SalleClasseEDT.Services
             _auditService = auditService;
         }
 
-        public async Task<Cours> PlanifierCourseAsync(Cours course)
+        public async Task<Cours> PlanifierCoursAsync(Cours course)
         {
             if (course.IdCours == 0)
             {
@@ -41,9 +41,12 @@ namespace Gestion_SalleClasseEDT.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var jour = debut.ToString("dddd");
-                var heureDebut = debut.TimeOfDay;
-                var heureFin = fin.TimeOfDay;
+                var jour = date.ToString("dddd").ToUpper().Substring(0, 3); // Par ex: MON, TUE
+                var heureDebut = startTime;
+                var heureFin = endTime;
+
+                var cours = await _context.Cours.FindAsync(courseId);
+                if (cours == null) throw new PlanningException("Cours non trouvé.");
 
                 // Validation of compatibility matter/class
                 var matiere = await _context.Matieres.FindAsync(cours.IdMatiere);
@@ -74,17 +77,13 @@ namespace Gestion_SalleClasseEDT.Services
                          || (heureFin > c.HeureDebut && heureFin <= c.HeureFin)
                          || (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)));
 
-                    if (conflitClasse) throw new PlanningException("La classe a déjà une séance à cet horaire.");
-                }
+                if (conflitClasse) throw new PlanningException("La classe a déjà une séance à cet horaire.");
 
                 // 3. Conflit Salle & Capacité
                 if (salleId.HasValue)
                 {
                     var salle = await _context.Salles.FindAsync(salleId.Value);
                     if (salle == null) throw new PlanningException("Salle non trouvée.");
-
-                    if (salle.Capacite < course.Capacity)
-                        throw new PlanningException($"La capacité de la salle ({salle.Capacite}) est insuffisante pour ce cours ({course.Capacity}).");
 
                     var conflitSalle = await _context.Seances
                         .Include(s => s.Cours)
@@ -129,10 +128,10 @@ namespace Gestion_SalleClasseEDT.Services
 
                 _context.Seances.Add(seance);
                 
-                if (course.Statut == CourseStatus.Cree.ToString() || course.Statut == CourseStatus.EnAttente.ToString())
+                if (cours.Statut == "Cree" || cours.Statut == "EnAttente")
                 {
-                    course.Statut = CourseStatus.Planifie.ToString();
-                    _context.Cours.Update(course);
+                    cours.Statut = "Planifie";
+                    _context.Cours.Update(cours);
                 }
 
                 await _context.SaveChangesAsync();
@@ -151,14 +150,14 @@ namespace Gestion_SalleClasseEDT.Services
 
         public async Task<IEnumerable<Seance>> ObtenirEmploisDuTempsAsync()
         {
-            return await _context.Creneaux
-                .Include(c => c.Cours)
+            return await _context.Seances
+                .Include(s => s.Cours)
                     .ThenInclude(c => c.Matiere)
-                .Include(c => c.Cours)
+                .Include(s => s.Cours)
                     .ThenInclude(c => c.Salle)
-                .Include(c => c.Cours)
+                .Include(s => s.Cours)
                     .ThenInclude(c => c.Professeur)
-                .Include(c => c.Cours)
+                .Include(s => s.Cours)
                     .ThenInclude(c => c.Classe)
                 .ToListAsync();
         }
