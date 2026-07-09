@@ -1,0 +1,231 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Mes Cours";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+}
+
+<style>
+    .back-btn { display: inline-flex; align-items: center; gap: .5rem; font-size: .85rem; color: #64748b; text-decoration: none; padding: .5rem 1rem; border: 1px solid #e2e8f0; border-radius: 10px; transition: all .2s; }
+    .back-btn:hover { border-color: #5C8ABF; color: #5C8ABF; text-decoration: none; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+    .cours-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .cours-table th { background: #17203A; color: white; padding: .85rem 1rem; text-align: left; font-size: .8rem; font-weight: 700; letter-spacing: .04em; }
+    .cours-table td { padding: .85rem 1rem; border-bottom: 1px solid #f8fafc; font-size: .85rem; color: #374151; vertical-align: middle; }
+    .cours-table tr:hover td { background: #f8fafc; }
+    .cours-table tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+    .badge-cm { background: #dbeafe; color: #1e40af; }
+    .badge-td { background: #d1fae5; color: #065f46; }
+    .badge-tp { background: #fef3c7; color: #92400e; }
+    .hours-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; min-width: 100px; }
+    .hours-segment { height: 100%; border-radius: 2px; }
+    .affectation-card { background: white; border-radius: 16px; padding: 1.5rem; border: 2px solid #f1f5f9; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); transition: border-color .2s; }
+    .affectation-card:hover { border-color: #5C8ABF; }
+    .aff-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: .75rem; }
+    .aff-matiere { font-size: 1rem; font-weight: 800; color: #17203A; }
+    .aff-classe { font-size: .82rem; color: #64748b; margin-top: 2px; }
+    .aff-stats { display: flex; gap: .75rem; margin-top: .75rem; flex-wrap: wrap; }
+    .aff-stat { display: flex; flex-direction: column; align-items: center; background: #f8fafc; border-radius: 10px; padding: .4rem .75rem; min-width: 64px; }
+    .aff-stat-val { font-size: 1.1rem; font-weight: 800; color: #17203A; }
+    .aff-stat-lbl { font-size: .65rem; color: #94a3b8; font-weight: 600; }
+    .progress-container { margin-top: .75rem; }
+    .progress-label { display: flex; justify-content: space-between; font-size: .72rem; color: #64748b; margin-bottom: 4px; }
+    .progress-bar { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #5C8ABF, #17203A); transition: width .5s ease; }
+    .cours-hist-item { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid #f8fafc; }
+    .cours-hist-item:last-child { border-bottom: none; }
+    .hist-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+    .tab-bar { display: flex; border-bottom: 2px solid #f1f5f9; margin-bottom: 1.5rem; }
+    .tab-btn { padding: .6rem 1.2rem; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; background: none; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; }
+    .tab-btn.active { color: #17203A; border-bottom-color: #5C8ABF; }
+    .section-title { font-size: 1.1rem; font-weight: 800; color: #17203A; margin-bottom: 1rem; }
+</style>
+
+<div>
+    <div class="page-header">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <a href="@Url.Action("Index", "ProfesseurDashboard", new { email })" class="back-btn">
+                <i data-lucide="arrow-left" class="h-4 w-4"></i> Retour
+            </a>
+            <h1 style="font-size:1.3rem;font-weight:800;color:#17203A;margin:0;">Mes Cours &amp; Matières</h1>
+        </div>
+        <div style="font-size:.85rem;color:#64748b;">
+            <span style="font-weight:700;color:#17203A;">@(prof.AffectationsMatieres?.Count ?? 0)</span> affectation(s) •
+            <span style="font-weight:700;color:#17203A;">@prof.HeuresEffectuees</span> h effectuées /
+            <span style="font-weight:700;color:#17203A;">@prof.CapaciteHoraireMax</span> h max
+        </div>
+    </div>
+
+    <!-- Barre d'onglets -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('affectations')" id="tabAff">Affectations</button>
+        <button class="tab-btn" onclick="showTab('historique')" id="tabHist">Historique des cours</button>
+    </div>
+
+    <!-- TAB: Affectations -->
+    <div id="tabAffectations">
+        @if (prof.AffectationsMatieres?.Any() == true)
+        {
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;">
+                @foreach (var aff in prof.AffectationsMatieres.OrderBy(a => a.Matiere?.NomMatiere))
+                {
+                    var pct = aff.VolumeHoraireTotal > 0
+                        ? Math.Min(100, (int)((double)prof.HeuresEffectuees / aff.VolumeHoraireTotal * 100))
+                        : 0;
+                    <div class="affectation-card">
+                        <div class="aff-header">
+                            <div>
+                                <div class="aff-matiere">@aff.Matiere?.NomMatiere</div>
+                                <div class="aff-classe">
+                                    <i data-lucide="users" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i>
+                                    @aff.Classe?.NomClasse
+                                    &nbsp;·&nbsp;
+                                    <i data-lucide="calendar" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i>
+                                    @aff.Semestre?.RefSemestre?.CodeSemestre
+                                </div>
+                            </div>
+                            <span style="background:@(aff.EstActif ? "#d1fae5" : "#fee2e2");color:@(aff.EstActif ? "#065f46" : "#991b1b");border-radius:8px;padding:3px 10px;font-size:.72rem;font-weight:700;">
+                                @(aff.EstActif ? "Actif" : "Inactif")
+                            </span>
+                        </div>
+
+                        <div class="aff-stats">
+                            <div class="aff-stat">
+                                <div class="aff-stat-val">@aff.VolumeHoraireTotal</div>
+                                <div class="aff-stat-lbl">Total (h)</div>
+                            </div>
+                            @if (aff.HeuresCm > 0)
+                            {
+                                <div class="aff-stat" style="background:#dbeafe20;">
+                                    <div class="aff-stat-val" style="color:#1e40af;">@aff.HeuresCm</div>
+                                    <div class="aff-stat-lbl">CM</div>
+                                </div>
+                            }
+                            @if (aff.HeuresTd > 0)
+                            {
+                                <div class="aff-stat" style="background:#d1fae520;">
+                                    <div class="aff-stat-val" style="color:#065f46;">@aff.HeuresTd</div>
+                                    <div class="aff-stat-lbl">TD</div>
+                                </div>
+                            }
+                            @if (aff.HeuresTp > 0)
+                            {
+                                <div class="aff-stat" style="background:#fef3c720;">
+                                    <div class="aff-stat-val" style="color:#92400e;">@aff.HeuresTp</div>
+                                    <div class="aff-stat-lbl">TP</div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>Progression globale</span>
+                                <span style="font-weight:700;">@pct%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width:@pct%;"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:.75rem;display:flex;gap:.5rem;">
+                            <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email, idMatiere = aff.IdMatiere, idClasse = aff.IdClasse })"
+                               style="display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;font-weight:600;color:#5C8ABF;text-decoration:none;padding:.3rem .7rem;border:1.5px solid #5C8ABF;border-radius:8px;transition:all .2s;"
+                               onmouseover="this.style.background='#5C8ABF';this.style.color='white'"
+                               onmouseout="this.style.background='';this.style.color='#5C8ABF'">
+                                <i data-lucide="plus" class="h-3 w-3"></i> Demander un créneau
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state" style="background:white;border-radius:16px;border:1px solid #f1f5f9;">
+                <i data-lucide="book-x" class="h-12 w-12" style="display:block;margin:0 auto 1rem;opacity:.4;"></i>
+                <p style="font-weight:700;color:#475569;">Aucune matière affectée</p>
+                <p style="font-size:.85rem;">L'administration n'a pas encore affecté de matières à votre profil.</p>
+            </div>
+        }
+    </div>
+
+    <!-- TAB: Historique des cours -->
+    <div id="tabHistorique" style="display:none;">
+        @if (prof.Cours?.Any() == true)
+        {
+            <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+                <table class="cours-table" style="border-radius:0;">
+                    <thead>
+                        <tr>
+                            <th>Matière</th>
+                            <th>Classe</th>
+                            <th>Salle</th>
+                            <th>Type</th>
+                            <th>Créneaux</th>
+                            <th>Statut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in prof.Cours.OrderBy(c => c.Matiere?.NomMatiere))
+                        {
+                            var typeBadge = c.TypeCours == "TD" ? "badge-td" : (c.TypeCours == "TP" ? "badge-tp" : (c.TypeCours == "examen" ? "badge-examen" : "badge-cm"));
+                            <tr>
+                                <td style="font-weight:600;">@c.Matiere?.NomMatiere</td>
+                                <td>@c.Classe?.NomClasse</td>
+                                <td>@(c.Salle?.NomSalle ?? "—")</td>
+                                <td><span class="badge @typeBadge">@c.TypeCours</span></td>
+                                <td>
+                                    @if (c.Creneaux?.Any() == true)
+                                    {
+                                        @foreach (var cr in c.Creneaux)
+                                        {
+                                            <span style="display:inline-block;font-size:.72rem;background:#f1f5f9;border-radius:6px;padding:2px 6px;margin:1px;">
+                                                @cr.JourSemaine @cr.HeureDebut.ToString(@"hh\:mm")-@cr.HeureFin.ToString(@"hh\:mm")
+                                            </span>
+                                        }
+                                    }
+                                    else { <span style="color:#94a3b8;">—</span> }
+                                </td>
+                                <td>
+                                    <span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:.72rem;font-weight:700;background:@(c.Statut=="planifié"?"#d1fae5":"#f1f5f9");color:@(c.Statut=="planifié"?"#065f46":"#64748b");">
+                                        @c.Statut
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email, idCours = c.IdCours })"
+                                       style="font-size:.75rem;color:#5C8ABF;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:.3rem;"
+                                       onmouseover="this.style.textDecoration='underline'"
+                                       onmouseout="this.style.textDecoration='none'">
+                                        <i data-lucide="edit-2" class="h-3 w-3"></i> Modifier
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state" style="background:white;border-radius:16px;border:1px solid #f1f5f9;">
+                <i data-lucide="calendar-x" class="h-10 w-10" style="display:block;margin:0 auto 1rem;opacity:.4;"></i>
+                <p style="font-weight:700;color:#475569;">Aucun cours dans l'historique</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => { if (window.lucide) lucide.createIcons(); });
+        function showTab(tab) {
+            document.getElementById('tabAffectations').style.display = tab === 'affectations' ? '' : 'none';
+            document.getElementById('tabHistorique').style.display = tab === 'historique' ? '' : 'none';
+            document.getElementById('tabAff').classList.toggle('active', tab === 'affectations');
+            document.getElementById('tabHist').classList.toggle('active', tab === 'historique');
+        }
+    </script>
+}

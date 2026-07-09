@@ -31,8 +31,8 @@ namespace Gestion_SalleClasseEDT.Controllers
         {
             try
             {
-                var cours = db.Cours.Include(c => c.Matiere).ToList();
-                return Ok(cours);
+                var courses = db.Cours.Include(c => c.Matiere).Include(c => c.Seances).ToList();
+                return Ok(courses);
             }
             catch (Exception ex)
             {
@@ -44,14 +44,82 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("{id:int}")]
         public IActionResult GetCours(int id)
         {
-            var cours = db.Cours
+            var course = db.Cours
                 .Include(c => c.Matiere)
                 .Include(c => c.Professeur)
                 .Include(c => c.Classe)
-                .Include(c => c.Salle)
+                .Include(c => c.Seances)
                 .FirstOrDefault(c => c.IdCours == id);
-            if (cours == null) return NotFound();
-            return Ok(cours);
+            if (course == null) return NotFound();
+            return Ok(course);
+        }
+
+        [HttpPost]
+        [Route("")]
+        public async Task<IActionResult> CreateCourse([FromBody] Cours course)
+        {
+            if (course == null) return BadRequest("Course is null");
+            
+            ModelState.Remove("Matiere");
+            ModelState.Remove("Professeur");
+            ModelState.Remove("Classe");
+            ModelState.Remove("Salle");
+            ModelState.Remove("Semestre");
+            ModelState.Remove("Creneaux");
+            ModelState.Remove("DemandesEdt");
+            ModelState.Remove("Seances");
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                return BadRequest(new { Message = "Erreur de validation: " + string.Join(", ", errors) });
+            }
+
+            var result = await _planningService.PlanifierCourseAsync(course);
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [Route("{id:int}/Status")]
+        public IActionResult UpdateStatus(int id, [FromBody] string newStatus)
+        {
+            var course = db.Cours.Find(id);
+            if (course == null) return NotFound();
+            if (Enum.TryParse<CourseStatus>(newStatus, true, out var status))
+            {
+                course.Statut = status.ToString();
+                db.SaveChanges();
+                return Ok(course);
+            }
+            return BadRequest("Invalid status");
+        }
+
+        [HttpPost]
+        [Route("{id:int}/Seance")]
+        public async Task<IActionResult> ScheduleSeance(int id, [FromBody] SeanceRequest request)
+        {
+            try
+            {
+                var seance = await _planningService.PlanifierSeanceAsync(id, request.Date, request.StartTime, request.EndTime, request.SalleId, request.GroupeId);
+                return Ok(seance);
+            }
+            catch (PlanningException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = ex.Message });
+            }
+        }
+
+        public class SeanceRequest
+        {
+            public DateTime Date { get; set; }
+            public TimeSpan StartTime { get; set; }
+            public TimeSpan EndTime { get; set; }
+            public int? SalleId { get; set; }
+            public int? GroupeId { get; set; }
         }
 
         [HttpGet]
@@ -82,7 +150,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                 var sallesOccupeesIds = db.Creneaux
                     .Include(c => c.Cours)
                     .Where(c => c.JourSemaine == jour && 
-                               ((heureDebut < c.HeureFin && heureFin > c.HeureDebut)))
+                               ((heureDebut >= c.HeureDebut && heureDebut < c.HeureFin) ||
+                                (heureFin > c.HeureDebut && heureFin <= c.HeureFin) ||
+                                (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)))
                     .Where(c => c.Cours.IdSalle != null)
                     .Select(c => c.Cours.IdSalle)
                     .ToList();
@@ -148,20 +218,20 @@ namespace Gestion_SalleClasseEDT.Controllers
 
                         table.Header(header =>
                         {
-                            header.Cell().Text("Jour").Bold();
+                            header.Cell().Text("Date").Bold();
                             header.Cell().Text("Heure").Bold();
-                            header.Cell().Text("Matière").Bold();
+                            header.Cell().Text("Cours").Bold();
                             header.Cell().Text("Professeur").Bold();
                             header.Cell().Text("Salle").Bold();
                         });
 
-                        foreach (var c in emplois)
+                        foreach (var s in emplois)
                         {
-                            table.Cell().Text(c.JourSemaine);
-                            table.Cell().Text($"{c.HeureDebut:hh\\:mm} - {c.HeureFin:hh\\:mm}");
-                            table.Cell().Text(c.Cours?.Matiere?.NomMatiere ?? "N/A");
-                            table.Cell().Text(c.Cours?.Professeur?.Nom ?? "N/A");
-                            table.Cell().Text(c.Cours?.Salle?.NomSalle ?? "N/A");
+                            table.Cell().Text(s.Date.ToShortDateString());
+                            table.Cell().Text($"{s.StartTime:hh\\:mm} - {s.EndTime:hh\\:mm}");
+                            table.Cell().Text(s.Cours?.Matiere?.NomMatiere ?? "N/A");
+                            table.Cell().Text(s.Cours?.Professeur?.Nom ?? "N/A");
+                            table.Cell().Text(s.Salle?.NomSalle ?? "N/A");
                         }
                     });
 
@@ -196,7 +266,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                         c.Cours.IdSalle == cours.IdSalle &&
                         c.JourSemaine == creneau.JourSemaine &&
                         c.IdCours != cours.IdCours &&
-                        (creneau.HeureDebut < c.HeureFin && creneau.HeureFin > c.HeureDebut)
+                        ((creneau.HeureDebut >= c.HeureDebut && creneau.HeureDebut < c.HeureFin) ||
+                         (creneau.HeureFin > c.HeureDebut && creneau.HeureFin <= c.HeureFin) ||
+                         (creneau.HeureDebut <= c.HeureDebut && creneau.HeureFin >= c.HeureFin))
                     );
                     if (cSalle != null)
                         return Ok(new { HasConflict = true, Message = $"La salle est occupée par {cSalle.Cours.Matiere.NomMatiere}." });

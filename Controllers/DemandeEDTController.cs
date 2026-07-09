@@ -220,12 +220,12 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             string jourSemaine = MapDayOfWeek(finalDate.Value.DayOfWeek);
 
-            int finalClasseId = demande.IdClasse ?? (demande.Cours != null ? demande.Cours.IdClasse : 0);
+            int finalClasseId = demande.IdClasse ?? (demande.Cours != null ? (demande.Cours.IdClasse ?? 0) : 0);
 
             int finalProfId = 0;
             if (demande.IdCours.HasValue && demande.Cours != null)
             {
-                finalProfId = demande.Cours.IdProfesseur;
+                finalProfId = demande.Cours.IdProfesseur ?? 0;
             }
             else
             {

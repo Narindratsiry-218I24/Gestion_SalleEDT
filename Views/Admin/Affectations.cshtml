@@ -1,0 +1,122 @@
+@model Gestion_SalleClasseEDT.Controllers.AdminController.AdminAnneeViewModel
+
+@{
+    ViewData["Title"] = "Gestion des Affectations";
+    var affectations = ViewBag.Affectations as System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.AffectationMatiere> ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.AffectationMatiere>();
+}
+
+<h1>Gestion des Affectations</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<section>
+    <h2>Nouvelle affectation</h2>
+    <form asp-action="CreerAffectation" method="post">
+        @Html.AntiForgeryToken()
+        <div>
+            <label>Professeur</label>
+            <select name="idProfesseur">
+                @foreach (var p in Model.Professeurs ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.Professeur>())
+                {
+                    <option value="@p.IdProfesseur">@p.Nom @p.Prenom</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Année</label>
+            <select name="anneeId" onchange="location.href='?anneeId='+this.value">
+                <option value="">--</option>
+                @foreach (var a in Model.Annees ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.AnneeAcademique>())
+                {
+                    <option value="@a.IdAnnee">@a.Libelle</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Classe</label>
+            <select name="idClasse">
+                @foreach (var c in Model.Classes ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.Classe>())
+                {
+                    <option value="@c.IdClasse">@c.NomClasse (@c.Filiere?.NomFiliere)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Matière</label>
+            <select name="idMatiere">
+                @foreach (var m in Model.Matieres ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.Matiere>())
+                {
+                    <option value="@m.IdMatiere">@m.NomMatiere</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Semestre</label>
+            <select name="idSemestre">
+                @foreach (var s in Model.Semestres ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.Semestre>())
+                {
+                    <option value="@s.IdSemestre">@s.RefSemestre?.CodeSemestre</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Volume horaire total</label>
+            <input name="volumeHoraireTotal" type="number" />
+        </div>
+        <div>
+            <label>Heures CM</label>
+            <input name="heuresCm" type="number" />
+        </div>
+        <div>
+            <label>Heures TD</label>
+            <input name="heuresTd" type="number" />
+        </div>
+        <div>
+            <label>Heures TP</label>
+            <input name="heuresTp" type="number" />
+        </div>
+        <div>
+            <label>Commentaire</label>
+            <input name="commentaire" />
+        </div>
+        <div>
+            <button type="submit">Affecter</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Liste des affectations</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Professeur</th>
+                <th>Classe</th>
+                <th>Matière</th>
+                <th>Semestre</th>
+                <th>Volume</th>
+                <th>Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in affectations)
+            {
+                <tr>
+                    <td>@a.Professeur?.Nom @a.Professeur?.Prenom</td>
+                    <td>@a.Classe?.NomClasse</td>
+                    <td>@a.Matiere?.NomMatiere</td>
+                    <td>@a.Semestre?.RefSemestre?.CodeSemestre</td>
+                    <td>@a.VolumeHoraireTotal</td>
+                    <td>@(a.EstActif ? "Actif" : "Inactif")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>

@@ -38,15 +38,14 @@ public class Matiere
 
     // Navigation properties
     [ForeignKey("IdFiliere")]
-    public virtual Filiere Filiere { get; set; }
+    public virtual Filiere? Filiere { get; set; }
 
     [ForeignKey("IdRefSemestre")]
-    public virtual RefSemestre RefSemestre { get; set; }
+    public virtual RefSemestre? RefSemestre { get; set; }
 
     [ForeignKey("IdProfesseurResponsable")]
-    public virtual Professeur ProfesseurResponsable { get; set; }
+    public virtual Professeur? ProfesseurResponsable { get; set; }
 
     public virtual ICollection<Cours> Cours { get; set; }
-    public virtual ICollection<AffectationMatiere> AffectationsMatieres { get; set; }
 }
 }

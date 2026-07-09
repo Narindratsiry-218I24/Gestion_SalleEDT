@@ -1,0 +1,210 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Mon Agenda";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+    var jours = new[] { "MON","TUE","WED","THU","FRI","SAT" };
+    var joursLabels = new Dictionary<string,string> {
+        ["MON"]="Lundi", ["TUE"]="Mardi", ["WED"]="Mercredi",
+        ["THU"]="Jeudi", ["FRI"]="Vendredi", ["SAT"]="Samedi"
+    };
+    // Créneaux horaires de 7h à 20h
+    var heures = Enumerable.Range(7, 14).Select(h => TimeSpan.FromHours(h)).ToList();
+    var creneaux = Model.CreneauxSemaine.OrderBy(c => c.JourOrdre).ThenBy(c => c.HeureDebut).ToList();
+}
+
+<style>
+    .agenda-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .back-btn { display: inline-flex; align-items: center; gap: .5rem; font-size: .85rem; color: #64748b; text-decoration: none; padding: .5rem 1rem; border: 1px solid #e2e8f0; border-radius: 10px; transition: all .2s; }
+    .back-btn:hover { border-color: #5C8ABF; color: #5C8ABF; }
+    .agenda-grid { display: grid; grid-template-columns: 60px repeat(6, 1fr); gap: 0; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid #f1f5f9; }
+    .agenda-header-cell { background: #17203A; color: white; padding: .75rem .5rem; text-align: center; font-size: .78rem; font-weight: 700; }
+    .agenda-header-cell:first-child { background: #0f1729; }
+    .agenda-time-cell { background: #f8fafc; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; padding: .4rem .3rem; font-size: .7rem; color: #94a3b8; font-weight: 600; text-align: right; display: flex; align-items: center; justify-content: flex-end; }
+    .agenda-slot { border-bottom: 1px solid #f8fafc; border-right: 1px solid #f8fafc; height: 48px; position: relative; }
+    .agenda-slot:last-child { border-right: none; }
+    .cours-block { position: absolute; left: 2px; right: 2px; border-radius: 8px; padding: 3px 6px; overflow: hidden; cursor: pointer; transition: all .2s; z-index: 2; }
+    .cours-block:hover { opacity: .9; transform: scale(1.01); }
+    .cours-block .cb-matiere { font-size: .7rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cours-block .cb-meta { font-size: .62rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cb-cours { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; }
+    .cb-td { background: linear-gradient(135deg, #065f46, #10b981); color: white; }
+    .cb-tp { background: linear-gradient(135deg, #92400e, #f59e0b); color: white; }
+    .cb-examen { background: linear-gradient(135deg, #991b1b, #ef4444); color: white; }
+    .legend { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: #475569; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    /* Disponibilités overlay */
+    .dispo-overlay { position: absolute; left: 0; right: 0; background: rgba(92,138,191,.08); border-left: 3px solid rgba(92,138,191,.4); border-radius: 0 4px 4px 0; z-index: 1; }
+    .list-view { margin-top: 2rem; }
+    .list-day-section { margin-bottom: 1.5rem; }
+    .list-day-title { font-size: 1rem; font-weight: 700; color: #17203A; margin-bottom: .75rem; display: flex; align-items: center; gap: .5rem; }
+    .list-day-line { flex: 1; height: 1px; background: #f1f5f9; }
+    .cours-list-item { display: flex; gap: 1rem; align-items: center; background: white; border-radius: 12px; padding: .85rem 1rem; margin-bottom: .5rem; border: 1.5px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,.04); transition: all .2s; }
+    .cours-list-item:hover { border-color: #5C8ABF; transform: translateX(4px); }
+    .cours-time-badge { background: #17203A; color: white; border-radius: 10px; padding: .35rem .65rem; font-size: .72rem; font-weight: 700; min-width: 90px; text-align: center; flex-shrink: 0; }
+    .cours-info { flex: 1; min-width: 0; }
+    .cours-name { font-weight: 700; color: #17203A; font-size: .92rem; }
+    .cours-details { font-size: .78rem; color: #64748b; margin-top: 2px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .7rem; font-weight: 600; }
+    .badge-cours { background: #dbeafe; color: #1e40af; }
+    .badge-td { background: #d1fae5; color: #065f46; }
+    .badge-tp { background: #fef3c7; color: #92400e; }
+    .badge-examen { background: #fee2e2; color: #991b1b; }
+    .empty-state { text-align:center; padding:3rem; color:#94a3b8; }
+    .view-toggle { display: flex; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+    .view-btn { padding: .45rem .9rem; font-size: .8rem; font-weight: 600; cursor: pointer; border: none; background: none; color: #64748b; transition: all .2s; }
+    .view-btn.active { background: #17203A; color: white; }
+</style>
+
+<div>
+    <div class="agenda-header">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <a href="@Url.Action("Index", "ProfesseurDashboard", new { email })" class="back-btn">
+                <i data-lucide="arrow-left" class="h-4 w-4"></i> Retour
+            </a>
+            <h1 style="font-size:1.3rem;font-weight:800;color:#17203A;margin:0;">Mon Agenda</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+            <div class="view-toggle">
+                <button class="view-btn active" onclick="showView('grid')" id="btnGrid">Grille</button>
+                <button class="view-btn" onclick="showView('list')" id="btnList">Liste</button>
+            </div>
+            <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email })"
+               style="background:#5C8ABF;color:white;border-radius:10px;padding:.5rem 1rem;font-size:.82rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;">
+                <i data-lucide="plus" class="h-4 w-4"></i> Demande
+            </a>
+        </div>
+    </div>
+
+    <!-- Légende -->
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> Cours Magistral</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div> TD</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> TP</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Examen</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(92,138,191,.3);border:1px solid #5C8ABF;"></div> Disponible</div>
+    </div>
+
+    <!-- Vue Grille -->
+    <div id="viewGrid">
+        @if (creneaux.Any())
+        {
+            <div class="agenda-grid">
+                <!-- En-têtes -->
+                <div class="agenda-header-cell">Heure</div>
+                @foreach (var j in jours)
+                {
+                    <div class="agenda-header-cell">@joursLabels[j]</div>
+                }
+
+                <!-- Lignes horaires -->
+                @foreach (var heure in heures)
+                {
+                    <div class="agenda-time-cell">@heure.ToString(@"hh\:mm")</div>
+                    @foreach (var jour in jours)
+                    {
+                        <div class="agenda-slot" style="position:relative;">
+                            @* Cours qui commencent à cette heure *@
+                            @foreach (var cr in creneaux.Where(c => c.JourSemaine == jour && c.HeureDebut == heure))
+                            {
+                                var dureeH = (cr.HeureFin - cr.HeureDebut).TotalHours;
+                                var hauteur = dureeH * 48; // 48px par heure
+                                var cbClass = cr.TypeCours == "TD" ? "cb-td" : (cr.TypeCours == "TP" ? "cb-tp" : (cr.TypeCours == "examen" ? "cb-examen" : "cb-cours"));
+                                <div class="cours-block @cbClass" style="top:0;height:@(hauteur - 4)px;"
+                                     title="@cr.NomMatiere — @cr.NomClasse (@cr.NomSalle) @cr.HeureDebut.ToString(@"hh\:mm")-@cr.HeureFin.ToString(@"hh\:mm")">
+                                    <div class="cb-matiere">@cr.NomMatiere</div>
+                                    <div class="cb-meta">@cr.NomClasse</div>
+                                </div>
+                            }
+                            @* Disponibilités (dispo_prof) *@
+                            @if (prof.Disponibilites?.Any(d => d.JourSemaine.ToUpper() == jour && d.HeureDebut <= heure && d.HeureFin > heure) == true)
+                            {
+                                <div class="dispo-overlay" style="top:0;height:100%;"></div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state" style="background:white;border-radius:20px;border:1px solid #f1f5f9;">
+                <i data-lucide="calendar-x-2" class="h-12 w-12" style="display:block;margin:0 auto 1rem;"></i>
+                <p style="font-weight:700;color:#475569;">Aucun cours planifié</p>
+                <p style="font-size:.85rem;">L'agenda sera disponible une fois l'emploi du temps généré par l'administration.</p>
+                <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email })"
+                   style="display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;background:#5C8ABF;color:white;border-radius:10px;padding:.6rem 1.2rem;text-decoration:none;font-weight:700;font-size:.85rem;">
+                    <i data-lucide="plus" class="h-4 w-4"></i> Faire une demande
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- Vue Liste -->
+    <div id="viewList" style="display:none;" class="list-view">
+        @{
+            var groupeParJour = creneaux.GroupBy(c => c.JourOrdre)
+                                         .OrderBy(g => g.Key)
+                                         .ToList();
+        }
+        @if (groupeParJour.Any())
+        {
+            @foreach (var groupe in groupeParJour)
+            {
+                var jourLabel = joursLabels.GetValueOrDefault(groupe.First().JourSemaine, groupe.First().JourSemaine);
+                <div class="list-day-section">
+                    <div class="list-day-title">
+                        <span>@jourLabel</span>
+                        <div class="list-day-line"></div>
+                        <span style="font-size:.78rem;color:#94a3b8;">@groupe.Count() cours</span>
+                    </div>
+                    @foreach (var cr in groupe.OrderBy(c => c.HeureDebut))
+                    {
+                        var typeBadgeClass = cr.TypeCours == "TD" ? "badge-td" : (cr.TypeCours == "TP" ? "badge-tp" : (cr.TypeCours == "examen" ? "badge-examen" : "badge-cours"));
+                        <div class="cours-list-item">
+                            <div class="cours-time-badge">
+                                @cr.HeureDebut.ToString(@"hh\:mm")–@cr.HeureFin.ToString(@"hh\:mm")
+                            </div>
+                            <div class="cours-info">
+                                <div class="cours-name">@cr.NomMatiere</div>
+                                <div class="cours-details">
+                                    <i data-lucide="users" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i> @cr.NomClasse &nbsp;
+                                    <i data-lucide="map-pin" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i> @cr.NomSalle
+                                </div>
+                            </div>
+                            <span class="badge @typeBadgeClass">@cr.TypeCours</span>
+                            <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email, idCours = cr.Cours.IdCours })"
+                               title="Demander un changement"
+                               style="color:#94a3b8;display:flex;align-items:center;padding:.4rem;border-radius:8px;transition:all .2s;text-decoration:none;"
+                               onmouseover="this.style.background='#f1f5f9';this.style.color='#5C8ABF'"
+                               onmouseout="this.style.background='';this.style.color='#94a3b8'">
+                                <i data-lucide="edit-2" class="h-4 w-4"></i>
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state" style="background:white;border-radius:20px;border:1px solid #f1f5f9;">
+                <p style="font-weight:700;color:#475569;">Aucun cours planifié</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.lucide) lucide.createIcons();
+        });
+        function showView(v) {
+            document.getElementById('viewGrid').style.display = v === 'grid' ? '' : 'none';
+            document.getElementById('viewList').style.display = v === 'list' ? '' : 'none';
+            document.getElementById('btnGrid').classList.toggle('active', v === 'grid');
+            document.getElementById('btnList').classList.toggle('active', v === 'list');
+        }
+    </script>
+}

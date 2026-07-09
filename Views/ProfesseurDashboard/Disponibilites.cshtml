@@ -1,0 +1,104 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Mes Disponibilités";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+}
+
+<div class="prof-dash">
+    <div class="section-header">
+        <h2 class="section-title-h2">Mes Disponibilités</h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
+            @TempData["Success"]
+        </div>
+    }
+
+    <div class="card-base">
+        <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 2rem;">
+            Définissez ici les créneaux horaires où vous êtes disponible pour donner cours.
+        </p>
+
+        <form method="post" action="@Url.Action("SauvegarderDisponibilites", "ProfesseurDashboard", new { email = email })">
+            @Html.AntiForgeryToken()
+            <div id="dispo-list" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                
+                @if (prof.Disponibilites != null && prof.Disponibilites.Any())
+                {
+                    foreach (var dispo in prof.Disponibilites)
+                    {
+                        <div class="dispo-row" style="display: flex; align-items: center; gap: 1rem;">
+                            <select name="jours" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+                                <option value="MON" selected="@(dispo.JourSemaine == "MON")">Lundi</option>
+                                <option value="TUE" selected="@(dispo.JourSemaine == "TUE")">Mardi</option>
+                                <option value="WED" selected="@(dispo.JourSemaine == "WED")">Mercredi</option>
+                                <option value="THU" selected="@(dispo.JourSemaine == "THU")">Jeudi</option>
+                                <option value="FRI" selected="@(dispo.JourSemaine == "FRI")">Vendredi</option>
+                                <option value="SAT" selected="@(dispo.JourSemaine == "SAT")">Samedi</option>
+                            </select>
+                            
+                            <input type="time" name="heuresDebut" value="@dispo.HeureDebut.ToString(@"hh\:mm")" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+                            <span style="color: #94a3b8;">à</span>
+                            <input type="time" name="heuresFin" value="@dispo.HeureFin.ToString(@"hh\:mm")" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+                            
+                            <select name="semainesType" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+                                <option value="A" selected="@(dispo.SemaineType == "A")">Toutes les semaines</option>
+                            </select>
+
+                            <button type="button" onclick="this.parentElement.remove()" style="color: #ef4444; background: none; border: none; cursor: pointer;">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p id="no-dispo" style="font-size: 0.85rem; color: #94a3b8; font-style: italic;">Aucune disponibilité définie.</p>
+                }
+            </div>
+
+            <button type="button" onclick="addDispo()" style="background: #f1f5f9; color: #475569; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem;">
+                <i data-lucide="plus" class="h-4 w-4"></i> Ajouter un créneau
+            </button>
+
+            <button type="submit" style="background: #17203A; color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Sauvegarder mes disponibilités
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function addDispo() {
+        const noDispo = document.getElementById('no-dispo');
+        if (noDispo) noDispo.remove();
+
+        const container = document.getElementById('dispo-list');
+        const row = document.createElement('div');
+        row.className = 'dispo-row';
+        row.style = 'display: flex; align-items: center; gap: 1rem;';
+        row.innerHTML = `
+            <select name="jours" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+                <option value="MON">Lundi</option>
+                <option value="TUE">Mardi</option>
+                <option value="WED">Mercredi</option>
+                <option value="THU">Jeudi</option>
+                <option value="FRI">Vendredi</option>
+                <option value="SAT">Samedi</option>
+            </select>
+            <input type="time" name="heuresDebut" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+            <span style="color: #94a3b8;">à</span>
+            <input type="time" name="heuresFin" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+            <select name="semainesType" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+                <option value="A">Toutes les semaines</option>
+            </select>
+            <button type="button" onclick="this.parentElement.remove()" style="color: #ef4444; background: none; border: none; cursor: pointer;">
+                X
+            </button>
+        `;
+        container.appendChild(row);
+    }
+</script>

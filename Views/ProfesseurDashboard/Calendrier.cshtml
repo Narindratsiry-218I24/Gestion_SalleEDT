@@ -1,0 +1,21 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Mon Calendrier";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+}
+
+<div class="prof-dash">
+    <div class="section-header">
+        <h2 class="section-title-h2">Mon Calendrier</h2>
+    </div>
+
+    <div class="card-base" style="min-height: 400px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+        <i data-lucide="calendar" class="h-16 w-16 text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-bold text-gray-700">Vue Calendrier</h3>
+        <p class="text-gray-500 text-sm mt-2 text-center">
+            La vue du calendrier mensuel est en cours de développement.<br />
+            Vous pourrez bientôt visualiser l'ensemble de votre mois ici.
+        </p>
+    </div>
+</div>

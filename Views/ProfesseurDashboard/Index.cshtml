@@ -1,0 +1,259 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Mon Espace Enseignant";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+}
+
+<style>
+    .prof-dash { font-family: 'Inter', sans-serif; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+    .stat-card { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); border: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: .5rem; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .stat-value { font-size: 2rem; font-weight: 800; color: #17203A; line-height: 1; }
+    .stat-label { font-size: .8rem; color: #64748b; font-weight: 500; }
+    .quick-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .quick-card { background: white; border-radius: 16px; padding: 1.5rem; border: 2px solid #f1f5f9; cursor: pointer; text-decoration: none; color: inherit; display: flex; align-items: center; gap: 1rem; transition: all .2s; }
+    .quick-card:hover { border-color: #5C8ABF; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(92,138,191,.15); text-decoration: none; color: inherit; }
+    .quick-card-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .quick-card-title { font-weight: 700; font-size: .95rem; color: #17203A; margin-bottom: 2px; }
+    .quick-card-desc { font-size: .78rem; color: #64748b; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-title-h2 { font-size: 1.15rem; font-weight: 700; color: #17203A; margin: 0; }
+    .see-all { font-size: .82rem; color: #5C8ABF; font-weight: 600; text-decoration: none; }
+    .see-all:hover { text-decoration: underline; }
+    .card-base { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); border: 1px solid #f1f5f9; }
+    .creneau-item { display: flex; align-items: center; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid #f8fafc; }
+    .creneau-item:last-child { border-bottom: none; }
+    .creneau-day { background: linear-gradient(135deg, #17203A, #5C8ABF); color: white; border-radius: 10px; padding: .3rem .6rem; font-size: .7rem; font-weight: 700; min-width: 60px; text-align: center; }
+    .creneau-time { font-size: .82rem; color: #64748b; min-width: 100px; }
+    .creneau-matiere { font-weight: 600; font-size: .9rem; color: #17203A; }
+    .creneau-meta { font-size: .78rem; color: #94a3b8; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .7rem; font-weight: 600; }
+    .badge-cours { background: #dbeafe; color: #1e40af; }
+    .badge-td { background: #d1fae5; color: #065f46; }
+    .badge-tp { background: #fef3c7; color: #92400e; }
+    .badge-examen { background: #fee2e2; color: #991b1b; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .empty-state i { opacity: .4; margin-bottom: 1rem; display: block; }
+    .prof-header { display: flex; align-items: center; gap: 1.5rem; background: linear-gradient(135deg, #17203A 0%, #2d4a7a 100%); color: white; border-radius: 20px; padding: 1.5rem 2rem; margin-bottom: 2rem; }
+    .prof-avatar { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; border: 3px solid rgba(255,255,255,.3); flex-shrink: 0; overflow: hidden; }
+    .prof-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .prof-name { font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; }
+    .prof-role { font-size: .85rem; opacity: .75; margin-bottom: .5rem; }
+    .prof-badges { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .prof-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 3px 10px; font-size: .75rem; font-weight: 600; }
+    .demand-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+    .demand-badge.en_attente_admin { background: #fef3c7; color: #92400e; }
+    .demand-badge.acceptee { background: #d1fae5; color: #065f46; }
+    .demand-badge.refusee { background: #fee2e2; color: #991b1b; }
+    .demand-badge.proposee_prof { background: #dbeafe; color: #1e40af; }
+    .dispo-row { display: flex; align-items: center; gap: 1rem; padding: .5rem 0; }
+    .dispo-jour { font-weight: 600; min-width: 80px; font-size: .85rem; color: #17203A; }
+    .dispo-bar { flex: 1; height: 8px; background: #f1f5f9; border-radius: 4px; position: relative; }
+    .dispo-fill { height: 100%; background: linear-gradient(90deg, #5C8ABF, #17203A); border-radius: 4px; }
+</style>
+
+<div class="prof-dash">
+    <!-- En-tête prof -->
+    <div class="prof-header">
+        <div class="prof-avatar">
+            @if (!string.IsNullOrEmpty(prof.PhotoUrl))
+            {
+                <img src="@prof.PhotoUrl" alt="Photo" />
+            }
+            else
+            {
+                @((prof.Prenom?.Length > 0 ? prof.Prenom[0].ToString() : "") + (prof.Nom?.Length > 0 ? prof.Nom[0].ToString() : ""))
+            }
+        </div>
+        <div style="flex:1; min-width:0;">
+            <div class="prof-name">@prof.Titre @prof.Prenom @prof.Nom</div>
+            <div class="prof-role">@prof.Grade • @prof.Specialite</div>
+            <div class="prof-badges">
+                <span class="prof-badge">@prof.Matricule</span>
+                <span class="prof-badge">@prof.CapaciteHoraireMax h/sem max</span>
+                <span class="prof-badge">@prof.HeuresEffectuees h effectuées</span>
+            </div>
+        </div>
+        <div style="text-align:right; flex-shrink:0;">
+            <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email })"
+               style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:12px;padding:.6rem 1.2rem;font-size:.85rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;transition:all .2s;"
+               onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+                <i data-lucide="plus-circle" class="h-4 w-4"></i>
+                Nouvelle demande
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#dbeafe;">
+                <i data-lucide="calendar-days" class="h-5 w-5" style="color:#1e40af;"></i>
+            </div>
+            <div class="stat-value">@Model.NbCoursCetteSemaine</div>
+            <div class="stat-label">Cours cette semaine</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#d1fae5;">
+                <i data-lucide="clock" class="h-5 w-5" style="color:#065f46;"></i>
+            </div>
+            <div class="stat-value">@Model.NbHeuresCetteSemaine<span style="font-size:1rem;">h</span></div>
+            <div class="stat-label">Heures cette semaine</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fef3c7;">
+                <i data-lucide="book-open" class="h-5 w-5" style="color:#92400e;"></i>
+            </div>
+            <div class="stat-value">@Model.NbMatieres</div>
+            <div class="stat-label">Matières affectées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fee2e2;">
+                <i data-lucide="file-clock" class="h-5 w-5" style="color:#991b1b;"></i>
+            </div>
+            <div class="stat-value">@Model.NbDemandesEnAttente</div>
+            <div class="stat-label">Demandes en attente</div>
+        </div>
+    </div>
+
+    <!-- Navigation rapide -->
+    <div class="quick-nav">
+        <a href="@Url.Action("Agenda", "ProfesseurDashboard", new { email })" class="quick-card">
+            <div class="quick-card-icon" style="background:#dbeafe;">
+                <i data-lucide="calendar-range" class="h-6 w-6" style="color:#1e40af;"></i>
+            </div>
+            <div>
+                <div class="quick-card-title">Mon Agenda</div>
+                <div class="quick-card-desc">Voir mes créneaux de cours</div>
+            </div>
+        </a>
+        <a href="@Url.Action("MesCours", "ProfesseurDashboard", new { email })" class="quick-card">
+            <div class="quick-card-icon" style="background:#d1fae5;">
+                <i data-lucide="graduation-cap" class="h-6 w-6" style="color:#065f46;"></i>
+            </div>
+            <div>
+                <div class="quick-card-title">Mes Cours</div>
+                <div class="quick-card-desc">Toutes mes matières enseignées</div>
+            </div>
+        </a>
+        <a href="@Url.Action("Calendrier", "ProfesseurDashboard", new { email })" class="quick-card">
+            <div class="quick-card-icon" style="background:#fef3c7;">
+                <i data-lucide="calendar" class="h-6 w-6" style="color:#92400e;"></i>
+            </div>
+            <div>
+                <div class="quick-card-title">Calendrier</div>
+                <div class="quick-card-desc">Vue mensuelle de l'emploi du temps</div>
+            </div>
+        </a>
+        <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email })" class="quick-card">
+            <div class="quick-card-icon" style="background:#ede9fe;">
+                <i data-lucide="file-plus-2" class="h-6 w-6" style="color:#5b21b6;"></i>
+            </div>
+            <div>
+                <div class="quick-card-title">Nouvelle Demande</div>
+                <div class="quick-card-desc">Demander un cours ou changement</div>
+            </div>
+        </a>
+        <a href="@Url.Action("Disponibilites", "ProfesseurDashboard", new { email })" class="quick-card">
+            <div class="quick-card-icon" style="background:#fce7f3;">
+                <i data-lucide="clock-4" class="h-6 w-6" style="color:#9d174d;"></i>
+            </div>
+            <div>
+                <div class="quick-card-title">Mes Disponibilités</div>
+                <div class="quick-card-desc">Gérer mes plages horaires</div>
+            </div>
+        </a>
+        <a href="@Url.Action("MesDemandes", "ProfesseurDashboard", new { email })" class="quick-card">
+            <div class="quick-card-icon" style="background:#ffedd5;">
+                <i data-lucide="list-checks" class="h-6 w-6" style="color:#c2410c;"></i>
+            </div>
+            <div>
+                <div class="quick-card-title">Mes Demandes</div>
+                <div class="quick-card-desc">Suivre mes requêtes soumises</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Agenda semaine -->
+    <div class="section-header">
+        <h2 class="section-title-h2"><i data-lucide="calendar-days" class="h-5 w-5" style="display:inline;vertical-align:middle;margin-right:.4rem;"></i>Agenda — Semaine courante</h2>
+        <a href="@Url.Action("Agenda", "ProfesseurDashboard", new { email })" class="see-all">Voir tout →</a>
+    </div>
+    <div class="card-base" style="margin-bottom:2rem;">
+        @{
+            var creneaux = Model.CreneauxSemaine.OrderBy(c => c.JourOrdre).ThenBy(c => c.HeureDebut).ToList();
+        }
+        @if (creneaux.Any())
+        {
+            @foreach (var cr in creneaux)
+            {
+                var typeBadgeClass = cr.TypeCours == "TD" ? "badge-td" : (cr.TypeCours == "TP" ? "badge-tp" : (cr.TypeCours == "examen" ? "badge-examen" : "badge-cours"));
+                <div class="creneau-item">
+                    <div class="creneau-day">@cr.JourLabel</div>
+                    <div class="creneau-time">
+                        <i data-lucide="clock" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i>
+                        @cr.HeureDebut.ToString(@"hh\:mm") – @cr.HeureFin.ToString(@"hh\:mm")
+                    </div>
+                    <div style="flex:1;">
+                        <div class="creneau-matiere">@cr.NomMatiere</div>
+                        <div class="creneau-meta">@cr.NomClasse • @cr.NomSalle</div>
+                    </div>
+                    <span class="badge @typeBadgeClass">@cr.TypeCours</span>
+                    <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email, idCours = cr.Cours.IdCours })"
+                       title="Demander un changement" style="color:#94a3b8;font-size:.75rem;text-decoration:none;display:flex;align-items:center;gap:3px;"
+                       onmouseover="this.style.color='#5C8ABF'" onmouseout="this.style.color='#94a3b8'">
+                        <i data-lucide="edit-2" class="h-4 w-4"></i>
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <i data-lucide="calendar-x-2" class="h-12 w-12" style="display:block;margin:0 auto 1rem;"></i>
+                <p style="font-weight:600;color:#475569;">Aucun cours planifié cette semaine</p>
+                <p style="font-size:.85rem;">Vos créneaux apparaîtront ici une fois que l'administration aura généré l'emploi du temps.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Matières affectées -->
+    @if (prof.AffectationsMatieres?.Any() == true)
+    {
+        <div class="section-header">
+            <h2 class="section-title-h2"><i data-lucide="book-open" class="h-5 w-5" style="display:inline;vertical-align:middle;margin-right:.4rem;"></i>Mes Matières</h2>
+            <a href="@Url.Action("MesCours", "ProfesseurDashboard", new { email })" class="see-all">Voir tout →</a>
+        </div>
+        <div class="card-base" style="margin-bottom:2rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">
+                @foreach (var aff in prof.AffectationsMatieres.Take(6))
+                {
+                    <div style="border:1.5px solid #f1f5f9;border-radius:12px;padding:1rem;display:flex;flex-direction:column;gap:.4rem;transition:border-color .2s;"
+                         onmouseover="this.style.borderColor='#5C8ABF'" onmouseout="this.style.borderColor='#f1f5f9'">
+                        <div style="font-weight:700;color:#17203A;font-size:.9rem;">@aff.Matiere?.NomMatiere</div>
+                        <div style="font-size:.78rem;color:#64748b;">@aff.Classe?.NomClasse</div>
+                        <div style="display:flex;gap:.5rem;margin-top:.25rem;flex-wrap:wrap;">
+                            @if (aff.HeuresCm > 0)
+                            { <span class="badge badge-cours">CM: @aff.HeuresCm h</span> }
+                            @if (aff.HeuresTd > 0)
+                            { <span class="badge badge-td">TD: @aff.HeuresTd h</span> }
+                            @if (aff.HeuresTp > 0)
+                            { <span class="badge badge-tp">TP: @aff.HeuresTp h</span> }
+                        </div>
+                        <div style="font-size:.75rem;color:#94a3b8;">Total: @aff.VolumeHoraireTotal h</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.lucide) lucide.createIcons();
+        });
+    </script>
+}
