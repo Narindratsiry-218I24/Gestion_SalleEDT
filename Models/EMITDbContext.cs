@@ -30,11 +30,7 @@ namespace Gestion_SalleClasseEDT.Models
         var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
         var database = Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
-<<<<<<< HEAD
-        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "fanomezantsoa";
-=======
         var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "tsiririmlay";
->>>>>>> 5cb813b27d5b16a3fe1606e6480df052d166398d
 
         return $"Server={server};Port={port};Database={database};User Id={user};Password={password};";
     }

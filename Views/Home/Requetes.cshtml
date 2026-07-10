@@ -286,12 +286,7 @@
                 await loadDemandes();
                 alert('Demande envoyee.');
             };
-=======
-            const filteredNiveaux = niveaux.filter(n => selectedMention && n.IdMention == selectedMention);
-            const filteredFilieres = filieres.filter(f => selectedMention && selectedNiveau && f.IdMention == selectedMention && matieres.some(m => m.IdFiliere == f.IdFiliere && m.RefSemestre?.IdNiveau == selectedNiveau));
-            const filteredClasses = classes.filter(c => selectedFiliere && c.IdFiliere == selectedFiliere);
-            const filteredMatieres = matieres.filter(m => selectedFiliere && selectedNiveau && m.IdFiliere == selectedFiliere && m.RefSemestre?.IdNiveau == selectedNiveau);
->>>>>>> 5cb813b27d5b16a3fe1606e6480df052d166398d
+
 
             return (
                 <div className="space-y-6">
