@@ -66,6 +66,11 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Matieres()
+    {
+        return View();
+    }
+
     public IActionResult Requetes()
     {
         return View();
