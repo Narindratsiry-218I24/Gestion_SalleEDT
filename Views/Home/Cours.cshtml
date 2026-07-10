@@ -19,45 +19,82 @@
     <partial name="_CoursTable" model="Model" />
 
     <!-- CRUD Modal -->
-    <div id="crud-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-black/50 backdrop-blur-sm transition-opacity">
-        <div class="relative p-4 w-full max-w-md max-h-full m-auto mt-20">
+    <div id="crud-modal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-[100] w-full h-full bg-black/50 backdrop-blur-sm overflow-y-auto overflow-x-hidden justify-center items-start pt-10 transition-opacity">
+        <div class="relative p-4 w-full max-w-2xl max-h-full mx-auto">
             <div class="relative bg-white rounded-xl shadow-2xl">
                 <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        Planifier un cours
+                    <h3 class="text-xl font-bold text-gray-900">
+                        Créer un nouveau cours
                     </h3>
                     <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center" data-modal-toggle="crud-modal">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
-                <!-- Formulaire de Planification -->
+                <!-- Formulaire de Création -->
                 <form class="p-4 md:p-5" id="planificationForm">
-                    <div class="grid gap-4 mb-4 grid-cols-2">
+                    <div class="grid gap-6 mb-6 grid-cols-2">
                         <div class="col-span-2">
                             <label for="idMatiere" class="block mb-2 text-sm font-medium text-gray-900">Matière</label>
-                            <input type="number" name="idMatiere" id="idMatiere" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="ID de la matière" required="">
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="idProfesseur" class="block mb-2 text-sm font-medium text-gray-900">Professeur</label>
-                            <input type="number" name="idProfesseur" id="idProfesseur" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="ID Professeur" required="">
+                            <select id="idMatiere" name="idMatiere" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                                <option value="">Chargement...</option>
+                            </select>
                         </div>
                         <div class="col-span-2 sm:col-span-1">
                             <label for="idClasse" class="block mb-2 text-sm font-medium text-gray-900">Classe</label>
-                            <input type="number" name="idClasse" id="idClasse" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="ID Classe" required="">
+                            <select id="idClasse" name="idClasse" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <option value="">Chargement...</option>
+                            </select>
                         </div>
-                        <div class="col-span-2">
-                            <label for="debut" class="block mb-2 text-sm font-medium text-gray-900">Date et Heure de Début</label>
-                            <input type="datetime-local" name="debut" id="debut" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required="">
+                        
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="idProfesseur" class="block mb-2 text-sm font-medium text-gray-900">Professeur</label>
+                            <select id="idProfesseur" name="idProfesseur" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <option value="">Chargement...</option>
+                            </select>
                         </div>
-                        <div class="col-span-2">
-                            <label for="fin" class="block mb-2 text-sm font-medium text-gray-900">Date et Heure de Fin</label>
-                            <input type="datetime-local" name="fin" id="fin" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required="">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="idSemestre" class="block mb-2 text-sm font-medium text-gray-900">Semestre</label>
+                            <select id="idSemestre" name="idSemestre" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <option value="">Chargement...</option>
+                            </select>
+                        </div>
+
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="volumeHours" class="block mb-2 text-sm font-medium text-gray-900">Volume Horaire</label>
+                            <input type="number" name="volumeHours" id="volumeHours" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Ex: 60" required="">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="capacity" class="block mb-2 text-sm font-medium text-gray-900">Capacité (Etudiants)</label>
+                            <input type="number" name="capacity" id="capacity" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Ex: 50" required="">
+                        </div>
+
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="typeCours" class="block mb-2 text-sm font-medium text-gray-900">Type de Cours</label>
+                            <select id="typeCours" name="typeCours" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <option value="CM">Cours Magistral (CM)</option>
+                                <option value="TD">Travaux Dirigés (TD)</option>
+                                <option value="TP">Travaux Pratiques (TP)</option>
+                                <option value="Seminaire">Séminaire</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label for="mode" class="block mb-2 text-sm font-medium text-gray-900">Mode d'enseignement</label>
+                            <select id="mode" name="mode" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <option value="Presentiel">Présentiel</option>
+                                <option value="EnLigne">En ligne</option>
+                                <option value="Hybride">Hybride</option>
+                            </select>
                         </div>
                     </div>
-                    <button type="submit" class="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                        <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
-                        Planifier avec Auto-Attribution
-                    </button>
+                    <div class="flex items-center justify-end gap-3 border-t pt-4 border-gray-100">
+                        <button type="button" data-modal-toggle="crud-modal" class="text-gray-600 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900">
+                            Annuler
+                        </button>
+                        <button type="submit" class="text-white inline-flex items-center bg-[#17203A] hover:bg-[#12192B] focus:ring-4 focus:outline-none focus:ring-[#17203A]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                            Créer le Cours
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -75,6 +112,12 @@
                     if(target) {
                         target.classList.toggle('hidden');
                         target.classList.toggle('flex');
+                        
+                        if(target.classList.contains('hidden')) {
+                            target.setAttribute('aria-hidden', 'true');
+                        } else {
+                            target.removeAttribute('aria-hidden');
+                        }
                     }
                 });
             });
@@ -90,41 +133,98 @@
 
                 const payload = {
                     IdMatiere: parseInt(document.getElementById('idMatiere').value),
-                    IdProfesseur: parseInt(document.getElementById('idProfesseur').value),
-                    IdClasse: parseInt(document.getElementById('idClasse').value),
-                    TypeCours: "CM",
-                    Statut: "planifié",
-                    IdSemestre: 1
+                    IdProfesseur: document.getElementById('idProfesseur').value ? parseInt(document.getElementById('idProfesseur').value) : null,
+                    IdClasse: document.getElementById('idClasse').value ? parseInt(document.getElementById('idClasse').value) : null,
+                    IdSemestre: document.getElementById('idSemestre').value ? parseInt(document.getElementById('idSemestre').value) : null,
+                    VolumeHours: parseInt(document.getElementById('volumeHours').value),
+                    Capacity: parseInt(document.getElementById('capacity').value),
+                    TypeCours: document.getElementById('typeCours').value,
+                    Mode: document.getElementById('mode').value,
+                    Statut: "Cree"
                 };
 
-                const debut = document.getElementById('debut').value;
-                const fin = document.getElementById('fin').value;
-
                 try {
-                    const response = await fetch(`/api/Cours/PlanifierAuto?debut=${encodeURIComponent(debut)}&fin=${encodeURIComponent(fin)}`, {
+                    const response = await fetch(`/api/Cours`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
                     if(response.ok) {
-                        alert("Cours planifié avec succès ! La salle a été attribuée.");
+                        alert("Cours créé avec succès !");
                         window.location.reload();
                     } else {
-                        const err = await response.json();
-                        alert("Erreur de planification: " + (err.Message || "Inconnue"));
+                        let errorMsg = "Erreur Inconnue";
+                        try {
+                            const err = await response.json();
+                            errorMsg = err.Message || "Erreur Inconnue";
+                            if (err.errors) {
+                                errorMsg = Object.entries(err.errors).map(([k, v]) => `${k}: ${v.join(', ')}`).join('\\n');
+                            }
+                        } catch (e) {
+                            errorMsg = "Erreur serveur : " + response.statusText;
+                        }
+                        alert("Erreur de planification: \\n" + errorMsg);
                     }
                 } catch(err) {
                     console.error(err);
                     alert("Erreur réseau ou serveur.");
                 } finally {
                     btn.disabled = false;
-                    btn.innerHTML = '<i data-lucide="calendar" class="w-4 h-4 mr-2"></i> Planifier avec Auto-Attribution';
+                    btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4 mr-2"></i> Créer le Cours';
                     if (window.lucide) lucide.createIcons();
                 }
             });
 
             if (window.lucide) lucide.createIcons();
+            
+            // Load dropdown data
+            async function loadDropdownData() {
+                try {
+                    const [matieresRes, professeursRes, classesRes] = await Promise.all([
+                        fetch('/api/Matiere'),
+                        fetch('/api/Professeur'),
+                        fetch('/api/Classe')
+                    ]);
+                    
+                    if(matieresRes.ok) {
+                        const matieres = await matieresRes.json();
+                        const select = document.getElementById('idMatiere');
+                        select.innerHTML = '<option value="">Sélectionnez une matière</option>';
+                        matieres.forEach(m => {
+                            select.innerHTML += `<option value="${m.IdMatiere}">${m.NomMatiere} (${m.CodeMatiere})</option>`;
+                        });
+                    }
+                    
+                    if(professeursRes.ok) {
+                        const profs = await professeursRes.json();
+                        const select = document.getElementById('idProfesseur');
+                        select.innerHTML = '<option value="">Sélectionnez un professeur</option>';
+                        profs.forEach(p => {
+                            select.innerHTML += `<option value="${p.IdProfesseur}">${p.Nom} ${p.Prenom}</option>`;
+                        });
+                    }
+                    
+                    if(classesRes.ok) {
+                        const classes = await classesRes.json();
+                        const select = document.getElementById('idClasse');
+                        select.innerHTML = '<option value="">Sélectionnez une classe</option>';
+                        classes.forEach(c => {
+                            select.innerHTML += `<option value="${c.IdClasse}">${c.NomClasse}</option>`;
+                        });
+                    }
+                    
+                    const selectSemestre = document.getElementById('idSemestre');
+                    selectSemestre.innerHTML = '<option value="">Sélectionnez un semestre</option>';
+                    for (let i = 1; i <= 10; i++) {
+                        selectSemestre.innerHTML += `<option value="${i}">S${i}</option>`;
+                    }
+                } catch(e) {
+                    console.error("Erreur de chargement des filtres", e);
+                }
+            }
+            
+            loadDropdownData();
         });
     </script>
 }

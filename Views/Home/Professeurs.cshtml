@@ -1,169 +1,437 @@
-@{
-    ViewBag.Title = "Enseignants";
-}
-
-<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Annuaire des Enseignants</h1>
-            <p class="text-gray-500 mt-1">Gérez le corps professoral et leurs disponibilités.</p>
-        </div>
-        <div class="flex gap-3">
-            <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer" onclick="document.getElementById('addProfModal').classList.remove('hidden')">
-                <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Enseignant
-            </button>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100">
-        <div class="flex flex-col gap-1">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Recherche</span>
-            <div class="relative w-[250px]">
-                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                <input type="text" id="searchProf" oninput="filterProfs()" placeholder="Nom, prénom..." class="w-full pl-9 pr-3 h-10 bg-gray-50/50 border-none font-medium text-[#17203A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
-            </div>
-        </div>
-    </div>
-
-    <!-- Teachers Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 flex-1 content-start" id="professeursGrid">
-        <div class="col-span-full text-center py-12 text-gray-500 font-bold">Chargement...</div>
-    </div>
-
-    <!-- Add Prof Modal -->
-    <div id="addProfModal" class="fixed inset-0 z-50 hidden">
-        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addProfModal').classList.add('hidden')"></div>
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter Enseignant</h2>
-                <form class="space-y-4" id="formAddProf">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                        <input type="text" id="nomProf" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                        <input type="text" id="prenomProf" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                    </div>
-                    <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50" onclick="document.getElementById('addProfModal').classList.add('hidden')">Annuler</button>
-                        <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b]">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        let allProfs = [];
-
-        async function loadProfesseurs() {
-            const grid = document.getElementById("professeursGrid");
-            grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 font-bold"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-500"></i> Chargement...</div></div>';
-            if (window.lucide) lucide.createIcons();
-
-            try {
-                const data = await app.apiGet("/api/Professeur");
-                allProfs = data || [];
-                renderProfs(allProfs);
-            } catch (err) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-red-600 font-bold">Erreur: ${app.escapeHtml(err.message)}</div>`;
-            }
-        }
-
-        function renderProfs(list) {
-            const grid = document.getElementById("professeursGrid");
-            grid.innerHTML = "";
-
-            if (list.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 font-bold">Aucun enseignant trouvé.</div>';
-                return;
-            }
-
-            list.forEach(function(p) {
-                const id = app.readProp(p, "IdProfesseur");
-                const nom = app.readProp(p, "Nom") || "";
-                const prenom = app.readProp(p, "Prenom") || "";
-                const initials = (nom.substring(0,1) + prenom.substring(0,1)).toUpperCase();
-
-                const card = document.createElement("div");
-                card.className = "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group relative";
-                card.innerHTML = `
-                    <div class="h-24 bg-gradient-to-r from-[#17203A] to-[#5C8ABF]"></div>
-                    <div class="px-6 pb-6 relative">
-                        <div class="w-20 h-20 rounded-xl bg-white p-1 absolute -top-10 left-6 shadow-sm">
-                            <div class="w-full h-full bg-blue-100 rounded-lg flex items-center justify-center text-blue-800 font-black text-2xl">
-                                ${app.escapeHtml(initials)}
-                            </div>
-                        </div>
-                        <div class="mt-14">
-                            <h3 class="font-bold text-lg text-[#17203A] m-0">${app.escapeHtml(nom)} ${app.escapeHtml(prenom)}</h3>
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <button class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 rounded-lg text-sm border-none cursor-pointer transition-colors" onclick="deleteProf(${id})">
-                                Supprimer
-                            </button>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function filterProfs() {
-            const query = document.getElementById("searchProf").value.toLowerCase().trim();
-            if (!query) { renderProfs(allProfs); return; }
-            const filtered = allProfs.filter(p => {
-                const nom = (app.readProp(p, "Nom") || "").toLowerCase();
-                const prenom = (app.readProp(p, "Prenom") || "").toLowerCase();
-                return nom.includes(query) || prenom.includes(query);
-            });
-            renderProfs(filtered);
-        }
-
-        async function deleteProf(id) {
-            if (confirm("Voulez-vous vraiment supprimer cet enseignant ?")) {
-                try {
-                    await app.apiDelete('/api/Professeur/' + id);
-                    loadProfesseurs();
-                } catch (err) {
-                    alert("Erreur lors de la suppression: " + err.message);
-                }
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            loadProfesseurs();
-
-            const form = document.getElementById("formAddProf");
-            if (form) {
-                form.addEventListener("submit", async function(e) {
-                    e.preventDefault();
-                    const nom = document.getElementById("nomProf").value.trim();
-                    const prenom = document.getElementById("prenomProf").value.trim();
-
-                    try {
-                        const btn = form.querySelector('button[type="submit"]');
-                        btn.disabled = true;
-                        btn.innerHTML = 'Enregistrement...';
-
-                        await app.apiPost('/api/Professeur', { Nom: nom, Prenom: prenom });
-
-                        document.getElementById("addProfModal").classList.add("hidden");
-                        form.reset();
-                        loadProfesseurs();
-                    } catch (err) {
-                        alert("Erreur lors de l'ajout: " + err.message);
-                    } finally {
-                        const btn = form.querySelector('button[type="submit"]');
-                        btn.disabled = false;
-                        btn.innerHTML = 'Enregistrer';
-                    }
-                });
-            }
-        });
-    </script>
-}
+@{
+    ViewBag.Title = "Enseignants";
+}
+
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Annuaire des Enseignants</h1>
+            <p class="text-gray-500 mt-1">Gérez le corps professoral, ajoutez des profils complets et suivez leur disponibilité.</p>
+        </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold text-[#17203A] mb-4">Filtres de recherche</h2>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-[0.24em] mb-2">Nom / Prénom</label>
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                            <input type="text" id="searchProf" oninput="filterProfs()" placeholder="Recherche" class="w-full pl-10 pr-3 h-11 rounded-2xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-[0.24em] mb-2">Grade</label>
+                        <select id="gradeFilter" onchange="filterProfs()" class="w-full h-11 rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20">
+                            <option value="">Tous les grades</option>
+                            <option>Professeur</option>
+                            <option>MC</option>
+                            <option>Assistant</option>
+                            <option>Vacataire</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-[0.24em] mb-2">Spécialité</label>
+                        <input type="text" id="specialiteFilter" oninput="filterProfs()" placeholder="Spécialité" class="w-full h-11 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-[0.24em] mb-2">Statut</label>
+                        <select id="statutFilter" onchange="filterProfs()" class="w-full h-11 rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20">
+                            <option value="">Tous les statuts</option>
+                            <option>permanent</option>
+                            <option>vacataire</option>
+                            <option>chercheur</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-semibold text-[#17203A] mb-4">Ajouter un enseignant</h2>
+                <form id="homeAddProfForm" class="space-y-5" enctype="multipart/form-data" onsubmit="submitHomeProf(event)">
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nom</label>
+                            <input name="Nom" required class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Prénom</label>
+                            <input name="Prenom" required class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <input name="Email" type="email" class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Grade</label>
+                            <input name="Grade" placeholder="Professeur, MC, Assistant, Vacataire" class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Titre</label>
+                            <select name="Titre" class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20">
+                                <option value="">Choisir</option>
+                                <option value="M.">M.</option>
+                                <option value="Mme">Mme</option>
+                                <option value="Dr">Dr</option>
+                                <option value="Prof">Prof</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Statut</label>
+                            <select name="Statut" class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20">
+                                <option value="">Choisir</option>
+                                <option value="permanent">Permanent</option>
+                                <option value="vacataire">Vacataire</option>
+                                <option value="chercheur">Chercheur</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Spécialité principale</label>
+                        <input name="Specialite" class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Spécialités secondaires</label>
+                        <input name="SpecialitesSecondaires" placeholder="Ex: Mathématiques, Physique" class="mt-1 block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 focus:border-[#5C8ABF] focus:ring-[#5C8ABF]/20" />
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Photo de profil</label>
+                            <input id="photoFile" name="photoFile" type="file" accept=".jpg,.jpeg,.png" class="mt-1 block w-full text-sm text-gray-600" />
+                            <p class="mt-2 text-xs text-gray-500">jpg/png, max 2MB.</p>
+                            <img id="photoPreview" class="mt-3 h-24 w-24 rounded-3xl object-cover hidden border border-gray-200" alt="Aperçu photo" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">CV</label>
+                            <input name="cvFile" type="file" accept=".pdf" class="mt-1 block w-full text-sm text-gray-600" />
+                            <p class="mt-2 text-xs text-gray-500">PDF, max 2MB.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                        <button type="submit" id="homeAddProfBtn" class="inline-flex justify-center rounded-2xl bg-[#17203A] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#12192B]">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h2 class="text-lg font-semibold text-[#17203A] mb-4">Aperçu des enseignants</h2>
+            <p class="text-sm text-gray-500">Le tableau ci-dessous affiche l’état actuel du corps professoral, avec photo et statut.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 flex-1 content-start" id="professeursGrid">
+        <div class="col-span-full text-center py-12 text-gray-500 font-bold">Chargement...</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allProfs = [];
+
+        async function loadProfesseurs() {
+            const grid = document.getElementById("professeursGrid");
+            grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 font-bold"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-500"></i> Chargement...</div></div>';
+            if (window.lucide) lucide.createIcons();
+
+            try {
+                const data = await app.apiGet("/api/Professeur");
+                allProfs = data || [];
+                filterProfs();
+            } catch (err) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-red-600 font-bold">Erreur: ${app.escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function renderProfs(list) {
+            const grid = document.getElementById("professeursGrid");
+            grid.innerHTML = "";
+
+            if (list.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 font-bold">Aucun enseignant trouvé.</div>';
+                return;
+            }
+
+            list.forEach(function(p) {
+                const id = app.readProp(p, "IdProfesseur");
+                const titre = app.readProp(p, "Titre") || "";
+                const nom = app.readProp(p, "Nom") || "";
+                const prenom = app.readProp(p, "Prenom") || "";
+                const initials = (nom.substring(0,1) + prenom.substring(0,1)).toUpperCase();
+                const photoUrl = app.readProp(p, "PhotoUrl") || null;
+                const email = app.readProp(p, "Email") || "-";
+                const telephone = app.readProp(p, "Telephone") || "-";
+                const grade = app.readProp(p, "Grade") || "Non défini";
+                const specialite = app.readProp(p, "Specialite") || "-";
+                const statut = app.readProp(p, "Statut") || "";
+                const statusBadge = statut ? `<span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">${app.escapeHtml(statut)}</span>` : "";
+
+                const card = document.createElement("div");
+                card.className = "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group relative";
+                card.innerHTML = `
+                    <div class="h-28 bg-gradient-to-r from-[#17203A] to-[#5C8ABF] relative">
+                        ${photoUrl ? `<img src="${app.escapeHtml(photoUrl)}" alt="Photo ${app.escapeHtml(nom)}" class="w-20 h-20 rounded-xl object-cover absolute left-6 bottom-[-24px] border-4 border-white shadow-lg" />` : `<div class="w-20 h-20 rounded-xl bg-white absolute left-6 bottom-[-24px] shadow-lg flex items-center justify-center text-2xl font-bold text-[#17203A]">${app.escapeHtml(initials)}</div>`}
+                    </div>
+                    <div class="px-6 pb-6 pt-10">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <h3 class="font-bold text-xl text-[#17203A]">${app.escapeHtml(titre)} ${app.escapeHtml(nom)} ${app.escapeHtml(prenom)}</h3>
+                                <p class="text-sm text-gray-500 mt-1">${app.escapeHtml(grade)}</p>
+                            </div>
+                            <div>${statusBadge}</div>
+                        </div>
+                        <div class="mt-4 space-y-2 text-sm text-gray-600">
+                            <div><span class="font-semibold text-gray-800">Email :</span> ${app.escapeHtml(email)}</div>
+                            <div><span class="font-semibold text-gray-800">Tél :</span> ${app.escapeHtml(telephone)}</div>
+                            <div><span class="font-semibold text-gray-800">Spécialité :</span> ${app.escapeHtml(specialite)}</div>
+                        </div>
+                        <div class="mt-5 grid grid-cols-2 gap-2">
+                            <button class="w-full bg-[#5C8ABF] hover:bg-[#47679c] text-white py-2 rounded-lg text-sm" onclick="viewProf(${id})">Détails</button>
+                            <button class="w-full bg-[#17203A] hover:bg-[#12192b] text-white py-2 rounded-lg text-sm" onclick="editProf(${id})">Modifier</button>
+                            <button class="w-full col-span-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 rounded-lg text-sm" onclick="deleteProf(${id})">Supprimer</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterProfs() {
+            const query = document.getElementById("searchProf").value.toLowerCase().trim();
+            const grade = document.getElementById("gradeFilter").value.toLowerCase().trim();
+            const specialiteVal = document.getElementById("specialiteFilter").value.toLowerCase().trim();
+            const statut = document.getElementById("statutFilter").value.toLowerCase().trim();
+
+            const filtered = allProfs.filter(p => {
+                const nom = (app.readProp(p, "Nom") || "").toLowerCase();
+                const prenom = (app.readProp(p, "Prenom") || "").toLowerCase();
+                const gradeProp = (app.readProp(p, "Grade") || "").toLowerCase();
+                const specialite = (app.readProp(p, "Specialite") || "").toLowerCase();
+                const statutProp = (app.readProp(p, "Statut") || "").toLowerCase();
+                const searchText = `${nom} ${prenom} ${gradeProp} ${specialite}`;
+
+                const matchesText = !query || searchText.includes(query);
+                const matchesGrade = !grade || gradeProp === grade;
+                const matchesSpecialite = !specialiteVal || specialite.includes(specialiteVal);
+                const matchesStatut = !statut || statutProp === statut;
+
+                return matchesText && matchesGrade && matchesSpecialite && matchesStatut;
+            });
+            renderProfs(filtered);
+        }
+
+        async function submitHomeProf(event) {
+            event.preventDefault();
+            const form = document.getElementById("homeAddProfForm");
+            const submitButton = document.getElementById("homeAddProfBtn");
+            const formData = new FormData(form);
+
+            try {
+                submitButton.disabled = true;
+                submitButton.textContent = "Enregistrement...";
+
+                const response = await fetch('/api/Professeur/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Erreur lors de l’envoi');
+                }
+
+                form.reset();
+                document.getElementById('photoPreview').classList.add('hidden');
+                loadProfesseurs();
+            } catch (err) {
+                alert("Erreur lors de l'ajout : " + err.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Ajouter";
+            }
+        }
+
+        function updatePhotoPreview() {
+            const input = document.getElementById('photoFile');
+            const preview = document.getElementById('photoPreview');
+            if (input.files && input.files[0]) {
+                preview.src = URL.createObjectURL(input.files[0]);
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+                preview.src = '';
+            }
+        }
+
+        async function deleteProf(id) {
+            if (confirm("Voulez-vous vraiment supprimer cet enseignant ?")) {
+                try {
+                    await app.apiDelete('/api/Professeur/' + id);
+                    loadProfesseurs();
+                } catch (err) {
+                    alert("Erreur lors de la suppression: " + err.message);
+                }
+            }
+        }
+
+        function editProf(id) {
+            window.location.href = `/Professeurs/Edit/${id}`;
+        }
+
+        function viewProf(id) {
+            window.location.href = `/Professeurs/Details/${id}`;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadProfesseurs();
+            document.getElementById('photoFile').addEventListener('change', updatePhotoPreview);
+        });
+
+        function renderProfs(list) {
+            const grid = document.getElementById("professeursGrid");
+            grid.innerHTML = "";
+
+            if (list.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 font-bold">Aucun enseignant trouvé.</div>';
+                return;
+            }
+
+            list.forEach(function(p) {
+                const id = app.readProp(p, "IdProfesseur");
+                const titre = app.readProp(p, "Titre") || "";
+                const nom = app.readProp(p, "Nom") || "";
+                const prenom = app.readProp(p, "Prenom") || "";
+                const initials = (nom.substring(0,1) + prenom.substring(0,1)).toUpperCase();
+                const photoUrl = app.readProp(p, "PhotoUrl") || null;
+                const email = app.readProp(p, "Email") || "-";
+                const telephone = app.readProp(p, "Telephone") || "-";
+                const grade = app.readProp(p, "Grade") || "Non défini";
+                const specialite = app.readProp(p, "Specialite") || "-";
+                const statut = app.readProp(p, "Statut") || "";
+                const statusBadge = statut ? `<span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">${app.escapeHtml(statut)}</span>` : "";
+
+                const card = document.createElement("div");
+                card.className = "bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group relative";
+                card.innerHTML = `
+                    <div class="h-28 bg-gradient-to-r from-[#17203A] to-[#5C8ABF] relative">
+                        ${photoUrl ? `<img src="${app.escapeHtml(photoUrl)}" alt="Photo ${app.escapeHtml(nom)}" class="w-20 h-20 rounded-xl object-cover absolute left-6 bottom-[-24px] border-4 border-white shadow-lg" />` : `<div class="w-20 h-20 rounded-xl bg-white absolute left-6 bottom-[-24px] shadow-lg flex items-center justify-center text-2xl font-bold text-[#17203A]">${app.escapeHtml(initials)}</div>`}
+                    </div>
+                    <div class="px-6 pb-6 pt-10">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <h3 class="font-bold text-xl text-[#17203A]">${app.escapeHtml(titre)} ${app.escapeHtml(nom)} ${app.escapeHtml(prenom)}</h3>
+                                <p class="text-sm text-gray-500 mt-1">${app.escapeHtml(grade)}</p>
+                            </div>
+                            <div>${statusBadge}</div>
+                        </div>
+                        <div class="mt-4 space-y-2 text-sm text-gray-600">
+                            <div><span class="font-semibold text-gray-800">Email :</span> ${app.escapeHtml(email)}</div>
+                            <div><span class="font-semibold text-gray-800">Tél :</span> ${app.escapeHtml(telephone)}</div>
+                            <div><span class="font-semibold text-gray-800">Spécialité :</span> ${app.escapeHtml(specialite)}</div>
+                        </div>
+                        <div class="mt-5 grid grid-cols-2 gap-2">
+                            <button class="w-full bg-[#5C8ABF] hover:bg-[#47679c] text-white py-2 rounded-lg text-sm" onclick="viewProf(${id})">Détails</button>
+                            <button class="w-full bg-[#17203A] hover:bg-[#12192b] text-white py-2 rounded-lg text-sm" onclick="editProf(${id})">Modifier</button>
+                            <button class="w-full col-span-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 rounded-lg text-sm" onclick="deleteProf(${id})">Supprimer</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterProfs() {
+            const query = document.getElementById("searchProf").value.toLowerCase().trim();
+            const grade = document.getElementById("gradeFilter").value.toLowerCase().trim();
+            const specialiteVal = document.getElementById("specialiteFilter").value.toLowerCase().trim();
+            const statut = document.getElementById("statutFilter").value.toLowerCase().trim();
+
+            const filtered = allProfs.filter(p => {
+                const nom = (app.readProp(p, "Nom") || "").toLowerCase();
+                const prenom = (app.readProp(p, "Prenom") || "").toLowerCase();
+                const gradeProp = (app.readProp(p, "Grade") || "").toLowerCase();
+                const specialite = (app.readProp(p, "Specialite") || "").toLowerCase();
+                const statutProp = (app.readProp(p, "Statut") || "").toLowerCase();
+                const searchText = `${nom} ${prenom} ${gradeProp} ${specialite}`;
+
+                const matchesText = !query || searchText.includes(query);
+                const matchesGrade = !grade || gradeProp === grade;
+                const matchesSpecialite = !specialiteVal || specialite.includes(specialiteVal);
+                const matchesStatut = !statut || statutProp === statut;
+
+                return matchesText && matchesGrade && matchesSpecialite && matchesStatut;
+            });
+            renderProfs(filtered);
+        }
+
+        async function submitHomeProf(event) {
+            event.preventDefault();
+            const form = document.getElementById("homeAddProfForm");
+            const submitButton = document.getElementById("homeAddProfBtn");
+            const formData = new FormData(form);
+
+            try {
+                submitButton.disabled = true;
+                submitButton.textContent = "Enregistrement...";
+
+                const response = await fetch('/api/Professeur/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Erreur lors de l’envoi');
+                }
+
+                form.reset();
+                document.getElementById('photoPreview').classList.add('hidden');
+                loadProfesseurs();
+            } catch (err) {
+                alert("Erreur lors de l'ajout : " + err.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Ajouter";
+            }
+        }
+
+        function updatePhotoPreview() {
+            const input = document.getElementById('photoFile');
+            const preview = document.getElementById('photoPreview');
+            if (input.files && input.files[0]) {
+                preview.src = URL.createObjectURL(input.files[0]);
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+                preview.src = '';
+            }
+        }
+
+        async function deleteProf(id) {
+            if (confirm("Voulez-vous vraiment supprimer cet enseignant ?")) {
+                try {
+                    await app.apiDelete('/api/Professeur/' + id);
+                    loadProfesseurs();
+                } catch (err) {
+                    alert("Erreur lors de la suppression: " + err.message);
+                }
+            }
+        }
+
+        function editProf(id) {
+            window.location.href = `/Professeurs/Edit/${id}`;
+        }
+
+        function viewProf(id) {
+            window.location.href = `/Professeurs/Details/${id}`;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadProfesseurs();
+            document.getElementById('photoFile').addEventListener('change', updatePhotoPreview);
+        });
+    </script>
+}

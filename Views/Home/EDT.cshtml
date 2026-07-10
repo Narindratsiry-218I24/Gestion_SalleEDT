@@ -278,56 +278,56 @@
                     emptyDiv.textContent = "Aucun cours planifié";
                     document.getElementById("dayCol0").appendChild(emptyDiv);
                 } else {
-                    data.forEach(function(cours) {
-                        const matiere = app.readProp(cours, "Matiere");
-                        const prof = app.readProp(cours, "Professeur");
-                        const salle = app.readProp(cours, "Salle");
-                        const typeCours = app.readProp(cours, "TypeCours") || "";
-                        const creneaux = app.readProp(cours, "Creneaux") || [];
+                    data.forEach(function(seance) {
+                        totalCreneaux++;
+                        
+                        const course = app.readProp(seance, "Course");
+                        const matiere = course ? app.readProp(course, "Matiere") : null;
+                        const prof = course ? app.readProp(course, "Professeur") : null;
+                        const salle = app.readProp(seance, "Salle");
+                        const typeCours = course ? app.readProp(course, "Type") || "" : "";
+                        
+                        // Obtenir le jour à partir de la date (s.Date)
+                        const dateStr = app.readProp(seance, "Date");
+                        if (!dateStr) return;
+                        
+                        const d = new Date(dateStr);
+                        const jours = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+                        const jour = jours[d.getDay()];
+                        
+                        const dayIndex = DAY_MAP[jour];
+                        if (dayIndex === undefined) return;
 
-                        creneaux.forEach(function(cr) {
-                            totalCreneaux++;
-                            let jour = (app.readProp(cr, "JourSemaine") || "").toLowerCase().trim();
-                            // Map French or English abbreviated days to DAY_MAP
-                            const dayMappings = {
-                                "mon": "lundi", "tue": "mardi", "wed": "mercredi", "thu": "jeudi", "fri": "vendredi",
-                                "lundi": "lundi", "mardi": "mardi", "mercredi": "mercredi", "jeudi": "jeudi", "vendredi": "vendredi"
-                            };
-                            jour = dayMappings[jour] || jour;
-                            const dayIndex = DAY_MAP[jour];
-                            if (dayIndex === undefined) return;
+                        const debut = timeToMinutes(app.readProp(seance, "StartTime"));
+                        const fin = timeToMinutes(app.readProp(seance, "EndTime"));
+                        const startOffset = debut - HOUR_START * 60;
+                        const duration = fin - debut;
+                        if (startOffset < 0 || duration <= 0) return;
 
-                            const debut = timeToMinutes(app.readProp(cr, "HeureDebut"));
-                            const fin = timeToMinutes(app.readProp(cr, "HeureFin"));
-                            const startOffset = debut - HOUR_START * 60;
-                            const duration = fin - debut;
-                            if (startOffset < 0 || duration <= 0) return;
+                        const topPx = (startOffset / 60) * HOUR_HEIGHT;
+                        const heightPx = (duration / 60) * HOUR_HEIGHT;
 
-                            const topPx = (startOffset / 60) * HOUR_HEIGHT;
-                            const heightPx = (duration / 60) * HOUR_HEIGHT;
+                        const block = document.createElement("div");
+                        block.className = "edt-block " + getBlockClass(typeCours);
+                        block.style.top = topPx + "px";
+                        block.style.height = heightPx + "px";
 
-                            const block = document.createElement("div");
-                            block.className = "edt-block " + getBlockClass(typeCours);
-                            block.style.top = topPx + "px";
-                            block.style.height = heightPx + "px";
+                        const matiereNom = matiere ? app.escapeHtml(app.readProp(matiere, "NomMatiere") || "") : "Cours";
+                        const profNom = prof ? app.escapeHtml((app.readProp(prof, "Nom") || "") + " " + (app.readProp(prof, "Prenom") || "")) : "";
+                        const salleNom = salle ? app.escapeHtml(app.readProp(salle, "NomSalle") || "") : "";
+                        const heureStr = String(Math.floor(debut/60)).padStart(2,"0") + ":" + String(debut%60).padStart(2,"0")
+                            + " - " + String(Math.floor(fin/60)).padStart(2,"0") + ":" + String(fin%60).padStart(2,"0");
 
-                            const matiereNom = matiere ? app.escapeHtml(app.readProp(matiere, "NomMatiere") || "") : "Cours";
-                            const profNom = prof ? app.escapeHtml((app.readProp(prof, "Nom") || "") + " " + (app.readProp(prof, "Prenom") || "")) : "";
-                            const salleNom = salle ? app.escapeHtml(app.readProp(salle, "NomSalle") || "") : "";
-                            const heureStr = String(Math.floor(debut/60)).padStart(2,"0") + ":" + String(debut%60).padStart(2,"0")
-                                + " - " + String(Math.floor(fin/60)).padStart(2,"0") + ":" + String(fin%60).padStart(2,"0");
+                        block.innerHTML = `
+                            <p class="font-bold text-xs m-0 truncate">${matiereNom}</p>
+                            <p class="text-[10px] m-0 truncate opacity-80">${heureStr}</p>
+                            ${heightPx > 40 ? `<p class="text-[10px] m-0 truncate opacity-70 mt-0.5">${profNom}</p>` : ""}
+                            ${heightPx > 55 ? `<p class="text-[10px] m-0 truncate opacity-60">${salleNom}</p>` : ""}
+                        `;
 
-                            block.innerHTML = `
-                                <p class="font-bold text-xs m-0 truncate">${matiereNom}</p>
-                                <p class="text-[10px] m-0 truncate opacity-80">${heureStr}</p>
-                                ${heightPx > 40 ? `<p class="text-[10px] m-0 truncate opacity-70 mt-0.5">${profNom}</p>` : ""}
-                                ${heightPx > 55 ? `<p class="text-[10px] m-0 truncate opacity-60">${salleNom}</p>` : ""}
-                            `;
+                        block.title = `${matiereNom}\n${heureStr}\n${profNom}\n${salleNom}\nType: ${typeCours}`;
 
-                            block.title = `${matiereNom}\n${heureStr}\n${profNom}\n${salleNom}\nType: ${typeCours}`;
-
-                            document.getElementById("dayCol" + dayIndex).appendChild(block);
-                        });
+                        document.getElementById("dayCol" + dayIndex).appendChild(block);
                     });
                 }
 

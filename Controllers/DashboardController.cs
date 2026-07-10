@@ -40,9 +40,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                 DemandesAttente   = db.DemandesEdt.Count(d =>
                     d.Statut == "en_attente" || d.Statut == "en attente" || d.Statut == "pending"),
                 OccupancyRate     = db.Salles.Any()
-                    ? (double)db.Creneaux
-                        .Where(c => c.JourSemaine == today)
-                        .Select(c => c.Cours.IdSalle)
+                    ? (double)db.Seances
+                        .Where(s => s.Date.Date == DateTime.Today && s.SalleId != null)
+                        .Select(s => s.SalleId)
                         .Distinct()
                         .Count() / db.Salles.Count() * 100
                     : 0

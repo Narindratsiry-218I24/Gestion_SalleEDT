@@ -5,10 +5,10 @@
         <table class="w-full text-sm text-left text-gray-300">
             <thead class="text-xs uppercase bg-white/5 text-gray-400">
                 <tr>
-                    <th scope="col" class="px-6 py-4">Matière / Type</th>
+                    <th scope="col" class="px-6 py-4">Cours / Matière</th>
                     <th scope="col" class="px-6 py-4">Professeur</th>
                     <th scope="col" class="px-6 py-4">Classe</th>
-                    <th scope="col" class="px-6 py-4">Salle & Créneaux</th>
+                    <th scope="col" class="px-6 py-4">Progrès & Séances</th>
                     <th scope="col" class="px-6 py-4">Statut</th>
                     <th scope="col" class="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -21,6 +21,7 @@
                             <div class="font-medium text-white mb-1">@(cours.Matiere?.NomMatiere ?? "N/A")</div>
                             <div class="text-xs text-gray-400 flex items-center gap-1">
                                 <span class="px-1.5 py-0.5 rounded-sm bg-white/10 text-gray-300">@cours.TypeCours</span>
+                                <span class="px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-300">@cours.Mode</span>
                             </div>
                         </td>
                         <td class="px-6 py-4">
@@ -39,32 +40,24 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-2">
-                                <div class="flex items-center gap-2 text-blue-300">
-                                    <i data-lucide="building" class="w-4 h-4"></i>
-                                    <span class="font-medium">@(cours.Salle?.NomSalle ?? "Non assignée")</span>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: @Math.Round(cours.Progression)%"></div>
                                 </div>
-                                @if(cours.Creneaux != null && cours.Creneaux.Any())
+                                <span class="text-xs text-gray-400">@cours.RealizedHours h / @cours.VolumeHours h (@Math.Round(cours.Progression)%)</span>
+                                
+                                @if(cours.NextSeance != null)
                                 {
-                                    <div class="flex flex-wrap gap-1 mt-1">
-                                    @foreach(var cr in cours.Creneaux)
-                                    {
-                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">
-                                            <i data-lucide="calendar" class="w-3 h-3"></i>
-                                            @cr.JourSemaine @cr.HeureDebut.ToString(@"hh\:mm") - @cr.HeureFin.ToString(@"hh\:mm")
-                                        </span>
-                                    }
+                                    <div class="text-xs text-blue-300 mt-1">
+                                        <i data-lucide="calendar" class="w-3 h-3 inline"></i> 
+                                        Prochaine: @cours.NextSeance.Date.ToShortDateString() @cours.NextSeance.StartTime.ToString(@"hh\:mm")
                                     </div>
-                                }
-                                else
-                                {
-                                    <span class="text-xs text-amber-500/80 italic">Aucun créneau</span>
                                 }
                             </div>
                         </td>
                         <td class="px-6 py-4">
                             @{
-                                var bgStatut = cours.Statut == "Planifié" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/20" : 
-                                              (cours.Statut == "En cours" ? "bg-blue-500/20 text-blue-400 border-blue-500/20" : "bg-gray-500/20 text-gray-400 border-gray-500/20");
+                                var bgStatut = cours.Statut == "Planifie" || cours.Statut == "EnCours" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/20" : 
+                                              (cours.Statut == "Cree" || cours.Statut == "EnAttente" ? "bg-blue-500/20 text-blue-400 border-blue-500/20" : "bg-gray-500/20 text-gray-400 border-gray-500/20");
                             }
                             <span class="px-2.5 py-1 rounded-full text-xs font-medium border @bgStatut">
                                 @cours.Statut
@@ -72,6 +65,9 @@
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href="/Home/CourseDetails/@cours.IdCours" class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-colors" title="Détails">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
                                 <button class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-colors" title="Modifier">
                                     <i data-lucide="edit-2" class="w-4 h-4"></i>
                                 </button>

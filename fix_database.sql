@@ -1,37 +1,55 @@
--- ============================================================
--- Script de synchronisation de la base EMIT_EDT_DB
--- À exécuter dans pgAdmin ou psql
--- ============================================================
+-- Ajout de la colonne departement à la table professeur si elle n'existe pas
+ALTER TABLE public.professeur ADD COLUMN IF NOT EXISTS departement VARCHAR(100) DEFAULT '';
 
--- 1. Marquer la migration InitialCreate comme déjà appliquée
---    (les tables existent déjà, on évite la recréation)
-INSERT INTO public."__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-VALUES ('20260608150516_InitialCreate', '8.0.0')
-ON CONFLICT DO NOTHING;
-
--- 2. Ajouter les nouvelles colonnes à demande_edt si elles n'existent pas
-ALTER TABLE public.demande_edt
-    ADD COLUMN IF NOT EXISTS id_classe      INTEGER REFERENCES public.classe(id_classe),
-    ADD COLUMN IF NOT EXISTS id_matiere     INTEGER REFERENCES public.matiere(id_matiere),
-    ADD COLUMN IF NOT EXISTS id_niveau      INTEGER REFERENCES public.niveau(id_niveau),
-    ADD COLUMN IF NOT EXISTS date_souhaitee          DATE,
-    ADD COLUMN IF NOT EXISTS heure_debut_souhaitee   TIME,
-    ADD COLUMN IF NOT EXISTS heure_fin_souhaitee     TIME;
-
--- 3. Créer la table proposition_admin si elle n'existe pas
-CREATE TABLE IF NOT EXISTS public.proposition_admin (
-    id_proposition      SERIAL PRIMARY KEY,
-    id_demande          INTEGER NOT NULL REFERENCES public.demande_edt(id_demande),
-    id_salle_proposee   INTEGER NOT NULL REFERENCES public.salle(id_salle),
-    date_proposee       TIMESTAMP WITH TIME ZONE NOT NULL,
-    heure_debut_proposee TIME NOT NULL,
-    heure_fin_proposee   TIME NOT NULL,
-    est_acceptee         BOOLEAN
+-- Création de la table groupes si elle n'existe pas
+CREATE TABLE IF NOT EXISTS public.groupes (
+    id_groupe SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    id_classe INT NOT NULL,
+    CONSTRAINT fk_groupes_classe FOREIGN KEY (id_classe) REFERENCES public.classe (id_classe) ON DELETE CASCADE
 );
 
--- 4. Agrandir la colonne statut de demande_edt (15 -> 30 chars pour les nouveaux statuts)
-ALTER TABLE public.demande_edt
-    ALTER COLUMN statut TYPE VARCHAR(30);
+-- Création de la table seances si elle n'existe pas
+CREATE TABLE IF NOT EXISTS public.seances (
+    id_seance SERIAL PRIMARY KEY,
+    id_cours INT NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    id_salle INT,
+    id_groupe INT,
+    realized_hours INT NOT NULL DEFAULT 0,
+    attendance DOUBLE PRECISION,
+    CONSTRAINT fk_seances_cours FOREIGN KEY (id_cours) REFERENCES public.cours (id_cours) ON DELETE CASCADE,
+    CONSTRAINT fk_seances_salle FOREIGN KEY (id_salle) REFERENCES public.salle (id_salle) ON DELETE SET NULL,
+    CONSTRAINT fk_seances_groupe FOREIGN KEY (id_groupe) REFERENCES public.groupes (id_groupe) ON DELETE SET NULL
+);
 
--- Fin du script
-SELECT 'Migration manuelle appliquée avec succès !' AS resultat;
+-- Création de la table subjects si elle n'existe pas (utilisée par schedules)
+CREATE TABLE IF NOT EXISTS public.subjects (
+    id_subject SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
+    label VARCHAR(200) NOT NULL,
+    credits INT NOT NULL DEFAULT 0,
+    hours INT NOT NULL DEFAULT 0,
+    type VARCHAR(50),
+    id_niveau INT,
+    id_mention INT,
+    id_filiere INT,
+    id_semestre INT
+);
+
+-- Création de la table schedules si elle n'existe pas
+CREATE TABLE IF NOT EXISTS public.schedules (
+    id_schedule SERIAL PRIMARY KEY,
+    id_subject INT NOT NULL,
+    session_type VARCHAR(50) NOT NULL,
+    id_professeur INT NOT NULL,
+    date_schedule DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    id_salle INT NOT NULL,
+    status VARCHAR(50),
+    notes TEXT
+);
+
