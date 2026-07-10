@@ -46,7 +46,7 @@ public class Matiere
     [ForeignKey("IdProfesseurResponsable")]
     public virtual Professeur? ProfesseurResponsable { get; set; }
 
-    public virtual ICollection<Cours> Cours { get; set; }
-    public virtual ICollection<AffectationMatiere> AffectationsMatieres { get; set; }
+    public virtual ICollection<Cours>? Cours { get; set; }
+    public virtual ICollection<AffectationMatiere>? AffectationsMatieres { get; set; }
 }
 }

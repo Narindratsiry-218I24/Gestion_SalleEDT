@@ -49,6 +49,7 @@ builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IAutoPlanningService, AutoPlanningService>();
 builder.Services.AddHttpContextAccessor();
 
 

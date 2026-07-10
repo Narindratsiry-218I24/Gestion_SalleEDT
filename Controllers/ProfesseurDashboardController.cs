@@ -220,6 +220,22 @@ namespace Gestion_SalleClasseEDT.Controllers
             return View(vm);
         }
 
+        public async Task<IActionResult> Notifications(string email)
+        {
+            var prof = await GetProfesseurFromRequest();
+            if (prof == null) return View("ProfNonTrouve");
+
+            var vm = new ProfesseurDashboardViewModel(prof, _db);
+            await vm.LoadAsync();
+            
+            ViewBag.ToutesNotifications = await _db.Notifications
+                .Where(n => n.IdProfesseur == prof.IdProfesseur)
+                .OrderByDescending(n => n.DateCreation)
+                .ToListAsync();
+
+            return View(vm);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SauvegarderDisponibilites(string email, string[] jours, string[] heuresDebut, string[] heuresFin, string[] semainesType)

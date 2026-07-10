@@ -154,5 +154,68 @@ namespace Gestion_SalleClasseEDT.Controllers
                         .ToList();
             return Ok(cours);
         }
+        // GET: api/Professeur/Agenda
+        [HttpGet]
+        [Route("Agenda")]
+        public async Task<IActionResult> GetAgenda(string email, int semaineOffset = 0)
+        {
+            if (string.IsNullOrEmpty(email)) return BadRequest("Email is required.");
+
+            var prof = await db.Professeurs
+                .Include(p => p.Cours)
+                    .ThenInclude(c => c.Creneaux)
+                .Include(p => p.Cours)
+                    .ThenInclude(c => c.Matiere)
+                .Include(p => p.Cours)
+                    .ThenInclude(c => c.Classe)
+                .Include(p => p.Cours)
+                    .ThenInclude(c => c.Salle)
+                .Include(p => p.Disponibilites)
+                .FirstOrDefaultAsync(p => p.Email == email);
+
+            if (prof == null) return NotFound("Professeur non trouvé.");
+
+            var today = DateTime.Now.Date;
+            var daysToSubtract = (int)today.DayOfWeek - 1;
+            if (daysToSubtract < 0) daysToSubtract = 6; // Sunday is 0, we want Monday as start
+
+            var startOfCurrentWeek = today.AddDays(-daysToSubtract);
+            var startOfTargetWeek = startOfCurrentWeek.AddDays(7 * semaineOffset);
+            var endOfTargetWeek = startOfTargetWeek.AddDays(7);
+
+            // Fetching creneaux. Since creneaux don't have explicit dates (they are weekly recurrence),
+            // if we need accurate per-week data (like specific exams or canceled courses),
+            // we would check exceptions. For now, assuming they apply to every week.
+            var creneaux = prof.Cours?
+                .SelectMany(c => c.Creneaux?.Select(cr => new
+                {
+                    IdCours = c.IdCours,
+                    NomMatiere = c.Matiere?.NomMatiere ?? "—",
+                    NomClasse = c.Classe?.NomClasse ?? "—",
+                    NomSalle = c.Salle?.NomSalle ?? "—",
+                    TypeCours = (c.TypeCours != null && c.TypeCours.ToLower() == "examen") ? "examen" : "cours",
+                    JourSemaine = cr.JourSemaine,
+                    HeureDebut = cr.HeureDebut,
+                    HeureFin = cr.HeureFin,
+                    Duree = (cr.HeureFin - cr.HeureDebut).TotalHours
+                }) ?? Enumerable.Empty<dynamic>())
+                .Where(c => c.TypeCours == "cours" || c.TypeCours == "examen")
+                .ToList() ?? new List<dynamic>();
+
+            var stats = new
+            {
+                NbCours = creneaux.Count,
+                HeuresTotales = creneaux.Sum(c => (int)c.Duree)
+            };
+
+            return Ok(new
+            {
+                SemaineDebut = startOfTargetWeek,
+                SemaineFin = endOfTargetWeek,
+                Disponibilites = prof.Disponibilites?.Select(d => new { d.JourSemaine, d.HeureDebut, d.HeureFin }),
+                Stats = stats,
+                Creneaux = creneaux
+            });
+        }
     }
 }

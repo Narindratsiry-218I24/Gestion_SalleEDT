@@ -223,6 +223,67 @@ namespace Gestion_SalleClasseEDT.Controllers
             return RedirectToAction(nameof(AnneeAcademique));
         }
 
+        [HttpGet]
+        public IActionResult EnvoyerMessage()
+        {
+            var profs = _db.Professeurs.OrderBy(p => p.Nom).ThenBy(p => p.Prenom).ToList();
+            ViewBag.Professeurs = profs;
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnvoyerMessage(int[] idsProfesseurs, string titre, string message, string type, string lien, [FromServices] Gestion_SalleClasseEDT.Services.IEmailService emailService)
+        {
+            if (idsProfesseurs == null || idsProfesseurs.Length == 0 || string.IsNullOrWhiteSpace(titre) || string.IsNullOrWhiteSpace(message))
+            {
+                TempData["Error"] = "Veuillez sélectionner au moins un professeur, un titre et un message.";
+                return RedirectToAction(nameof(EnvoyerMessage));
+            }
+
+            var profs = await _db.Professeurs.Where(p => idsProfesseurs.Contains(p.IdProfesseur)).ToListAsync();
+            var notifications = new System.Collections.Generic.List<Notification>();
+
+            foreach(var prof in profs)
+            {
+                var notif = new Notification
+                {
+                    IdProfesseur = prof.IdProfesseur,
+                    Titre = titre,
+                    Message = message,
+                    Type = string.IsNullOrEmpty(type) ? "info" : type,
+                    Lien = lien
+                };
+                notifications.Add(notif);
+
+                // Envoi de l'email
+                if (!string.IsNullOrEmpty(prof.Email))
+                {
+                    string htmlBody = $@"
+                        <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                            <div style='text-align: center; margin-bottom: 20px;'>
+                                <img src='https://emit.mg/images/logo.png' alt='EMIT Logo' style='max-height: 80px;' />
+                            </div>
+                            <div style='background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                                <h2 style='color: #17203A; margin-top: 0;'>{titre}</h2>
+                                <p style='font-size: 16px; line-height: 1.5;'>{message}</p>
+                                {(string.IsNullOrEmpty(lien) ? "" : $"<div style='margin-top:20px;'><a href='{lien}' style='background-color:#5C8ABF; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Voir plus</a></div>")}
+                            </div>
+                            <p style='margin-top: 30px; font-size: 12px; color: #64748b; text-align: center;'>
+                                Ceci est un message automatique de l'administration EMIT. Merci de ne pas répondre à cet e-mail.
+                            </p>
+                        </div>";
+                    await emailService.SendEmailAsync(prof.Email, $"[EMIT] {titre}", htmlBody);
+                }
+            }
+
+            _db.Notifications.AddRange(notifications);
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = $"Message envoyé avec succès à {profs.Count} professeur(s).";
+            return RedirectToAction(nameof(EnvoyerMessage));
+        }
+
         public class CreateAnneeVm
         {
             public string Libelle { get; set; }
