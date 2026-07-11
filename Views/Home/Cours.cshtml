@@ -1,101 +1,235 @@
-@model IEnumerable<Gestion_SalleClasseEDT.Models.Cours>
+@model Gestion_SalleClasseEDT.Models.ViewModels.CoursListViewModel
 @{
-    ViewBag.Title = "Planification des Cours";
+    ViewBag.Title = "Cours";
+    var mentions = ViewBag.Mentions as List<Gestion_SalleClasseEDT.Models.Mention> ?? new List<Gestion_SalleClasseEDT.Models.Mention>();
+    var niveaux = ViewBag.Niveaux as List<Gestion_SalleClasseEDT.Models.Niveau> ?? new List<Gestion_SalleClasseEDT.Models.Niveau>();
+    var statuts = ViewBag.Statuts as List<string> ?? new List<string>();
 }
 
-<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+<div class="space-y-6 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Planification des Cours</h1>
-            <p class="text-gray-500 mt-1">Gérez la planification et l'attribution des salles (A-D) aux cours.</p>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Cours</h1>
+            <p class="text-gray-500 mt-1">Filtrez, recherchez et gérez tous les cours de l'établissement.</p>
+        </div>
+        <div class="flex gap-2">
+            <button class="flex items-center gap-2 bg-[#17203A] hover:bg-[#12192B] text-white px-4 py-2 rounded-lg transition-colors font-medium" onclick="openCreateCourseModal()">
+                <i data-lucide="plus" class="w-4 h-4"></i> Nouveau Cours
+            </button>
         </div>
     </div>
 
-    <!-- Filter Partial -->
-    <partial name="_Filter" />
+    <!-- Filtres -->
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <form method="get" action="@Url.Action("Cours")" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Mention</label>
+                <select name="mention" id="filterMention" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="">Toutes les mentions</option>
+                    @foreach (var m in mentions)
+                    {
+                        <option value="@m.NomMention" selected="@(Model?.FilterMention == m.NomMention)">
+                            @m.NomMention
+                        </option>
+                    }
+                </select>
+            </div>
 
-    <!-- Table Partial -->
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Niveau</label>
+                <select name="niveau" id="filterNiveau" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="">Tous les niveaux</option>
+                    @foreach (var n in niveaux.OrderBy(n => n.Ordre))
+                    {
+                        var niveauName = n.CodeNiveau switch
+                        {
+                            "L1" => "Licence 1",
+                            "L2" => "Licence 2",
+                            "L3" => "Licence 3",
+                            "M1" => "Master 1",
+                            "M2" => "Master 2",
+                            _ => n.CodeNiveau
+                        };
+                        <option value="@niveauName" selected="@(Model?.FilterNiveau == niveauName)">
+                            @niveauName
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Parcours</label>
+                <select name="parcours" id="filterParcours" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="">Tous les parcours</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Statut</label>
+                <select name="statut" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="">Tous les statuts</option>
+                    @foreach (var s in statuts)
+                    {
+                        <option value="@s" selected="@(Model?.FilterStatut == s)">
+                            @s
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="md:col-span-3">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Recherche</label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" name="search" value="@Model?.SearchTerm" placeholder="Rechercher par matière, code, enseignant..." 
+                           class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                </div>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <button type="submit" class="w-full bg-[#17203A] hover:bg-[#12192B] text-white px-4 py-2 rounded-lg transition-colors font-medium">
+                    <i data-lucide="filter" class="w-4 h-4 inline mr-1"></i> Filtrer
+                </button>
+                <button type="reset" class="px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" onclick="resetFilters()">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Résumé des filtres actifs -->
+    @if (!string.IsNullOrEmpty(Model?.FilterMention) || !string.IsNullOrEmpty(Model?.FilterNiveau) || !string.IsNullOrEmpty(Model?.FilterParcours))
+    {
+        <div class="flex flex-wrap gap-2 items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+            <span class="font-medium text-gray-700">Filtres actifs :</span>
+            @if (!string.IsNullOrEmpty(Model.FilterMention))
+            {
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
+                    Mention : @Model.FilterMention
+                    <a href="@Url.Action("Cours", new { niveau = Model.FilterNiveau, parcours = Model.FilterParcours, search = Model.SearchTerm, statut = Model.FilterStatut })" class="ml-1 text-blue-600 hover:text-blue-800">×</a>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.FilterNiveau))
+            {
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs">
+                    Niveau : @Model.FilterNiveau
+                    <a href="@Url.Action("Cours", new { mention = Model.FilterMention, parcours = Model.FilterParcours, search = Model.SearchTerm, statut = Model.FilterStatut })" class="ml-1 text-green-600 hover:text-green-800">×</a>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.FilterParcours))
+            {
+                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs">
+                    Parcours : @Model.FilterParcours
+                    <a href="@Url.Action("Cours", new { mention = Model.FilterMention, niveau = Model.FilterNiveau, search = Model.SearchTerm, statut = Model.FilterStatut })" class="ml-1 text-purple-600 hover:text-purple-800">×</a>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs">
+                    Recherche : "@Model.SearchTerm"
+                    <a href="@Url.Action("Cours", new { mention = Model.FilterMention, niveau = Model.FilterNiveau, parcours = Model.FilterParcours, statut = Model.FilterStatut })" class="ml-1 text-gray-600 hover:text-gray-800">×</a>
+                </span>
+            }
+        </div>
+    }
+
+    <!-- Table des cours -->
     <partial name="_CoursTable" model="Model" />
 
-    <!-- CRUD Modal -->
-    <div id="crud-modal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-[100] w-full h-full bg-black/50 backdrop-blur-sm overflow-y-auto overflow-x-hidden justify-center items-start pt-10 transition-opacity">
-        <div class="relative p-4 w-full max-w-2xl max-h-full mx-auto">
-            <div class="relative bg-white rounded-xl shadow-2xl">
-                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
-                    <h3 class="text-xl font-bold text-gray-900">
-                        Créer un nouveau cours
-                    </h3>
-                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center" data-modal-toggle="crud-modal">
+    <!-- Modal de création de cours -->
+    <div id="createCourseModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-white rounded-t-xl">
+                    <h3 class="text-xl font-bold text-[#17203A]">Créer un nouveau cours</h3>
+                    <button onclick="closeCreateCourseModal()" class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
-                <!-- Formulaire de Création -->
-                <form class="p-4 md:p-5" id="planificationForm">
-                    <div class="grid gap-6 mb-6 grid-cols-2">
-                        <div class="col-span-2">
-                            <label for="idMatiere" class="block mb-2 text-sm font-medium text-gray-900">Matière</label>
-                            <select id="idMatiere" name="idMatiere" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
-                                <option value="">Chargement...</option>
-                            </select>
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="idClasse" class="block mb-2 text-sm font-medium text-gray-900">Classe</label>
-                            <select id="idClasse" name="idClasse" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <option value="">Chargement...</option>
-                            </select>
-                        </div>
+                <div class="p-6">
+                    <form id="createCourseForm" class="space-y-4">
+                        @Html.AntiForgeryToken()
                         
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="idProfesseur" class="block mb-2 text-sm font-medium text-gray-900">Professeur</label>
-                            <select id="idProfesseur" name="idProfesseur" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <option value="">Chargement...</option>
-                            </select>
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="idSemestre" class="block mb-2 text-sm font-medium text-gray-900">Semestre</label>
-                            <select id="idSemestre" name="idSemestre" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <option value="">Chargement...</option>
-                            </select>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Matière <span class="text-red-500">*</span></label>
+                                <select id="courseMatiereId" name="IdMatiere" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="">Sélectionnez une matière</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Professeur</label>
+                                <select id="courseProfesseurId" name="IdProfesseur" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="">Non assigné</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Classe</label>
+                                <select id="courseClasseId" name="IdClasse" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="">Non assignée</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Groupe</label>
+                                <select id="courseGroupeId" name="IdGroupe" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="">Aucun groupe</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Semestre</label>
+                                <select id="courseSemestreId" name="IdSemestre" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="">Sélectionnez un semestre</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Volume Horaire <span class="text-red-500">*</span></label>
+                                <input type="number" id="courseVolumeHours" name="VolumeHours" required min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: 60" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Capacité</label>
+                                <input type="number" id="courseCapacity" name="Capacity" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: 50" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Type de cours</label>
+                                <select id="courseType" name="TypeCours" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="CM">Cours Magistral (CM)</option>
+                                    <option value="TD">Travaux Dirigés (TD)</option>
+                                    <option value="TP">Travaux Pratiques (TP)</option>
+                                    <option value="Projet">Projet</option>
+                                    <option value="Seminaire">Séminaire</option>
+                                    <option value="Examen">Examen</option>
+                                    <option value="Soutenance">Soutenance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mode d'enseignement</label>
+                                <select id="courseMode" name="Mode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="Presentiel">Présentiel</option>
+                                    <option value="EnLigne">En ligne</option>
+                                    <option value="Hybride">Hybride</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Langue</label>
+                                <select id="courseLanguage" name="LanguageStr" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="Francais">Français</option>
+                                    <option value="Anglais">Anglais</option>
+                                    <option value="Malagasy">Malagasy</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="volumeHours" class="block mb-2 text-sm font-medium text-gray-900">Volume Horaire</label>
-                            <input type="number" name="volumeHours" id="volumeHours" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Ex: 60" required="">
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button type="button" onclick="closeCreateCourseModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                                Annuler
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-lg hover:bg-[#12192B] transition-colors font-medium">
+                                <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Créer le cours
+                            </button>
                         </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="capacity" class="block mb-2 text-sm font-medium text-gray-900">Capacité (Etudiants)</label>
-                            <input type="number" name="capacity" id="capacity" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Ex: 50" required="">
-                        </div>
-
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="typeCours" class="block mb-2 text-sm font-medium text-gray-900">Type de Cours</label>
-                            <select id="typeCours" name="typeCours" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <option value="CM">Cours Magistral (CM)</option>
-                                <option value="TD">Travaux Dirigés (TD)</option>
-                                <option value="TP">Travaux Pratiques (TP)</option>
-                                <option value="Seminaire">Séminaire</option>
-                            </select>
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <label for="mode" class="block mb-2 text-sm font-medium text-gray-900">Mode d'enseignement</label>
-                            <select id="mode" name="mode" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <option value="Presentiel">Présentiel</option>
-                                <option value="EnLigne">En ligne</option>
-                                <option value="Hybride">Hybride</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-end gap-3 border-t pt-4 border-gray-100">
-                        <button type="button" data-modal-toggle="crud-modal" class="text-gray-600 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900">
-                            Annuler
-                        </button>
-                        <button type="submit" class="text-white inline-flex items-center bg-[#17203A] hover:bg-[#12192B] focus:ring-4 focus:outline-none focus:ring-[#17203A]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-                            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
-                            Créer le Cours
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -103,128 +237,193 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Modal Toggles
-            const modalToggles = document.querySelectorAll('[data-modal-toggle]');
-            modalToggles.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const target = document.getElementById(btn.getAttribute('data-modal-toggle'));
-                    if(target) {
-                        target.classList.toggle('hidden');
-                        target.classList.toggle('flex');
-                        
-                        if(target.classList.contains('hidden')) {
-                            target.setAttribute('aria-hidden', 'true');
-                        } else {
-                            target.removeAttribute('aria-hidden');
+        // Configuration des parcours par mention et niveau
+        const parcoursConfig = {
+            "Informatique": {
+                "Licence": ["DA2I"],
+                "Master": ["M2I", "SDIA", "SIGD"]
+            },
+            "Management": {
+                "Licence": ["AES"],
+                "Master": ["AE", "MEAS"]
+            },
+            "Multimédia": {
+                "Licence": ["ICM"],
+                "Master": ["RPO", "RCPO"]
+            }
+        };
+
+        // --- Filtres dépendants ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const mentionSelect = document.getElementById('filterMention');
+            const niveauSelect = document.getElementById('filterNiveau');
+            const parcoursSelect = document.getElementById('filterParcours');
+
+            function updateParcoursOptions() {
+                const mention = mentionSelect.value;
+                const niveau = niveauSelect.value;
+                
+                parcoursSelect.innerHTML = '<option value="">Tous les parcours</option>';
+                
+                if (mention && niveau) {
+                    const niveauType = niveau.startsWith("Licence") ? "Licence" : "Master";
+                    const parcours = parcoursConfig[mention]?.[niveauType] || [];
+                    
+                    parcours.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p;
+                        opt.textContent = p;
+                        parcoursSelect.appendChild(opt);
+                    });
+
+                    // Sélectionner le parcours actuel s'il existe
+                    const currentParcours = '@Model?.FilterParcours';
+                    if (currentParcours) {
+                        parcoursSelect.value = currentParcours;
+                    }
+                }
+            }
+
+            mentionSelect.addEventListener('change', updateParcoursOptions);
+            niveauSelect.addEventListener('change', updateParcoursOptions);
+
+            // Initialiser les parcours si mention et niveau sont déjà sélectionnés
+            if (mentionSelect.value && niveauSelect.value) {
+                updateParcoursOptions();
+            }
+        });
+
+        // --- Reset des filtres ---
+        function resetFilters() {
+            document.getElementById('filterMention').value = '';
+            document.getElementById('filterNiveau').value = '';
+            document.getElementById('filterParcours').innerHTML = '<option value="">Tous les parcours</option>';
+            document.querySelector('input[name="search"]').value = '';
+            document.querySelector('select[name="statut"]').value = '';
+            document.getElementById('filterForm').submit();
+        }
+
+        // --- Modal de création de cours ---
+        function openCreateCourseModal() {
+            document.getElementById('createCourseModal').classList.remove('hidden');
+            loadFormData();
+        }
+
+        function closeCreateCourseModal() {
+            document.getElementById('createCourseModal').classList.add('hidden');
+            document.getElementById('createCourseForm').reset();
+        }
+
+        async function loadFormData() {
+            try {
+                const [matieres, professeurs, classes, semestres] = await Promise.all([
+                    fetch('/api/Matiere').then(r => r.json()),
+                    fetch('/api/Professeur').then(r => r.json()),
+                    fetch('/api/Classe').then(r => r.json()),
+                    fetch('/api/RefSemestre').then(r => r.json())
+                ]);
+
+                const matiereSelect = document.getElementById('courseMatiereId');
+                matiereSelect.innerHTML = '<option value="">Sélectionnez une matière</option>';
+                matieres.forEach(m => {
+                    matiereSelect.innerHTML += `<option value="${m.IdMatiere}">${m.NomMatiere} (${m.CodeMatiere})</option>`;
+                });
+
+                const profSelect = document.getElementById('courseProfesseurId');
+                profSelect.innerHTML = '<option value="">Non assigné</option>';
+                professeurs.forEach(p => {
+                    profSelect.innerHTML += `<option value="${p.IdProfesseur}">${p.Prenom} ${p.Nom}</option>`;
+                });
+
+                const classeSelect = document.getElementById('courseClasseId');
+                classeSelect.innerHTML = '<option value="">Non assignée</option>';
+                classes.forEach(c => {
+                    classeSelect.innerHTML += `<option value="${c.IdClasse}">${c.NomClasse}</option>`;
+                });
+
+                const semestreSelect = document.getElementById('courseSemestreId');
+                semestreSelect.innerHTML = '<option value="">Sélectionnez un semestre</option>';
+                semestres.forEach(s => {
+                    semestreSelect.innerHTML += `<option value="${s.IdRefSemestre}">${s.CodeSemestre}</option>`;
+                });
+
+                // Charger les groupes pour la classe sélectionnée
+                document.getElementById('courseClasseId').addEventListener('change', async function() {
+                    const classeId = this.value;
+                    const groupeSelect = document.getElementById('courseGroupeId');
+                    groupeSelect.innerHTML = '<option value="">Aucun groupe</option>';
+                    
+                    if (classeId) {
+                        try {
+                            const groupes = await fetch(`/api/Groupe/ByClasse/${classeId}`).then(r => r.json());
+                            groupes.forEach(g => {
+                                groupeSelect.innerHTML += `<option value="${g.Id}">${g.Name}</option>`;
+                            });
+                        } catch (e) {
+                            console.warn('Erreur chargement groupes:', e);
                         }
                     }
                 });
-            });
 
-            // Form Submit for Auto Planification
-            const form = document.getElementById('planificationForm');
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const btn = form.querySelector('button[type="submit"]');
-                btn.disabled = true;
-                btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Traitement...';
-                if (window.lucide) lucide.createIcons();
-
-                const payload = {
-                    IdMatiere: parseInt(document.getElementById('idMatiere').value),
-                    IdProfesseur: document.getElementById('idProfesseur').value ? parseInt(document.getElementById('idProfesseur').value) : null,
-                    IdClasse: document.getElementById('idClasse').value ? parseInt(document.getElementById('idClasse').value) : null,
-                    IdSemestre: document.getElementById('idSemestre').value ? parseInt(document.getElementById('idSemestre').value) : null,
-                    VolumeHours: parseInt(document.getElementById('volumeHours').value),
-                    Capacity: parseInt(document.getElementById('capacity').value),
-                    TypeCours: document.getElementById('typeCours').value,
-                    Mode: document.getElementById('mode').value,
-                    Statut: "Cree"
-                };
-
-                try {
-                    const response = await fetch(`/api/Cours`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if(response.ok) {
-                        alert("Cours créé avec succès !");
-                        window.location.reload();
-                    } else {
-                        let errorMsg = "Erreur Inconnue";
-                        try {
-                            const err = await response.json();
-                            errorMsg = err.Message || "Erreur Inconnue";
-                            if (err.errors) {
-                                errorMsg = Object.entries(err.errors).map(([k, v]) => `${k}: ${v.join(', ')}`).join('\\n');
-                            }
-                        } catch (e) {
-                            errorMsg = "Erreur serveur : " + response.statusText;
-                        }
-                        alert("Erreur de planification: \\n" + errorMsg);
-                    }
-                } catch(err) {
-                    console.error(err);
-                    alert("Erreur réseau ou serveur.");
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4 mr-2"></i> Créer le Cours';
-                    if (window.lucide) lucide.createIcons();
-                }
-            });
-
-            if (window.lucide) lucide.createIcons();
-            
-            // Load dropdown data
-            async function loadDropdownData() {
-                try {
-                    const [matieresRes, professeursRes, classesRes] = await Promise.all([
-                        fetch('/api/Matiere'),
-                        fetch('/api/Professeur'),
-                        fetch('/api/Classe')
-                    ]);
-                    
-                    if(matieresRes.ok) {
-                        const matieres = await matieresRes.json();
-                        const select = document.getElementById('idMatiere');
-                        select.innerHTML = '<option value="">Sélectionnez une matière</option>';
-                        matieres.forEach(m => {
-                            select.innerHTML += `<option value="${m.IdMatiere}">${m.NomMatiere} (${m.CodeMatiere})</option>`;
-                        });
-                    }
-                    
-                    if(professeursRes.ok) {
-                        const profs = await professeursRes.json();
-                        const select = document.getElementById('idProfesseur');
-                        select.innerHTML = '<option value="">Sélectionnez un professeur</option>';
-                        profs.forEach(p => {
-                            select.innerHTML += `<option value="${p.IdProfesseur}">${p.Nom} ${p.Prenom}</option>`;
-                        });
-                    }
-                    
-                    if(classesRes.ok) {
-                        const classes = await classesRes.json();
-                        const select = document.getElementById('idClasse');
-                        select.innerHTML = '<option value="">Sélectionnez une classe</option>';
-                        classes.forEach(c => {
-                            select.innerHTML += `<option value="${c.IdClasse}">${c.NomClasse}</option>`;
-                        });
-                    }
-                    
-                    const selectSemestre = document.getElementById('idSemestre');
-                    selectSemestre.innerHTML = '<option value="">Sélectionnez un semestre</option>';
-                    for (let i = 1; i <= 10; i++) {
-                        selectSemestre.innerHTML += `<option value="${i}">S${i}</option>`;
-                    }
-                } catch(e) {
-                    console.error("Erreur de chargement des filtres", e);
-                }
+                // Valeurs par défaut
+                document.getElementById('courseVolumeHours').value = '';
+                document.getElementById('courseCapacity').value = '';
+            } catch (e) {
+                console.error('Erreur chargement données:', e);
             }
+        }
+
+        // --- Soumission du formulaire de création ---
+        document.getElementById('createCourseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            loadDropdownData();
+            const formData = new FormData(this);
+            const payload = {
+                IdMatiere: parseInt(formData.get('IdMatiere')),
+                IdProfesseur: formData.get('IdProfesseur') ? parseInt(formData.get('IdProfesseur')) : null,
+                IdClasse: formData.get('IdClasse') ? parseInt(formData.get('IdClasse')) : null,
+                IdGroupe: formData.get('IdGroupe') ? parseInt(formData.get('IdGroupe')) : null,
+                IdSemestre: formData.get('IdSemestre') ? parseInt(formData.get('IdSemestre')) : null,
+                VolumeHours: parseInt(formData.get('VolumeHours')),
+                Capacity: formData.get('Capacity') ? parseInt(formData.get('Capacity')) : 0,
+                TypeCours: formData.get('TypeCours') || 'CM',
+                Mode: formData.get('Mode') || 'Presentiel',
+                LanguageStr: formData.get('LanguageStr') || 'Francais',
+                Statut: 'Cree'
+            };
+
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Création...';
+
+            try {
+                const response = await fetch('/api/Cours', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert('✅ Cours créé avec succès !');
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Erreur: ' + (error.Message || 'Erreur inconnue'));
+                }
+            } catch (err) {
+                alert('❌ Erreur réseau: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Créer le cours';
+            }
         });
+
+        // --- Initialisation des icônes ---
+        if (window.lucide) {
+            lucide.createIcons();
+        }
     </script>
-}
+}   

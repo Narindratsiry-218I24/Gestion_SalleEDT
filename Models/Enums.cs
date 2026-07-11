@@ -32,4 +32,11 @@ namespace Gestion_SalleClasseEDT.Models
         EnLigne,
         Hybride
     }
+
+    public enum Language
+    {
+        Francais,
+        Anglais,
+        Malagasy
+    }
 }

@@ -36,7 +36,7 @@ public class Salle
     public string TypeSalle { get; set; }
 
     // Navigation properties
-    public virtual ICollection<Cours> Cours { get; set; }
-    public virtual ICollection<DemandeEdt> DemandesEdt { get; set; }
+    public virtual ICollection<Cours>? Cours { get; set; }
+    public virtual ICollection<DemandeEdt>? DemandesEdt { get; set; }
 }
 }

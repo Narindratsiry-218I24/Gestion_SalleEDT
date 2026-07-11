@@ -11,14 +11,16 @@ Env.Load();
 
 // Register EMITDbContext with PostgreSQL
 builder.Services.AddDbContext<EMITDbContext>(options =>
+{
     options.UseNpgsql(
         $"Server={Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost"};" +
         $"Port={Environment.GetEnvironmentVariable("DB_PORT") ?? "5432"};" +
         $"Database={Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB"};" +
         $"User Id={Environment.GetEnvironmentVariable("DB_USER") ?? "postgres"};" +
         $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "fanomezantsoa"};"
-    )
-);
+    );
+    options.ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews()
@@ -40,20 +42,39 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
+
 QuestPDF.Settings.License = LicenseType.Community;
 
-// Register application services
 builder.Services.AddScoped<IPlanningService, PlanningService>();
-builder.Services.AddScoped<IClasseGenerationService, ClasseGenerationService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IAuditService, AuditService>();
-builder.Services.AddScoped<IAutoPlanningService, AutoPlanningService>();
 builder.Services.AddHttpContextAccessor();
 
-
 var app = builder.Build();
+
+// Apply migrations
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<EMITDbContext>();
+    dbContext.Database.Migrate();
+
+    var seedPath = Path.Combine(Directory.GetCurrentDirectory(), "seed.sql");
+    if (File.Exists(seedPath))
+    {
+        try
+        {
+            var sql = File.ReadAllText(seedPath);
+            dbContext.Database.ExecuteSqlRaw(sql);
+            Console.WriteLine("seed.sql applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Could not apply seed.sql: {ex.Message}");
+        }
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -30,7 +30,7 @@ namespace Gestion_SalleClasseEDT.Models
         var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
         var database = Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
-        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "tsiririmlay";
+        var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "kifeko";
 
         return $"Server={server};Port={port};Database={database};User Id={user};Password={password};";
     }
@@ -42,7 +42,6 @@ namespace Gestion_SalleClasseEDT.Models
     public DbSet<AnneeAcademique> AnneesAcademiques { get; set; }
     public DbSet<Semestre> Semestres { get; set; }
     public DbSet<Classe> Classes { get; set; }
-    public DbSet<AffectationMatiere> AffectationsMatieres { get; set; }
     public DbSet<Matiere> Matieres { get; set; }
     public DbSet<Professeur> Professeurs { get; set; }
     public DbSet<Salle> Salles { get; set; }
@@ -57,7 +56,9 @@ namespace Gestion_SalleClasseEDT.Models
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Prerequisite> Prerequisites { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<AffectationMatiere> AffectationsMatieres { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,57 +76,6 @@ namespace Gestion_SalleClasseEDT.Models
             b.HasOne(s => s.Subject).WithMany();
             b.HasOne(s => s.Professeur).WithMany();
             b.HasOne(s => s.Salle).WithMany();
-        });
-
-        modelBuilder.Entity<Professeur>(b =>
-        {
-            b.HasIndex(p => p.Matricule).IsUnique();
-            b.Property(p => p.SpecialitesSecondaires).HasColumnType("jsonb");
-            b.Property(p => p.DateCreation).HasDefaultValueSql("now()");
-            b.Property(p => p.EstActif).HasDefaultValue(true);
-            b.Property(p => p.CapaciteHoraireMax).HasDefaultValue(20);
-        });
-
-        modelBuilder.Entity<Classe>(b =>
-        {
-            b.HasIndex(c => new { c.IdAnneeAcademique, c.CodeClasse }).IsUnique();
-            b.HasOne(c => c.AnneeAcademique)
-                .WithMany(a => a.Classes)
-                .HasForeignKey(c => c.IdAnneeAcademique)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AffectationMatiere>(b =>
-        {
-            b.HasIndex(a => new { a.IdClasse, a.IdMatiere, a.IdProfesseur, a.IdSemestre }).IsUnique();
-            b.Property(a => a.HeuresCm).HasDefaultValue(0);
-            b.Property(a => a.HeuresTd).HasDefaultValue(0);
-            b.Property(a => a.HeuresTp).HasDefaultValue(0);
-            b.Property(a => a.EstActif).HasDefaultValue(true);
-            b.HasOne(a => a.Classe)
-                .WithMany(c => c.AffectationsMatieres)
-                .HasForeignKey(a => a.IdClasse)
-                .OnDelete(DeleteBehavior.Cascade);
-            b.HasOne(a => a.Semestre)
-                .WithMany(s => s.AffectationsMatieres)
-                .HasForeignKey(a => a.IdSemestre)
-                .OnDelete(DeleteBehavior.Cascade);
-            b.HasOne(a => a.Matiere)
-                .WithMany(m => m.AffectationsMatieres)
-                .HasForeignKey(a => a.IdMatiere)
-                .OnDelete(DeleteBehavior.Restrict);
-            b.HasOne(a => a.Professeur)
-                .WithMany(p => p.AffectationsMatieres)
-                .HasForeignKey(a => a.IdProfesseur)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<Cours>(b =>
-        {
-            b.HasOne(c => c.AffectationMatiere)
-                .WithMany(a => a.Cours)
-                .HasForeignKey(c => c.IdAffectation)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Cours>()
