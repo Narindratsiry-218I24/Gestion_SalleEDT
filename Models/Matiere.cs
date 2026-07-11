@@ -46,6 +46,12 @@ public class Matiere
     [ForeignKey("IdProfesseurResponsable")]
     public virtual Professeur? ProfesseurResponsable { get; set; }
 
-    public virtual ICollection<Cours>? Cours { get; set; }
+    [InverseProperty("Matiere")]
+    public virtual ICollection<Prerequisite>? Prerequisites { get; set; }
+
+    [InverseProperty("PrerequisiteMatiere")]
+    public virtual ICollection<Prerequisite>? IsPrerequisiteFor { get; set; }
+
+    public virtual ICollection<Cours>? Cours { get; set; } = new List<Cours>();
 }
 }

@@ -11,14 +11,16 @@ Env.Load();
 
 // Register EMITDbContext with PostgreSQL
 builder.Services.AddDbContext<EMITDbContext>(options =>
+{
     options.UseNpgsql(
         $"Server={Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost"};" +
         $"Port={Environment.GetEnvironmentVariable("DB_PORT") ?? "5432"};" +
         $"Database={Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB"};" +
         $"User Id={Environment.GetEnvironmentVariable("DB_USER") ?? "postgres"};" +
-        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "fafana"};"
-    )
-);
+        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "kifeko"};"
+    );
+    options.ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews()
@@ -50,16 +52,25 @@ builder.Services.AddScoped<SchedulingService>();
 
 var app = builder.Build();
 
-// Run seed.sql if it exists
+// Apply migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<EMITDbContext>();
+    dbContext.Database.Migrate();
+
     var seedPath = Path.Combine(Directory.GetCurrentDirectory(), "seed.sql");
     if (File.Exists(seedPath))
     {
-        var sql = File.ReadAllText(seedPath);
-        dbContext.Database.ExecuteSqlRaw(sql);
-        Console.WriteLine("seed.sql applied successfully.");
+        try
+        {
+            var sql = File.ReadAllText(seedPath);
+            dbContext.Database.ExecuteSqlRaw(sql);
+            Console.WriteLine("seed.sql applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Could not apply seed.sql: {ex.Message}");
+        }
     }
 }
 

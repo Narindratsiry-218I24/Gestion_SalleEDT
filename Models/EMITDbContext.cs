@@ -56,6 +56,7 @@ namespace Gestion_SalleClasseEDT.Models
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Prerequisite> Prerequisites { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
