@@ -79,10 +79,22 @@
                     body: JSON.stringify({ Email: email, Password: password })
                 });
 
+                if (response.status === 403) {
+                    const txt = await response.text();
+                    throw new Error(txt || "Compte non autorisé.");
+                }
+
                 if (!response.ok) throw new Error("Email ou mot de passe incorrect.");
+
                 const user = await response.json();
                 localStorage.setItem("user", JSON.stringify(user));
-                window.location.href = "/Home/Dashboard";
+                const role = (user.Role || user.role || "").toLowerCase();
+                const userEmail = user.Email || user.email;
+                if (role === "professeur") {
+                    window.location.href = "/ProfesseurDashboard/Index?email=" + encodeURIComponent(userEmail);
+                } else {
+                    window.location.href = "/Home/Dashboard";
+                }
             } catch (error) {
                 message.textContent = error.message || "Échec de la connexion.";
                 message.className = "rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600";

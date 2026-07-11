@@ -1,0 +1,134 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Mon Calendrier";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+}
+
+<div class="prof-dash">
+    <div class="section-header flex justify-between items-center mb-6">
+        <h2 class="section-title-h2">Mon Calendrier</h2>
+        <a href="/ProfesseurDashboard/NouvelleDemande?email=@email" class="bg-[#5C8ABF] text-white px-4 py-2 rounded-md hover:bg-[#4d7daf] transition-colors flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle Demande
+        </a>
+    </div>
+
+    <!-- Légende -->
+    <div class="mb-4 flex flex-wrap gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+        <div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-blue-500 block"></span><span class="text-sm font-medium text-gray-700">CM</span></div>
+        <div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-green-500 block"></span><span class="text-sm font-medium text-gray-700">TD</span></div>
+        <div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-orange-500 block"></span><span class="text-sm font-medium text-gray-700">TP</span></div>
+        <div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-red-500 block"></span><span class="text-sm font-medium text-gray-700">Examen</span></div>
+    </div>
+
+    <div class="card-base bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Modal Détails Cours -->
+<div id="eventModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 id="modalTitle" class="text-lg font-bold text-gray-800">Détails du Cours</h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="space-y-3 text-sm">
+            <p><strong class="text-gray-700">Matière :</strong> <span id="modalMatiere"></span></p>
+            <p><strong class="text-gray-700">Classe :</strong> <span id="modalClasse"></span></p>
+            <p><strong class="text-gray-700">Type :</strong> <span id="modalType" class="px-2 py-1 rounded text-xs font-bold text-white"></span></p>
+            <p><strong class="text-gray-700">Horaires :</strong> <span id="modalHoraires"></span></p>
+            <p><strong class="text-gray-700">Jour :</strong> <span id="modalJour"></span></p>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 transition-colors">Fermer</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script>
+        function closeModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            
+            // Map day string to integer for recurring events
+            const dayMap = {
+                'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6, 'SUN': 0
+            };
+
+            const getColorForType = (type) => {
+                const t = type ? type.toUpperCase() : '';
+                switch(t) {
+                    case 'CM': return '#3b82f6'; // blue-500
+                    case 'TD': return '#22c55e'; // green-500
+                    case 'TP': return '#f97316'; // orange-500
+                    case 'EXAMEN': return '#ef4444'; // red-500
+                    default: return '#6b7280'; // gray-500
+                }
+            };
+
+            // Prepare events from model
+            const rawEvents = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CreneauxSemaine));
+            const events = rawEvents.map(e => {
+                const dayInt = dayMap[e.JourSemaine] !== undefined ? dayMap[e.JourSemaine] : 1;
+                return {
+                    title: e.NomMatiere,
+                    daysOfWeek: [dayInt],
+                    startTime: e.HeureDebut,
+                    endTime: e.HeureFin,
+                    color: getColorForType(e.TypeCours),
+                    extendedProps: {
+                        matiere: e.NomMatiere,
+                        classe: e.NomClasse,
+                        type: e.TypeCours,
+                        jour: e.JourSemaine,
+                        horaires: e.HeureDebut + ' - ' + e.HeureFin
+                    }
+                };
+            });
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                locale: 'fr',
+                slotMinTime: '07:00:00',
+                slotMaxTime: '19:00:00',
+                allDaySlot: false,
+                hiddenDays: [0], // Hide Sunday
+                events: events,
+                eventClick: function(info) {
+                    const props = info.event.extendedProps;
+                    document.getElementById('modalMatiere').textContent = props.matiere || 'N/A';
+                    document.getElementById('modalClasse').textContent = props.classe || 'N/A';
+                    
+                    const typeEl = document.getElementById('modalType');
+                    typeEl.textContent = props.type || 'N/A';
+                    typeEl.style.backgroundColor = info.event.backgroundColor;
+
+                    document.getElementById('modalHoraires').textContent = props.horaires;
+                    
+                    const daysFr = {'MON': 'Lundi', 'TUE': 'Mardi', 'WED': 'Mercredi', 'THU': 'Jeudi', 'FRI': 'Vendredi', 'SAT': 'Samedi', 'SUN': 'Dimanche'};
+                    document.getElementById('modalJour').textContent = daysFr[props.jour] || props.jour;
+
+                    document.getElementById('eventModal').classList.remove('hidden');
+                }
+            });
+            calendar.render();
+            
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
+}

@@ -23,7 +23,7 @@ namespace Gestion_SalleClasseEDT.Services
             _auditService = auditService;
         }
 
-        public async Task<Cours> PlanifierCourseAsync(Cours course)
+        public async Task<Cours> PlanifierCoursAsync(Cours course)
         {
             if (course.IdCours == 0)
             {
@@ -41,45 +41,49 @@ namespace Gestion_SalleClasseEDT.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var course = await _context.Cours.Include(c => c.Matiere).FirstOrDefaultAsync(c => c.IdCours == courseId);
-                if (course == null) throw new PlanningException("Cours non trouvé.");
+                var jour = date.ToString("dddd").ToUpper().Substring(0, 3); // Par ex: MON, TUE
+                var heureDebut = startTime;
+                var heureFin = endTime;
+
+                var cours = await _context.Cours.FindAsync(courseId);
+                if (cours == null) throw new PlanningException("Cours non trouvé.");
+
+                // Validation of compatibility matter/class
+                var matiere = await _context.Matieres.FindAsync(cours.IdMatiere);
+                var classe = await _context.Classes.FindAsync(cours.IdClasse);
+                
+                if (matiere != null && classe != null && matiere.IdFiliere != classe.IdFiliere)
+                {
+                    throw new PlanningException("La matière n'est pas compatible avec la filière de cette classe.");
+                }
 
                 // 1. Conflit Professeur
-                if (course.IdProfesseur.HasValue)
-                {
-                    var conflitProf = await _context.Seances
-                        .Include(s => s.Cours)
-                        .AnyAsync(s => s.Cours.IdProfesseur == course.IdProfesseur
-                            && s.Date == date.Date
-                            && ((startTime >= s.StartTime && startTime < s.EndTime)
-                             || (endTime > s.StartTime && endTime <= s.EndTime)
-                             || (startTime <= s.StartTime && endTime >= s.EndTime)));
-                             
-                    if (conflitProf) throw new PlanningException("Le professeur a déjà une séance à cet horaire.");
-                }
+                var conflitProf = await _context.Creneaux
+                    .Include(c => c.Cours)
+                    .AnyAsync(c => c.Cours.IdProfesseur == cours.IdProfesseur
+                        && c.JourSemaine == jour
+                        && ((heureDebut >= c.HeureDebut && heureDebut < c.HeureFin)
+                         || (heureFin > c.HeureDebut && heureFin <= c.HeureFin)
+                         || (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)));
+                         
+                if (conflitProf) throw new PlanningException("Le professeur a déjà un cours à cet horaire.");
 
                 // 2. Conflit Classe
-                if (course.IdClasse.HasValue)
-                {
-                    var conflitClasse = await _context.Seances
-                        .Include(s => s.Cours)
-                        .AnyAsync(s => s.Cours.IdClasse == course.IdClasse
-                            && s.Date == date.Date
-                            && ((startTime >= s.StartTime && startTime < s.EndTime)
-                             || (endTime > s.StartTime && endTime <= s.EndTime)
-                             || (startTime <= s.StartTime && endTime >= s.EndTime)));
+                var conflitClasse = await _context.Creneaux
+                    .Include(c => c.Cours)
+                    .AnyAsync(c => c.Cours.IdClasse == cours.IdClasse
+                        && c.JourSemaine == jour
+                        && ((heureDebut >= c.HeureDebut && heureDebut < c.HeureFin)
+                         || (heureFin > c.HeureDebut && heureFin <= c.HeureFin)
+                         || (heureDebut <= c.HeureDebut && heureFin >= c.HeureFin)));
 
-                    if (conflitClasse) throw new PlanningException("La classe a déjà une séance à cet horaire.");
-                }
+                if (conflitClasse) throw new PlanningException("La classe a déjà une séance à cet horaire.");
 
                 // 3. Conflit Salle & Capacité
                 if (salleId.HasValue)
                 {
                     var salle = await _context.Salles.FindAsync(salleId.Value);
                     if (salle == null) throw new PlanningException("Salle non trouvée.");
-
-                    if (salle.Capacite < course.Capacity)
-                        throw new PlanningException($"La capacité de la salle ({salle.Capacite}) est insuffisante pour ce cours ({course.Capacity}).");
 
                     var conflitSalle = await _context.Seances
                         .Include(s => s.Cours)
@@ -124,10 +128,10 @@ namespace Gestion_SalleClasseEDT.Services
 
                 _context.Seances.Add(seance);
                 
-                if (course.Statut == CourseStatus.Cree.ToString() || course.Statut == CourseStatus.EnAttente.ToString())
+                if (cours.Statut == "Cree" || cours.Statut == "EnAttente")
                 {
-                    course.Statut = CourseStatus.Planifie.ToString();
-                    _context.Cours.Update(course);
+                    cours.Statut = "Planifie";
+                    _context.Cours.Update(cours);
                 }
 
                 await _context.SaveChangesAsync();
@@ -147,10 +151,14 @@ namespace Gestion_SalleClasseEDT.Services
         public async Task<IEnumerable<Seance>> ObtenirEmploisDuTempsAsync()
         {
             return await _context.Seances
-                .Include(s => s.Cours).ThenInclude(c => c.Matiere)
-                .Include(s => s.Cours).ThenInclude(c => c.Professeur)
-                .Include(s => s.Cours).ThenInclude(c => c.Classe)
-                .Include(s => s.Salle)
+                .Include(s => s.Cours)
+                    .ThenInclude(c => c.Matiere)
+                .Include(s => s.Cours)
+                    .ThenInclude(c => c.Salle)
+                .Include(s => s.Cours)
+                    .ThenInclude(c => c.Professeur)
+                .Include(s => s.Cours)
+                    .ThenInclude(c => c.Classe)
                 .ToListAsync();
         }
     }

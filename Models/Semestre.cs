@@ -26,6 +26,9 @@ public class Semestre
     [Column("date_fin")]
     public DateTime DateFin { get; set; }
 
+    [Column("est_archivee")]
+    public bool EstArchivee { get; set; } = false;
+
     // Navigation properties
     [ForeignKey("IdRefSemestre")]
     public virtual RefSemestre RefSemestre { get; set; }
@@ -33,7 +36,7 @@ public class Semestre
     [ForeignKey("IdAnnee")]
     public virtual AnneeAcademique AnneeAcademique { get; set; }
 
-    public virtual ICollection<Classe> Classes { get; set; }
+    public virtual ICollection<AffectationMatiere> AffectationsMatieres { get; set; }
     public virtual ICollection<Cours> Cours { get; set; }
 }
 }

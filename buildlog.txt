@@ -1,0 +1,815 @@
+1:using System;
+2:using System.IO;
+3:using System.Linq;
+4:using System.Security.Cryptography;
+5:using System.Text;
+6:using System.Threading.Tasks;
+7:using Microsoft.AspNetCore.Mvc;
+8:using Microsoft.AspNetCore.Hosting;
+9:using Microsoft.AspNetCore.Http;
+10:using Microsoft.EntityFrameworkCore;
+11:using Microsoft.Extensions.Configuration;
+12:using Microsoft.Extensions.Logging;
+13:using Gestion_SalleClasseEDT.Models;
+14:using Gestion_SalleClasseEDT.Services;
+15:
+16:namespace Gestion_SalleClasseEDT.Controllers
+17:{
+18:    public class ProfesseursController : Controller
+19:    {
+20:        private readonly EMITDbContext _db;
+21:        private readonly IWebHostEnvironment _env;
+22:        private readonly IEmailService _emailService;
+23:        private readonly IConfiguration _config;
+24:        private readonly IHttpContextAccessor _httpContextAccessor;
+25:        private readonly ILogger<ProfesseursController> _logger;
+26:
+27:        private readonly string[] _allowedImageExt = new[] { ".jpg", ".jpeg", ".png" };
+28:        private readonly string[] _allowedCvExt = new[] { ".pdf" };
+29:        private const long MaxFileBytes = 2 * 1024 * 1024; // 2MB
+30:
+31:        public ProfesseursController(
+32:            EMITDbContext context,
+33:            IWebHostEnvironment env,
+34:            IEmailService emailService,
+35:            IConfiguration config,
+36:            IHttpContextAccessor httpContextAccessor,
+37:            ILogger<ProfesseursController> logger)
+38:        {
+39:            _db = context;
+40:            _env = env;
+41:            _emailService = emailService;
+42:            _config = config;
+43:            _httpContextAccessor = httpContextAccessor;
+44:            _logger = logger;
+45:        }
+46:
+47:        // ─────────────────────────────────────────────────────────────
+48:        // INDEX
+49:        // ─────────────────────────────────────────────────────────────
+50:        public async Task<IActionResult> Index()
+51:        {
+52:            var list = await _db.Professeurs
+53:                .Include(p => p.Utilisateur)
+54:                .ToListAsync();
+55:            return View(list);
+56:        }
+57:
+58:        // ─────────────────────────────────────────────────────────────
+59:        // DETAILS
+60:        // ─────────────────────────────────────────────────────────────
+61:        public async Task<IActionResult> Details(int id)
+62:        {
+63:            var p = await _db.Professeurs
+64:                .Include(p => p.Utilisateur)
+65:                .FirstOrDefaultAsync(p => p.IdProfesseur == id);
+66:            if (p == null) return NotFound();
+67:            return View(p);
+68:        }
+69:
+70:        // ─────────────────────────────────────────────────────────────
+71:        // CREATE GET
+72:        // ─────────────────────────────────────────────────────────────
+73:        public IActionResult Create()
+74:        {
+75:            var maxId = _db.Professeurs.Max(p => (int?)p.IdProfesseur) ?? 0;
+76:            ViewBag.NewMatricule = $"PROF-{(maxId + 1):D4}";
+77:            return View();
+78:        }
+79:
+80:        // ─────────────────────────────────────────────────────────────
+81:        // SEND VERIFICATION CODE
+82:        // ─────────────────────────────────────────────────────────────
+83:        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string code, DateTime expiry)> _verificationCodes = new();
+84:
+85:        [HttpPost]
+86:        public async Task<IActionResult> SendVerificationCode(string email)
+87:        {
+88:            if (string.IsNullOrEmpty(email)) return Json(new { success = false, message = "Email vide." });
+89:            
+90:            if (await _db.Utilisateurs.AnyAsync(u => u.Email == email))
+91:                return Json(new { success = false, message = "Cet email est déjà utilisé." });
+92:
+93:            var code = new Random().Next(100000, 999999).ToString();
+94:            _verificationCodes[email] = (code, DateTime.UtcNow.AddMinutes(15));
+95:
+96:            try
+97:            {
+98:                await _emailService.SendEmailAsync(
+99:                    email,
+100:                    "Code de vérification",
+101:                    $"Votre code de vérification est : <b>{code}</b>. Il est valable 15 minutes."
+102:                );
+103:                return Json(new { success = true });
+104:            }
+105:            catch (Exception ex)
+106:            {
+107:                return Json(new { success = false, message = ex.Message });
+108:            }
+109:        }
+110:
+111:        // ─────────────────────────────────────────────────────────────
+112:        // CHECK EMAIL AVAILABILITY
+113:        // ─────────────────────────────────────────────────────────────
+114:        [HttpPost]
+115:        public async Task<IActionResult> CheckEmailAvailability(string email)
+116:        {
+117:            if (string.IsNullOrEmpty(email))
+118:                return Json(new { available = false, message = "Email requis." });
+119:
+120:            var exists = await _db.Utilisateurs.AnyAsync(u => u.Email == email);
+121:            return Json(new { available = !exists, message = exists ? "Cette adresse Email existe déjà" : "Adresse Email disponible" });
+122:        }
+123:
+124:        // ─────────────────────────────────────────────────────────────
+125:        // VERIFY OTP CODE
+126:        // ─────────────────────────────────────────────────────────────
+127:        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _otpAttempts = new();
+128:
+129:        [HttpPost]
+130:        public IActionResult VerifyOtpCode(string email, string code)
+131:        {
+132:            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(code))
+133:                return Json(new { success = false, message = "Email et code requis." });
+134:
+135:            // Check attempts
+136:            var attempts = _otpAttempts.GetOrAdd(email, 0);
+137:            if (attempts >= 5)
+138:                return Json(new { success = false, message = "Nombre maximum de tentatives atteint. Renvoyez un nouveau code.", maxAttempts = true });
+139:
+140:            if (!_verificationCodes.TryGetValue(email, out var val))
+141:                return Json(new { success = false, message = "Aucun code envoyé pour cet email." });
+142:
+143:            if (val.expiry < DateTime.UtcNow)
+144:                return Json(new { success = false, message = "Code expiré. Renvoyez un nouveau code." });
+145:
+146:            if (val.code != code)
+147:            {
+148:                _otpAttempts[email] = attempts + 1;
+149:                return Json(new { success = false, message = "Code incorrect", remaining = 5 - (attempts + 1) });
+150:            }
+151:
+152:            // Success — clear attempts
+153:            _otpAttempts.TryRemove(email, out _);
+154:            return Json(new { success = true, message = "Adresse Email vérifiée" });
+155:        }
+156:
+157:        // ─────────────────────────────────────────────────────────────
+158:        // CREATE POST
+159:        // ─────────────────────────────────────────────────────────────
+160:        [HttpPost]
+161:        [ValidateAntiForgeryToken]
+162:        public async Task<IActionResult> Create(Professeur professeur, IFormFile photoFile, IFormFile cvFile, string VerificationCode)
+163:        {
+164:            // ── Nettoyage du ModelState : on ne garde que les champs
+165:            //    réellement présents dans la vue Create
+166:            var allowedKeys = new HashSet<string>(StringComparer.Ordinal)
+167:            {
+168:                "Nom", "Prenom", "Email", "Telephone", "TelephonePortable", "Titre", "Grade",
+169:                "Specialite", "DateEmbauche", "Statut",
+170:                "Matricule", "CapaciteHoraireMax", "VerificationCode", "Biographie"
+171:            };
+172:            foreach (var key in ModelState.Keys.ToList())
+173:            {
+174:                if (!allowedKeys.Contains(key))
+175:                    ModelState.Remove(key);
+176:            }
+177:
+178:            if (!ModelState.IsValid) return View(professeur);
+179:
+180:            [HttpPost]
+181:            [ValidateAntiForgeryToken]
+182:            public async Task<IActionResult> Create([Bind("Nom,Prenom,Email,Telephone,Grade,Specialite,Departement,DateEmbauche,Statut,Biographie,Matricule,CapaciteHoraireMax")] Professeur professeur, IFormFile photoFile, IFormFile cvFile, string VerificationCode)
+183:            {
+184:                // Use explicit binding to avoid manual ModelState manipulation.
+185:                if (!ModelState.IsValid) return View(professeur);
+186:            // ── Valider l'email : le formulaire soumet à la fois
+187:            //    'Email' (asp-for) et 'AccountEmail' (champ OTP JS).
+188:            //    On utilise uniquement professeur.Email (champ asp-for).
+189:            if (string.IsNullOrWhiteSpace(professeur.Email))
+190:            {
+191:                ModelState.AddModelError("Email", "L'adresse email est obligatoire.");
+192:                return View(professeur);
+193:            }
+194:
+195:            // ── Vérifier si l'email existe déjà ──────────────────────
+196:            if (await _db.Utilisateurs.AnyAsync(u => u.Email == professeur.Email))
+197:            {
+198:                ModelState.AddModelError("Email", "Un compte avec cette adresse email existe déjà.");
+199:                return View(professeur);
+200:            }
+201:
+202:            // ── Vérifier le code OTP ──────────────────────────────────
+203:            //    La clé dans _verificationCodes est indexée par l'email
+204:            //    utilisé lors de l'envoi (AccountEmail JS = professeur.Email).
+205:            if (!_verificationCodes.TryGetValue(professeur.Email, out var otpVal)
+206:                || otpVal.code != VerificationCode
+207:                || otpVal.expiry < DateTime.UtcNow)
+208:            {
+209:                _logger.LogWarning("[CREATE PROF] OTP invalide ou expiré pour {Email}. Code reçu={Code}",
+210:                    professeur.Email, VerificationCode);
+211:                ModelState.AddModelError("", "Code de vérification invalide ou expiré. Veuillez renvoyer le code sur l'onglet 'Compte utilisateur'.");
+212:                return View(professeur);
+213:            }
+214:
+215:            // ── Valider les fichiers ──────────────────────────────────
+216:            if (photoFile != null)
+217:            {
+218:                var ext = Path.GetExtension(photoFile.FileName).ToLowerInvariant();
+219:                if (!_allowedImageExt.Contains(ext) || photoFile.Length > MaxFileBytes)
+220:                {
+221:                    ModelState.AddModelError("photoFile", "Photo: types autorisés jpg/png, taille max 2 Mo.");
+222:                    return View(professeur);
+223:                }
+224:            }
+225:            if (cvFile != null)
+226:            {
+227:                var ext = Path.GetExtension(cvFile.FileName).ToLowerInvariant();
+228:                if (!_allowedCvExt.Contains(ext) || cvFile.Length > MaxFileBytes)
+229:                {
+230:                    ModelState.AddModelError("cvFile", "CV: format PDF uniquement, taille max 2 Mo.");
+231:                    return View(professeur);
+232:                }
+233:            }
+234:
+235:            // ── Correction séquences PostgreSQL (sécurité) ────────────
+236:            try
+237:            {
+238:                await _db.Database.ExecuteSqlRawAsync(
+239:                    "SELECT setval(pg_get_serial_sequence('public.utilisateur','id_utilisateur'), COALESCE(MAX(id_utilisateur),0)+1, false) FROM public.utilisateur;");
+240:                await _db.Database.ExecuteSqlRawAsync(
+241:                    "SELECT setval(pg_get_serial_sequence('public.professeur','id_professeur'), COALESCE(MAX(id_professeur),0)+1, false) FROM public.professeur;");
+242:            }
+243:            catch (Exception ex)
+244:            {
+245:                _logger.LogWarning("[CREATE PROF] Reset séquence ignoré : {Msg}", ex.Message);
+246:            }
+247:
+248:            // Ensure both inserts occur in a single transaction so we won't leave partial state
+249:            using var tx = await _db.Database.BeginTransactionAsync();
+250:            try
+251:            {
+252:                // FIX: Reset PostgreSQL sequences automatically if they are out of sync (best-effort)
+253:                try {
+254:                    await _db.Database.ExecuteSqlRawAsync("SELECT setval(pg_get_serial_sequence('public.utilisateur', 'id_utilisateur'), coalesce(max(id_utilisateur),0) + 1, true) FROM public.utilisateur;");
+255:                    await _db.Database.ExecuteSqlRawAsync("SELECT setval(pg_get_serial_sequence('public.professeur', 'id_professeur'), coalesce(max(id_professeur),0) + 1, true) FROM public.professeur;");
+256:                } catch { /* Ignore if not Postgres or insufficient privileges */ }
+257:
+258:                _db.Utilisateurs.Add(utilisateur);
+259:                var userSaved = await _db.SaveChangesAsync(); // Obtenir l'ID
+260:                if (userSaved == 0)
+261:                {
+262:                    ModelState.AddModelError(string.Empty, "Impossible de créer le compte utilisateur.");
+263:                    await tx.RollbackAsync();
+264:                    return View(professeur);
+265:                }
+266:
+267:                // ── 3. Lier le professeur au compte utilisateur ───────────
+268:                professeur.IdUtilisateur = utilisateur.IdUtilisateur;
+269:                professeur.DateCreation = DateTime.UtcNow;
+270:                if (professeur.CapaciteHoraireMax == 0) professeur.CapaciteHoraireMax = 20;
+271:                if (string.IsNullOrEmpty(professeur.Matricule))
+272:                {
+273:                    var maxId = await _db.Professeurs.MaxAsync(p => (int?)p.IdProfesseur) ?? 0;
+274:                    professeur.Matricule = $"PROF-{(maxId + 1):D4}";
+275:                }
+276:                professeur.EstActif = true;
+277:                professeur.CvUrl = professeur.CvUrl ?? string.Empty; // Valeur par défaut pour éviter l'erreur NOT NULL
+278:                professeur.PhotoUrl = professeur.PhotoUrl ?? string.Empty; // Idem
+279:                if (string.IsNullOrEmpty(professeur.SpecialitesSecondaires))
+280:                {
+281:                    professeur.SpecialitesSecondaires = "[]";
+282:                }
+283:
+284:                // Fix Npgsql UTC DateTime restriction for DateEmbauche
+285:                if (professeur.DateEmbauche.HasValue && professeur.DateEmbauche.Value.Kind == DateTimeKind.Unspecified)
+286:                {
+287:                    professeur.DateEmbauche = DateTime.SpecifyKind(professeur.DateEmbauche.Value, DateTimeKind.Utc);
+288:                }
+289:
+290:                _db.Professeurs.Add(professeur);
+291:                var profSaved = await _db.SaveChangesAsync();
+292:                if (profSaved == 0)
+293:                {
+294:                    ModelState.AddModelError(string.Empty, "Impossible d'enregistrer le professeur.");
+295:                    await tx.RollbackAsync();
+296:                    return View(professeur);
+297:                }
+298:
+299:                await tx.CommitAsync();
+300:            }
+301:            catch (Exception ex)
+302:            {
+303:                await tx.RollbackAsync();
+304:                ModelState.AddModelError(string.Empty, "Erreur lors de la création : " + ex.Message);
+305:                return View(professeur);
+306:            }
+307:
+308:            // ════════════════════════════════════════════════════════
+309:            // TRANSACTION ATOMIQUE : les deux inserts ou aucun
+310:            // ════════════════════════════════════════════════════════
+311:            await using var transaction = await _db.Database.BeginTransactionAsync();
+312:            try
+313:            {
+314:                // ── 1. Créer le compte Utilisateur ───────────────────
+315:                var utilisateur = new Utilisateur
+316:                {
+317:                    Nom             = professeur.Nom,
+318:                    Prenom          = professeur.Prenom,
+319:                    Email           = professeur.Email,
+320:                    Role            = "professeur",
+321:                    PasswordHash    = HashPassword(motDePasseTemp),
+322:                    TokenActivation = token,
+323:                    TokenExpiration = tokenExpiry,
+324:                    StatutCompte    = "EnAttente",
+325:                    PremierLogin    = true,
+326:                    DateCreation    = DateTime.UtcNow
+327:                };
+328:                _db.Utilisateurs.Add(utilisateur);
+329:                await _db.SaveChangesAsync(); // → génère utilisateur.IdUtilisateur
+330:
+331:                _logger.LogInformation("[CREATE PROF] Utilisateur #{Id} créé ({Email})",
+332:                    utilisateur.IdUtilisateur, utilisateur.Email);
+333:
+334:                // ── 2. Préparer toutes les colonnes NOT NULL ──────────
+335:                professeur.IdUtilisateur = utilisateur.IdUtilisateur;
+336:                professeur.DateCreation  = DateTime.UtcNow;
+337:                professeur.EstActif      = true;
+338:
+339:                // Valeurs par défaut sûres pour toutes les colonnes NOT NULL
+340:                if (string.IsNullOrEmpty(professeur.Matricule))
+341:                {
+342:                    var maxId = await _db.Professeurs.MaxAsync(p => (int?)p.IdProfesseur) ?? 0;
+343:                    professeur.Matricule = $"PROF-{(maxId + 1):D4}";
+344:                }
+345:                if (professeur.CapaciteHoraireMax <= 0) professeur.CapaciteHoraireMax = 20;
+346:                if (string.IsNullOrEmpty(professeur.SpecialitesSecondaires)) professeur.SpecialitesSecondaires = "[]";
+347:                if (string.IsNullOrEmpty(professeur.Biographie))             professeur.Biographie = string.Empty;
+348:                if (string.IsNullOrEmpty(professeur.TelephonePortable))      professeur.TelephonePortable = string.Empty;
+349:                if (string.IsNullOrEmpty(professeur.Titre))                  professeur.Titre = string.Empty;
+350:                if (string.IsNullOrEmpty(professeur.PhotoUrl))               professeur.PhotoUrl = string.Empty;
+351:                if (string.IsNullOrEmpty(professeur.CvUrl))                  professeur.CvUrl = string.Empty;
+352:                if (string.IsNullOrEmpty(professeur.Statut))                 professeur.Statut = "Actif";
+353:
+354:                // Correction UTC pour Npgsql
+355:                if (professeur.DateEmbauche.HasValue
+356:                    && professeur.DateEmbauche.Value.Kind == DateTimeKind.Unspecified)
+357:                {
+358:                    professeur.DateEmbauche = DateTime.SpecifyKind(
+359:                        professeur.DateEmbauche.Value, DateTimeKind.Utc);
+360:                }
+361:
+362:                // ── 3. Insérer le Professeur ──────────────────────────
+363:                _db.Professeurs.Add(professeur);
+364:                await _db.SaveChangesAsync(); // → génère professeur.IdProfesseur
+365:
+366:                _logger.LogInformation("[CREATE PROF] Professeur #{Id} ({Nom}) inséré avec succès.",
+367:                    professeur.IdProfesseur, $"{professeur.Prenom} {professeur.Nom}");
+368:
+369:                // ── 4. Upload fichiers (après avoir l'ID) ─────────────
+370:                var uploadsRoot = Path.Combine(
+371:                    _env.WebRootPath ?? "wwwroot",
+372:                    "uploads", "professeurs",
+373:                    professeur.IdProfesseur.ToString());
+374:                Directory.CreateDirectory(uploadsRoot);
+375:
+376:                if (photoFile != null)
+377:                {
+378:                    var ext      = Path.GetExtension(photoFile.FileName).ToLowerInvariant();
+379:                    var fileName = "photo" + ext;
+380:                    var filePath = Path.Combine(uploadsRoot, fileName);
+381:                    using (var stream = System.IO.File.Create(filePath))
+382:                        await photoFile.CopyToAsync(stream);
+383:                    professeur.PhotoUrl = $"/uploads/professeurs/{professeur.IdProfesseur}/{fileName}";
+384:                }
+385:                if (cvFile != null)
+386:                {
+387:                    var fileName = "cv" + Path.GetExtension(cvFile.FileName).ToLowerInvariant();
+388:                    var filePath = Path.Combine(uploadsRoot, fileName);
+389:                    using (var stream = System.IO.File.Create(filePath))
+390:                        await cvFile.CopyToAsync(stream);
+391:                    professeur.CvUrl = $"/uploads/professeurs/{professeur.IdProfesseur}/{fileName}";
+392:                }
+393:
+394:                // Mise à jour des URLs de fichiers si nécessaire
+395:                if (photoFile != null || cvFile != null)
+396:                {
+397:                    _db.Entry(professeur).State = EntityState.Modified;
+398:                    await _db.SaveChangesAsync();
+399:                }
+400:
+401:                // ── 5. Valider la transaction ─────────────────────────
+402:                await transaction.CommitAsync();
+403:
+404:                // Nettoyer le code OTP
+405:                _verificationCodes.TryRemove(professeur.Email, out _);
+406:            }
+407:            catch (DbUpdateException dbEx)
+408:            {
+409:                await transaction.RollbackAsync();
+410:                var detail = dbEx.InnerException?.Message ?? dbEx.Message;
+411:                _logger.LogError(dbEx, "[CREATE PROF] Erreur EF Core lors de l'insertion. Détail: {Detail}", detail);
+412:                ModelState.AddModelError("", $"Erreur base de données : {detail}");
+413:                return View(professeur);
+414:            }
+415:            catch (Exception ex)
+416:            {
+417:                await transaction.RollbackAsync();
+418:                _logger.LogError(ex, "[CREATE PROF] Erreur inattendue.");
+419:                ModelState.AddModelError("", $"Erreur inattendue : {ex.Message}");
+420:                return View(professeur);
+421:            }
+422:
+423:            // ── 6. Envoyer l'email d'activation (hors transaction) ───
+424:            string emailSent = "non";
+425:            try
+426:            {
+427:                var baseUrl        = GetBaseUrl();
+428:                var lienActivation = $"{baseUrl}/Professeurs/ActivationCompte" +
+429:                                     $"?token={Uri.EscapeDataString(token)}" +
+430:                                     $"&email={Uri.EscapeDataString(professeur.Email)}";
+431:                await _emailService.SendActivationEmailAsync(
+432:                    professeur.Email,
+433:                    $"{professeur.Prenom} {professeur.Nom}",
+434:                    motDePasseTemp,
+435:                    lienActivation);
+436:                emailSent = "oui";
+437:            }
+438:            catch (Exception ex)
+439:            {
+440:                _logger.LogWarning(ex, "[CREATE PROF] Envoi email échoué (non bloquant).");
+441:                TempData["EmailError"] = $"Professeur créé, mais l'email n'a pas pu être envoyé : {ex.Message}";
+442:            }
+443:
+444:            TempData["SuccessMessage"] = emailSent == "oui"
+445:                ? $"Professeur {professeur.Prenom} {professeur.Nom} créé avec succès. Email d'activation envoyé à {professeur.Email}."
+446:                : $"Professeur créé. Mot de passe temporaire : {motDePasseTemp}";
+447:
+448:            return RedirectToAction(nameof(Index));
+449:        }
+450:
+451:        // ─────────────────────────────────────────────────────────────
+452:        // ACTIVATION COMPTE (GET) — formulaire changement mdp
+453:        // ─────────────────────────────────────────────────────────────
+454:        [HttpGet]
+455:        public async Task<IActionResult> ActivationCompte(string token, string email)
+456:        {
+457:            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(email))
+458:                return View("ActivationErreur", "Lien d'activation invalide.");
+459:
+460:            var utilisateur = await _db.Utilisateurs
+461:                .FirstOrDefaultAsync(u => u.Email == email && u.TokenActivation == token);
+462:
+463:            if (utilisateur == null)
+464:                return View("ActivationErreur", "Lien d'activation invalide ou déjà utilisé.");
+465:
+466:            if (utilisateur.TokenExpiration < DateTime.UtcNow)
+467:                return View("ActivationErreur", "Ce lien d'activation a expiré. Contactez l'administrateur.");
+468:
+469:            ViewBag.Email = email;
+470:            ViewBag.Token = token;
+471:            ViewBag.Nom   = $"{utilisateur.Prenom} {utilisateur.Nom}";
+472:            return View();
+473:        }
+474:
+475:        // ─────────────────────────────────────────────────────────────
+476:        // ACTIVATION COMPTE (POST) — enregistre le nouveau mdp
+477:        // ─────────────────────────────────────────────────────────────
+478:        [HttpPost]
+479:        [ValidateAntiForgeryToken]
+480:        public async Task<IActionResult> ActivationCompte(string token, string email, string nouveauMotDePasse, string confirmationMotDePasse)
+481:        {
+482:            if (nouveauMotDePasse != confirmationMotDePasse)
+483:            {
+484:                ViewBag.Email  = email;
+485:                ViewBag.Token  = token;
+486:                ModelState.AddModelError("", "Les mots de passe ne correspondent pas.");
+487:                return View();
+488:            }
+489:
+490:            if (nouveauMotDePasse.Length < 8)
+491:            {
+492:                ViewBag.Email = email;
+493:                ViewBag.Token = token;
+494:                ModelState.AddModelError("", "Le mot de passe doit contenir au moins 8 caractères.");
+495:                return View();
+496:            }
+497:
+498:            var utilisateur = await _db.Utilisateurs
+499:                .FirstOrDefaultAsync(u => u.Email == email && u.TokenActivation == token);
+500:
+501:            if (utilisateur == null || utilisateur.TokenExpiration < DateTime.UtcNow)
+502:                return View("ActivationErreur", "Lien invalide ou expiré.");
+503:
+504:            // Mettre à jour le compte
+505:            utilisateur.PasswordHash    = HashPassword(nouveauMotDePasse);
+506:            utilisateur.TokenActivation = null;
+507:            utilisateur.TokenExpiration = null;
+508:            utilisateur.StatutCompte    = "Actif";
+509:            utilisateur.PremierLogin    = false;
+510:            await _db.SaveChangesAsync();
+511:
+512:            // Mettre à jour le statut du professeur lié
+513:            var professeur = await _db.Professeurs.FirstOrDefaultAsync(p => p.IdUtilisateur == utilisateur.IdUtilisateur);
+514:            if (professeur != null)
+515:            {
+516:                professeur.Statut = "Actif";
+517:                await _db.SaveChangesAsync();
+518:            }
+519:
+520:            // Envoyer notification de confirmation
+521:            try { await _emailService.SendPasswordChangedEmailAsync(utilisateur.Email, $"{utilisateur.Prenom} {utilisateur.Nom}"); }
+522:            catch { /* non bloquant */ }
+523:
+524:            TempData["ActivationOk"] = true;
+525:            return RedirectToAction("ActivationSuccess");
+526:        }
+527:
+528:        // ─────────────────────────────────────────────────────────────
+529:        // ACTIVATION SUCCESS
+530:        // ─────────────────────────────────────────────────────────────
+531:        public IActionResult ActivationSuccess() => View();
+532:
+533:        // ─────────────────────────────────────────────────────────────
+534:        // RENVOYER EMAIL D'ACTIVATION (admin)
+535:        // ─────────────────────────────────────────────────────────────
+536:        [HttpPost]
+537:        public async Task<IActionResult> RenvoyerEmail(int id)
+538:        {
+539:            var professeur = await _db.Professeurs
+540:                .Include(p => p.Utilisateur)
+541:                .FirstOrDefaultAsync(p => p.IdProfesseur == id);
+542:
+543:            if (professeur?.Utilisateur == null)
+544:                return Json(new { success = false, message = "Professeur ou compte introuvable." });
+545:
+546:            if (professeur.Utilisateur.StatutCompte == "Actif")
+547:                return Json(new { success = false, message = "Le compte est déjà actif." });
+548:
+549:            // Régénérer le token et le mot de passe
+550:            var motDePasseTemp = GeneratePassword();
+551:            var token          = GenerateSecureToken();
+552:            var tokenExpiry    = DateTime.UtcNow.AddHours(48);
+553:
+554:            professeur.Utilisateur.PasswordHash    = HashPassword(motDePasseTemp);
+555:            professeur.Utilisateur.TokenActivation = token;
+556:            professeur.Utilisateur.TokenExpiration = tokenExpiry;
+557:            professeur.Utilisateur.StatutCompte    = "EnAttente";
+558:            await _db.SaveChangesAsync();
+559:
+560:            try
+561:            {
+562:                var baseUrl = GetBaseUrl();
+563:                var lien    = $"{baseUrl}/Professeurs/ActivationCompte?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(professeur.Email)}";
+564:                await _emailService.SendActivationEmailAsync(
+565:                    professeur.Email,
+566:                    $"{professeur.Prenom} {professeur.Nom}",
+567:                    motDePasseTemp,
+568:                    lien
+569:                );
+570:                return Json(new { success = true, message = "Email d'activation renvoyé avec succès." });
+571:            }
+572:            catch (Exception ex)
+573:            {
+574:                return Json(new { success = false, message = $"Erreur SMTP : {ex.Message}" });
+575:            }
+576:        }
+577:
+578:        // ─────────────────────────────────────────────────────────────
+579:        // CHANGER STATUT COMPTE (suspendre / réactiver)
+580:        // ─────────────────────────────────────────────────────────────
+581:        [HttpPost]
+582:        public async Task<IActionResult> ChangerStatutCompte(int id, string statut)
+583:        {
+584:            var professeur = await _db.Professeurs
+585:                .Include(p => p.Utilisateur)
+586:                .FirstOrDefaultAsync(p => p.IdProfesseur == id);
+587:
+588:            if (professeur?.Utilisateur == null)
+589:                return Json(new { success = false, message = "Compte introuvable." });
+590:
+591:            var statutsValides = new[] { "Actif", "Suspendu", "Desactive" };
+592:            if (!statutsValides.Contains(statut))
+593:                return Json(new { success = false, message = "Statut invalide." });
+594:
+595:            professeur.Utilisateur.StatutCompte = statut;
+596:            await _db.SaveChangesAsync();
+597:
+598:            return Json(new { success = true, message = $"Compte mis à {statut}." });
+599:        }
+600:
+601:        // ─────────────────────────────────────────────────────────────
+602:        // EDIT GET
+603:        // ─────────────────────────────────────────────────────────────
+604:        public async Task<IActionResult> Edit(int id)
+605:        {
+606:            var p = await _db.Professeurs
+607:                .Include(p => p.Utilisateur)
+608:                .FirstOrDefaultAsync(p => p.IdProfesseur == id);
+609:            if (p == null) return NotFound();
+610:            return View(p);
+611:        }
+612:
+613:        // ─────────────────────────────────────────────────────────────
+614:        // EDIT POST
+615:        // ─────────────────────────────────────────────────────────────
+616:        [HttpPost]
+617:        [ValidateAntiForgeryToken]
+618:        public async Task<IActionResult> Edit(int id, Professeur professeur, IFormFile photoFile, IFormFile cvFile)
+619:        {
+620:            if (id != professeur.IdProfesseur) return BadRequest();
+621:
+622:            var allowedKeys = new[] { "IdProfesseur", "Nom", "Prenom", "Email", "Telephone", "TelephonePortable", "Titre", "Grade", "Specialite", "DateEmbauche", "Statut", "Biographie" };
+623:            foreach (var key in ModelState.Keys.ToList())
+624:            {
+625:                if (!allowedKeys.Contains(key))
+626:                {
+627:                    ModelState.Remove(key);
+628:                }
+629:            }
+630:
+631:            if (!ModelState.IsValid) return View(professeur);
+632:
+633:            // Vérifier si l'email existe déjà pour un autre utilisateur
+634:            if (await _db.Utilisateurs.AnyAsync(u => u.Email == professeur.Email && u.IdUtilisateur != professeur.IdUtilisateur))
+635:            {
+636:                ModelState.AddModelError("Email", "Un compte avec cette adresse email existe déjà.");
+637:                return View(professeur);
+638:            }
+639:
+640:            var existingProfesseur = await _db.Professeurs.FindAsync(id);
+641:            if (existingProfesseur == null) return NotFound();
+642:
+643:            // Validate files
+644:            if (photoFile != null)
+645:            {
+646:                var ext = Path.GetExtension(photoFile.FileName).ToLowerInvariant();
+647:                if (!_allowedImageExt.Contains(ext) || photoFile.Length > MaxFileBytes)
+648:                {
+649:                    ModelState.AddModelError("photoFile", "Photo: types autorisés jpg,png et taille max 2MB.");
+650:                    return View(professeur);
+651:                }
+652:            }
+653:            if (cvFile != null)
+654:            {
+655:                var ext = Path.GetExtension(cvFile.FileName).ToLowerInvariant();
+656:                if (!_allowedCvExt.Contains(ext) || cvFile.Length > MaxFileBytes)
+657:                {
+658:                    ModelState.AddModelError("cvFile", "CV: format PDF et taille max 2MB.");
+659:                    return View(professeur);
+660:                }
+661:            }
+662:
+663:            try
+664:            {
+665:                var uploadsRoot = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads", "professeurs", professeur.IdProfesseur.ToString());
+666:                Directory.CreateDirectory(uploadsRoot);
+667:
+668:                if (photoFile != null)
+669:                {
+670:                    var ext      = Path.GetExtension(photoFile.FileName).ToLowerInvariant();
+671:                    var fileName = "photo" + ext;
+672:                    var filePath = Path.Combine(uploadsRoot, fileName);
+673:                    using (var stream = System.IO.File.Create(filePath))
+674:                        await photoFile.CopyToAsync(stream);
+675:                    existingProfesseur.PhotoUrl = $"/uploads/professeurs/{professeur.IdProfesseur}/{fileName}";
+676:                }
+677:
+678:                if (cvFile != null)
+679:                {
+680:                    var fileName = "cv" + Path.GetExtension(cvFile.FileName).ToLowerInvariant();
+681:                    var filePath = Path.Combine(uploadsRoot, fileName);
+682:                    using (var stream = System.IO.File.Create(filePath))
+683:                        await cvFile.CopyToAsync(stream);
+684:                    existingProfesseur.CvUrl = $"/uploads/professeurs/{professeur.IdProfesseur}/{fileName}";
+685:                }
+686:
+687:                existingProfesseur.Matricule            = professeur.Matricule;
+688:                existingProfesseur.Titre                = professeur.Titre;
+689:                existingProfesseur.Nom                  = professeur.Nom;
+690:                existingProfesseur.Prenom               = professeur.Prenom;
+691:                existingProfesseur.Email                = professeur.Email;
+692:                existingProfesseur.Telephone            = professeur.Telephone;
+693:                existingProfesseur.TelephonePortable    = professeur.TelephonePortable;
+694:                existingProfesseur.Grade                = professeur.Grade;
+695:
+696:                existingProfesseur.Specialite           = professeur.Specialite;
+697:                existingProfesseur.SpecialitesSecondaires = professeur.SpecialitesSecondaires;
+698:                
+699:                // Fix Npgsql UTC DateTime restriction for DateEmbauche
+700:                if (professeur.DateEmbauche.HasValue && professeur.DateEmbauche.Value.Kind == DateTimeKind.Unspecified)
+701:                {
+702:                    existingProfesseur.DateEmbauche = DateTime.SpecifyKind(professeur.DateEmbauche.Value, DateTimeKind.Utc);
+703:                }
+704:                else
+705:                {
+706:                    existingProfesseur.DateEmbauche = professeur.DateEmbauche;
+707:                }
+708:
+709:                existingProfesseur.Statut               = professeur.Statut;
+710:                existingProfesseur.CapaciteHoraireMax   = professeur.CapaciteHoraireMax;
+711:                existingProfesseur.Biographie           = professeur.Biographie;
+712:                existingProfesseur.DateModification     = DateTime.UtcNow;
+713:
+714:                _db.Update(existingProfesseur);
+715:                await _db.SaveChangesAsync();
+716:            }
+717:            catch (DbUpdateConcurrencyException)
+718:            {
+719:                if (!_db.Professeurs.Any(e => e.IdProfesseur == id)) return NotFound();
+720:                throw;
+721:            }
+722:
+723:            return RedirectToAction(nameof(Index));
+724:        }
+725:
+726:        // ─────────────────────────────────────────────────────────────
+727:        // DELETE GET
+728:        // ─────────────────────────────────────────────────────────────
+729:        public async Task<IActionResult> Delete(int id)
+730:        {
+731:            var p = await _db.Professeurs.FindAsync(id);
+732:            if (p == null) return NotFound();
+733:            return View(p);
+734:        }
+735:
+736:        // ─────────────────────────────────────────────────────────────
+737:        // DELETE POST
+738:        // ─────────────────────────────────────────────────────────────
+739:        [HttpPost, ActionName("Delete")]
+740:        [ValidateAntiForgeryToken]
+741:        public async Task<IActionResult> DeleteConfirmed(int id)
+742:        {
+743:            var p = await _db.Professeurs
+744:                .Include(p => p.Utilisateur)
+745:                .FirstOrDefaultAsync(p => p.IdProfesseur == id);
+746:            if (p == null) return NotFound();
+747:
+748:            var uploadsRoot = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads", "professeurs", id.ToString());
+749:            if (Directory.Exists(uploadsRoot)) Directory.Delete(uploadsRoot, true);
+750:
+751:            // Supprimer le compte utilisateur associé
+752:            if (p.Utilisateur != null)
+753:                _db.Utilisateurs.Remove(p.Utilisateur);
+754:
+755:            _db.Professeurs.Remove(p);
+756:            await _db.SaveChangesAsync();
+757:            return RedirectToAction(nameof(Index));
+758:        }
+759:
+760:        // ─────────────────────────────────────────────────────────────
+761:        // HELPERS PRIVÉS
+762:        // ─────────────────────────────────────────────────────────────
+763:        private static string GeneratePassword()
+764:        {
+765:            const string upper   = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+766:            const string lower   = "abcdefghjkmnpqrstuvwxyz";
+767:            const string digits  = "23456789";
+768:            const string special = "@#!$";
+769:            const string all     = upper + lower + digits + special;
+770:
+771:            using var rng = RandomNumberGenerator.Create();
+772:            var buf = new byte[12];
+773:            rng.GetBytes(buf);
+774:
+775:            var password = new char[10];
+776:            password[0] = upper[buf[0]  % upper.Length];
+777:            password[1] = lower[buf[1]  % lower.Length];
+778:            password[2] = digits[buf[2] % digits.Length];
+779:            password[3] = special[buf[3] % special.Length];
+780:            for (int i = 4; i < 10; i++)
+781:                password[i] = all[buf[i] % all.Length];
+782:
+783:            // Mélanger
+784:            for (int i = password.Length - 1; i > 0; i--)
+785:            {
+786:                rng.GetBytes(buf);
+787:                int j = buf[0] % (i + 1);
+788:                (password[i], password[j]) = (password[j], password[i]);
+789:            }
+790:            return new string(password);
+791:        }
+792:
+793:        private static string GenerateSecureToken()
+794:        {
+795:            using var rng = RandomNumberGenerator.Create();
+796:            var bytes = new byte[48];
+797:            rng.GetBytes(bytes);
+798:            return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
+799:        }
+800:
+801:        private static string HashPassword(string password)
+802:        {
+803:            using var sha256 = SHA256.Create();
+804:            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password + "EMIT_SALT_2026"));
+805:            return Convert.ToBase64String(bytes);
+806:        }
+807:
+808:        private string GetBaseUrl()
+809:        {
+810:            var request = _httpContextAccessor.HttpContext?.Request;
+811:            if (request == null) return _config["AppSettings:BaseUrl"] ?? "http://localhost:5000";
+812:            return $"{request.Scheme}://{request.Host}";
+813:        }
+814:    }
+815:}

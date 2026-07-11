@@ -53,6 +53,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             ModelState.Remove("RefSemestre");
             ModelState.Remove("ProfesseurResponsable");
             ModelState.Remove("Cours");
+            ModelState.Remove("AffectationsMatieres");
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 

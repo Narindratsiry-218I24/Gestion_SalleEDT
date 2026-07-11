@@ -69,6 +69,11 @@
     <script>
         (async function () {
             const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const role = (user.Role || user.role || "").toLowerCase();
+            if (role === "professeur") {
+                window.location.replace("/ProfesseurDashboard/Index?email=" + encodeURIComponent(user.Email || user.email));
+                return;
+            }
             const firstName = user.Prenom || user.prenom || user.Nom || user.nom || user.Role || user.role || "";
             document.getElementById("welcomeTitle").textContent = "Bienvenue" + (firstName ? ", " + firstName : "");
 

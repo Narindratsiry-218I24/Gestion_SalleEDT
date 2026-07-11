@@ -1,0 +1,115 @@
+@model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
+@{
+    ViewData["Title"] = "Nouvelle Demande";
+    var email = Context.Request.Query["email"].ToString();
+    var prof = Model.Professeur;
+}
+
+<div class="prof-dash">
+    <div class="section-header">
+        <h2 class="section-title-h2">Formuler une nouvelle demande</h2>
+        <a href="@Url.Action("MesDemandes", "ProfesseurDashboard", new { email })" class="btn btn-secondary" style="background:#f1f5f9; color:#475569; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; text-decoration: none;">
+            Retour aux demandes
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div style="background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="card-base" style="max-width: 800px; margin: 0 auto;">
+        <form method="post" action="@Url.Action("SoumettreDemande", "ProfesseurDashboard", new { email = email })">
+            @Html.AntiForgeryToken()
+            
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- Type de Demande -->
+                <div>
+                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Type de Demande</label>
+                    <select name="typeDemande" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                        <option value="modification">Modification de créneau</option>
+                        <option value="annulation">Annulation de cours</option>
+                        <option value="ajout">Ajout de créneau supplémentaire</option>
+                    </select>
+                </div>
+
+                <!-- Matière -->
+                <div>
+                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Matière (Optionnel si général)</label>
+                    <select name="idMatiere" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                        <option value="">-- Sélectionnez une matière --</option>
+                        @if (Model.Matieres != null)
+                        {
+                            foreach (var mat in Model.Matieres)
+                            {
+                                <option value="@mat.IdMatiere">@mat.NomMatiere</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Classe -->
+                <div>
+                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Classe (Optionnel)</label>
+                    <select name="idClasse" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                        <option value="">-- Sélectionnez une classe --</option>
+                        @if (Model.Classes != null)
+                        {
+                            foreach (var classe in Model.Classes)
+                            {
+                                <option value="@classe.IdClasse">@classe.NomClasse</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Salle -->
+                <div>
+                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Salle Souhaitée (Optionnel)</label>
+                    <select name="idSalle" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
+                        <option value="">-- Indifférent / Laissez l'administration choisir --</option>
+                        @if (Model.Salles != null)
+                        {
+                            foreach (var salle in Model.Salles)
+                            {
+                                <option value="@salle.IdSalle">@salle.NomSalle (Capacité: @salle.Capacite)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Date Souhaitée -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Date Souhaitée</label>
+                        <input type="date" name="dateSouhaitee" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;" />
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Heure de début</label>
+                        <input type="time" name="heureDebut" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;" />
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Heure de fin</label>
+                        <input type="time" name="heureFin" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;" />
+                    </div>
+                </div>
+
+                <!-- Justification -->
+                <div>
+                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Justification / Commentaire</label>
+                    <textarea name="justification" rows="4" required placeholder="Expliquez la raison de votre demande..." style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;"></textarea>
+                </div>
+
+                <!-- Bouton -->
+                <div style="text-align: right; margin-top: 1rem;">
+                    <button type="submit" style="background: #17203A; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer;">
+                        Soumettre la demande
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
