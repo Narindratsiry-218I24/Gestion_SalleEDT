@@ -53,5 +53,6 @@ public class Matiere
     public virtual ICollection<Prerequisite>? IsPrerequisiteFor { get; set; }
 
     public virtual ICollection<Cours>? Cours { get; set; } = new List<Cours>();
+    public virtual ICollection<AffectationMatiere>? AffectationsMatieres { get; set; }
 }
 }

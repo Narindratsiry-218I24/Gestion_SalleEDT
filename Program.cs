@@ -49,6 +49,8 @@ builder.Services.AddScoped<IPlanningService, PlanningService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 

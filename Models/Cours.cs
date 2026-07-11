@@ -68,6 +68,19 @@ namespace Gestion_SalleClasseEDT.Models
         [ForeignKey("IdAffectation")]
         public virtual AffectationMatiere? AffectationMatiere { get; set; }
 
+[Column("id_groupe")]
+        public int? IdGroupe { get; set; }
+
+        [ForeignKey("IdGroupe")]
+        public virtual Groupe? Groupe { get; set; }
+
+        [Column("objectives")]
+        public string? Objectives { get; set; }
+        [Column("skills")]
+        public string? Skills { get; set; }
+        [Column("evaluation")]
+        public string? Evaluation { get; set; }
+
         public virtual ICollection<Creneau>? Creneaux { get; set; }
         public virtual ICollection<DemandeEdt>? DemandesEdt { get; set; }
         
