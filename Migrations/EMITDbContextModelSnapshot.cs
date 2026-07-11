@@ -23,6 +23,76 @@ namespace Gestion_SalleClasseEDT.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.AffectationMatiere", b =>
+                {
+                    b.Property<int>("IdAffectation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id_affectation");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdAffectation"));
+
+                    b.Property<string>("Commentaire")
+                        .HasColumnType("text")
+                        .HasColumnName("commentaire");
+
+                    b.Property<DateTime>("DateDebut")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_debut");
+
+                    b.Property<DateTime>("DateFin")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_fin");
+
+                    b.Property<bool>("EstActif")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_actif");
+
+                    b.Property<int>("HeuresCm")
+                        .HasColumnType("integer")
+                        .HasColumnName("heures_cm");
+
+                    b.Property<int>("HeuresTd")
+                        .HasColumnType("integer")
+                        .HasColumnName("heures_td");
+
+                    b.Property<int>("HeuresTp")
+                        .HasColumnType("integer")
+                        .HasColumnName("heures_tp");
+
+                    b.Property<int>("IdClasse")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_classe");
+
+                    b.Property<int>("IdMatiere")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_matiere");
+
+                    b.Property<int>("IdProfesseur")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_professeur");
+
+                    b.Property<int>("IdSemestre")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_semestre");
+
+                    b.Property<int>("VolumeHoraireTotal")
+                        .HasColumnType("integer")
+                        .HasColumnName("volume_horaire_total");
+
+                    b.HasKey("IdAffectation");
+
+                    b.HasIndex("IdClasse");
+
+                    b.HasIndex("IdMatiere");
+
+                    b.HasIndex("IdProfesseur");
+
+                    b.HasIndex("IdSemestre");
+
+                    b.ToTable("affectation_matiere", "public");
+                });
+
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.AnneeAcademique", b =>
                 {
                     b.Property<int>("IdAnnee")
@@ -32,6 +102,10 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdAnnee"));
 
+                    b.Property<DateTime?>("DateArchivage")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_archivage");
+
                     b.Property<DateTime>("DateDebutAnnee")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_debut_annee");
@@ -39,6 +113,14 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Property<DateTime>("DateFinAnnee")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_fin_annee");
+
+                    b.Property<bool>("EstActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_active");
+
+                    b.Property<bool>("EstArchivee")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_archivee");
 
                     b.Property<string>("Libelle")
                         .IsRequired()
@@ -105,13 +187,26 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdClasse"));
 
+                    b.Property<string>("CodeClasse")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code_classe");
+
+                    b.Property<bool>("EstArchivee")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_archivee");
+
+                    b.Property<int>("IdAnneeAcademique")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_annee_academique");
+
                     b.Property<int>("IdFiliere")
                         .HasColumnType("integer")
                         .HasColumnName("id_filiere");
 
-                    b.Property<int>("IdSemestre")
+                    b.Property<int>("IdNiveau")
                         .HasColumnType("integer")
-                        .HasColumnName("id_semestre");
+                        .HasColumnName("id_niveau");
 
                     b.Property<string>("NomClasse")
                         .IsRequired()
@@ -121,9 +216,11 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     b.HasKey("IdClasse");
 
+                    b.HasIndex("IdAnneeAcademique");
+
                     b.HasIndex("IdFiliere");
 
-                    b.HasIndex("IdSemestre");
+                    b.HasIndex("IdNiveau");
 
                     b.ToTable("classe", "public");
                 });
@@ -137,10 +234,6 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdCours"));
 
-                    b.Property<string>("Bibliography")
-                        .HasColumnType("text")
-                        .HasColumnName("bibliography");
-
                     b.Property<int>("Capacity")
                         .HasColumnType("integer")
                         .HasColumnName("capacity");
@@ -148,6 +241,10 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Property<string>("Evaluation")
                         .HasColumnType("text")
                         .HasColumnName("evaluation");
+
+                    b.Property<int?>("IdAffectation")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_affectation");
 
                     b.Property<int?>("IdClasse")
                         .HasColumnType("integer")
@@ -169,18 +266,9 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id_salle");
 
-                    b.Property<int?>("IdSemestre")
+                    b.Property<int>("IdSemestre")
                         .HasColumnType("integer")
                         .HasColumnName("id_semestre");
-
-                    b.Property<string>("LanguageStr")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("language");
-
-                    b.Property<string>("Methods")
-                        .HasColumnType("text")
-                        .HasColumnName("methods");
 
                     b.Property<string>("Mode")
                         .HasMaxLength(50)
@@ -210,6 +298,8 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnName("volume_hours");
 
                     b.HasKey("IdCours");
+
+                    b.HasIndex("IdAffectation");
 
                     b.HasIndex("IdClasse");
 
@@ -547,6 +637,51 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.ToTable("niveau", "public");
                 });
 
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Notification", b =>
+                {
+                    b.Property<int>("IdNotification")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdNotification"));
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DateLecture")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("EstLue")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("IdProfesseur")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Lien")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Titre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("IdNotification");
+
+                    b.HasIndex("IdProfesseur");
+
+                    b.ToTable("Notifications", "public");
+                });
+
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Prerequisite", b =>
                 {
                     b.Property<int>("Id")
@@ -582,11 +717,66 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdProfesseur"));
 
+                    b.Property<string>("Biographie")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("biographie");
+
+                    b.Property<int>("CapaciteHoraireMax")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacite_horaire_max");
+
+                    b.Property<string>("CvUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("cv_url");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_creation");
+
+                    b.Property<DateTime?>("DateEmbauche")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_embauche");
+
+                    b.Property<DateTime?>("DateModification")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_modification");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("email");
+
+                    b.Property<bool>("EstActif")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_actif");
+
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("grade");
+
+                    b.Property<int>("HeuresEffectuees")
+                        .HasColumnType("integer")
+                        .HasColumnName("heures_effectuees");
+
+                    b.Property<int?>("IdAnneeAcademique")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_annee_academique");
+
+                    b.Property<int?>("IdUtilisateur")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_utilisateur");
+
+                    b.Property<string>("Matricule")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("matricule");
 
                     b.Property<string>("Nom")
                         .IsRequired()
@@ -594,11 +784,34 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("nom");
 
+                    b.Property<string>("PhotoUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("photo_url");
+
                     b.Property<string>("Prenom")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("prenom");
+
+                    b.Property<string>("Specialite")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("specialite");
+
+                    b.Property<string>("SpecialitesSecondaires")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("specialites_secondaires");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("statut");
 
                     b.Property<string>("Telephone")
                         .IsRequired()
@@ -606,9 +819,26 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("telephone");
 
+                    b.Property<string>("TelephonePortable")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("telephone_portable");
+
+                    b.Property<string>("Titre")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("titre");
+
                     b.HasKey("IdProfesseur");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("IdAnneeAcademique");
+
+                    b.HasIndex("IdUtilisateur")
                         .IsUnique();
 
                     b.ToTable("professeur", "public");
@@ -846,6 +1076,10 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date_fin");
 
+                    b.Property<bool>("EstArchivee")
+                        .HasColumnType("boolean")
+                        .HasColumnName("est_archivee");
+
                     b.Property<int>("IdAnnee")
                         .HasColumnType("integer")
                         .HasColumnName("id_annee");
@@ -939,6 +1173,14 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdUtilisateur"));
 
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_creation");
+
+                    b.Property<DateTime?>("DateDerniereConnexion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_derniere_connexion");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -950,6 +1192,15 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("nom");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<bool>("PremierLogin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("premier_login");
 
                     b.Property<string>("Prenom")
                         .IsRequired()
@@ -963,6 +1214,21 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("role");
 
+                    b.Property<string>("StatutCompte")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("statut_compte");
+
+                    b.Property<string>("TokenActivation")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("token_activation");
+
+                    b.Property<DateTime?>("TokenExpiration")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("token_expiration");
+
                     b.HasKey("IdUtilisateur");
 
                     b.HasIndex("Email")
@@ -971,27 +1237,74 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.ToTable("utilisateur", "public");
                 });
 
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.AffectationMatiere", b =>
+                {
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Classe", "Classe")
+                        .WithMany("AffectationsMatieres")
+                        .HasForeignKey("IdClasse")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Matiere", "Matiere")
+                        .WithMany("AffectationsMatieres")
+                        .HasForeignKey("IdMatiere")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Professeur", "Professeur")
+                        .WithMany("AffectationsMatieres")
+                        .HasForeignKey("IdProfesseur")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Semestre", "Semestre")
+                        .WithMany("AffectationsMatieres")
+                        .HasForeignKey("IdSemestre")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Classe");
+
+                    b.Navigation("Matiere");
+
+                    b.Navigation("Professeur");
+
+                    b.Navigation("Semestre");
+                });
+
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Classe", b =>
                 {
+                    b.HasOne("Gestion_SalleClasseEDT.Models.AnneeAcademique", "AnneeAcademique")
+                        .WithMany("Classes")
+                        .HasForeignKey("IdAnneeAcademique")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Gestion_SalleClasseEDT.Models.Filiere", "Filiere")
                         .WithMany("Classes")
                         .HasForeignKey("IdFiliere")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Gestion_SalleClasseEDT.Models.Semestre", "Semestre")
-                        .WithMany("Classes")
-                        .HasForeignKey("IdSemestre")
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Niveau", "Niveau")
+                        .WithMany()
+                        .HasForeignKey("IdNiveau")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("AnneeAcademique");
+
                     b.Navigation("Filiere");
 
-                    b.Navigation("Semestre");
+                    b.Navigation("Niveau");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Cours", b =>
                 {
+                    b.HasOne("Gestion_SalleClasseEDT.Models.AffectationMatiere", "AffectationMatiere")
+                        .WithMany("Cours")
+                        .HasForeignKey("IdAffectation");
+
                     b.HasOne("Gestion_SalleClasseEDT.Models.Classe", "Classe")
                         .WithMany("Cours")
                         .HasForeignKey("IdClasse");
@@ -1016,7 +1329,11 @@ namespace Gestion_SalleClasseEDT.Migrations
 
                     b.HasOne("Gestion_SalleClasseEDT.Models.Semestre", "Semestre")
                         .WithMany("Cours")
-                        .HasForeignKey("IdSemestre");
+                        .HasForeignKey("IdSemestre")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AffectationMatiere");
 
                     b.Navigation("Classe");
 
@@ -1049,7 +1366,7 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .HasForeignKey("IdClasse");
 
                     b.HasOne("Gestion_SalleClasseEDT.Models.Cours", "Cours")
-                        .WithMany()
+                        .WithMany("DemandesEdt")
                         .HasForeignKey("IdCours");
 
                     b.HasOne("Gestion_SalleClasseEDT.Models.Utilisateur", "Demandeur")
@@ -1131,7 +1448,7 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .IsRequired();
 
                     b.HasOne("Gestion_SalleClasseEDT.Models.Professeur", "ProfesseurResponsable")
-                        .WithMany()
+                        .WithMany("MatieresResponsable")
                         .HasForeignKey("IdProfesseurResponsable");
 
                     b.HasOne("Gestion_SalleClasseEDT.Models.RefSemestre", "RefSemestre")
@@ -1158,6 +1475,17 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Navigation("Mention");
                 });
 
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Notification", b =>
+                {
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Professeur", "Professeur")
+                        .WithMany()
+                        .HasForeignKey("IdProfesseur")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Professeur");
+                });
+
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Prerequisite", b =>
                 {
                     b.HasOne("Gestion_SalleClasseEDT.Models.Matiere", "Matiere")
@@ -1175,6 +1503,21 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Navigation("Matiere");
 
                     b.Navigation("PrerequisiteMatiere");
+                });
+
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Professeur", b =>
+                {
+                    b.HasOne("Gestion_SalleClasseEDT.Models.AnneeAcademique", "AnneeAcademique")
+                        .WithMany("Professeurs")
+                        .HasForeignKey("IdAnneeAcademique");
+
+                    b.HasOne("Gestion_SalleClasseEDT.Models.Utilisateur", "Utilisateur")
+                        .WithOne("Professeur")
+                        .HasForeignKey("Gestion_SalleClasseEDT.Models.Professeur", "IdUtilisateur");
+
+                    b.Navigation("AnneeAcademique");
+
+                    b.Navigation("Utilisateur");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.PropositionAdmin", b =>
@@ -1291,19 +1634,32 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.Navigation("Semestre");
                 });
 
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.AffectationMatiere", b =>
+                {
+                    b.Navigation("Cours");
+                });
+
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.AnneeAcademique", b =>
                 {
+                    b.Navigation("Classes");
+
+                    b.Navigation("Professeurs");
+
                     b.Navigation("Semestres");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Classe", b =>
                 {
+                    b.Navigation("AffectationsMatieres");
+
                     b.Navigation("Cours");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Cours", b =>
                 {
                     b.Navigation("Creneaux");
+
+                    b.Navigation("DemandesEdt");
 
                     b.Navigation("Seances");
                 });
@@ -1322,6 +1678,8 @@ namespace Gestion_SalleClasseEDT.Migrations
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Matiere", b =>
                 {
+                    b.Navigation("AffectationsMatieres");
+
                     b.Navigation("Cours");
 
                     b.Navigation("IsPrerequisiteFor");
@@ -1343,9 +1701,13 @@ namespace Gestion_SalleClasseEDT.Migrations
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Professeur", b =>
                 {
+                    b.Navigation("AffectationsMatieres");
+
                     b.Navigation("Cours");
 
                     b.Navigation("Disponibilites");
+
+                    b.Navigation("MatieresResponsable");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.RefSemestre", b =>
@@ -1364,9 +1726,14 @@ namespace Gestion_SalleClasseEDT.Migrations
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Semestre", b =>
                 {
-                    b.Navigation("Classes");
+                    b.Navigation("AffectationsMatieres");
 
                     b.Navigation("Cours");
+                });
+
+            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Utilisateur", b =>
+                {
+                    b.Navigation("Professeur");
                 });
 #pragma warning restore 612, 618
         }
