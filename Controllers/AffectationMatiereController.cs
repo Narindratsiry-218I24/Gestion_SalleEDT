@@ -82,13 +82,22 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (affectation.VolumeHoraireTotal <= 0)
                 return BadRequest("Le volume horaire total doit etre positif.");
 
-            var existe = db.AffectationsMatieres.Any(a =>
+            var existePourCeProf = db.AffectationsMatieres.Any(a =>
                 a.IdClasse == affectation.IdClasse &&
                 a.IdMatiere == affectation.IdMatiere &&
                 a.IdProfesseur == affectation.IdProfesseur &&
-                a.IdSemestre == affectation.IdSemestre);
+                a.IdSemestre == affectation.IdSemestre &&
+                a.EstActif);
 
-            if (existe) return BadRequest("Cette affectation existe deja pour cette classe, matiere, professeur et semestre.");
+            if (existePourCeProf) return BadRequest("Cette affectation existe déjà pour ce professeur.");
+
+            var existePourAutreProf = db.AffectationsMatieres.Any(a =>
+                a.IdClasse == affectation.IdClasse &&
+                a.IdMatiere == affectation.IdMatiere &&
+                a.IdSemestre == affectation.IdSemestre &&
+                a.EstActif);
+
+            if (existePourAutreProf) return BadRequest("Cette matière est déjà affectée à un autre professeur pour cette classe.");
 
             db.AffectationsMatieres.Add(affectation);
             db.SaveChanges();

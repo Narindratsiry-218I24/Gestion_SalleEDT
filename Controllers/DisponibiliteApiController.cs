@@ -18,14 +18,13 @@ namespace Gestion_SalleClasseEDT.Controllers
         {
             _db = db;
         }
-
         [HttpGet("Mois")]
         public async Task<IActionResult> GetMois(string email, int mois, int annee)
         {
             var prof = await _db.Professeurs.FirstOrDefaultAsync(p => p.Email == email);
             if (prof == null) return NotFound("Professeur non trouvé.");
 
-            var startDate = new DateTime(annee, mois, 1);
+            var startDate = new DateTime(annee, mois, 1, 0, 0, 0, DateTimeKind.Utc);
             var endDate = startDate.AddMonths(1).AddDays(-1);
 
             var dispos = await _db.DisponibilitesProf
@@ -36,7 +35,15 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(c => c.Matiere)
                 .Include(c => c.Salle)
                 .Include(c => c.Creneaux)
+                .Include(c => c.AffectationMatiere)
                 .Where(c => c.IdProfesseur == prof.IdProfesseur)
+                .ToListAsync();
+
+            var user = await _db.Utilisateurs.FirstOrDefaultAsync(u => u.Email == email);
+            int userId = user?.IdUtilisateur ?? 0;
+
+            var proposedSlots = await _db.DemandesEdt
+                .Where(d => d.IdDemandeur == userId && d.DateSouhaitee >= startDate && d.DateSouhaitee <= endDate)
                 .ToListAsync();
 
             var jours = new List<object>();
@@ -60,29 +67,27 @@ namespace Gestion_SalleClasseEDT.Controllers
 
                 // Check specific date availability (YYYY-MM-DD)
                 var dayDispos = dispos.Where(d => d.JourSemaine == dateStr).ToList();
-                
-                // Fallback to generic day if no specific date is defined (optional, but let's just use specific dates now)
-                if (!dayDispos.Any()) 
-                {
-                    // If you want generic fallback: dayDispos = dispos.Where(d => d.JourSemaine.ToUpper() == jourStr).ToList();
-                    // But the user requested specific date by default. We'll leave it empty to force specific dates.
-                }
 
                 bool hasMatin = dayDispos.Any(d => d.HeureDebut <= new TimeSpan(8, 0, 0) && d.HeureFin >= new TimeSpan(12, 0, 0));
                 bool hasAprem = dayDispos.Any(d => d.HeureDebut <= new TimeSpan(14, 0, 0) && d.HeureFin >= new TimeSpan(18, 0, 0));
 
+                bool hasProposed = proposedSlots.Any(p => p.DateSouhaitee.HasValue && p.DateSouhaitee.Value.Date == currentDate.Date);
+
                 string statut = "blanc"; // non défini
-                if (hasMatin && hasAprem) statut = "vert";
+                if (hasProposed) statut = "violet";
+                else if (hasMatin && hasAprem) statut = "vert";
                 else if (hasMatin || hasAprem) statut = "orange";
                 else if (dayDispos.Any()) statut = "rouge"; 
 
                 var coursDuJour = coursQuery.SelectMany(c => c.Creneaux
-                    .Where(cr => cr.JourSemaine.ToUpper() == jourStr)
+                    .Where(cr => cr.JourSemaine.ToUpper() == jourStr &&
+                                 (c.AffectationMatiere == null || 
+                                 (currentDate.Date >= c.AffectationMatiere.DateDebut.Date && currentDate.Date <= c.AffectationMatiere.DateFin.Date)))
                     .Select(cr => new {
                         heureDebut = cr.HeureDebut.ToString(@"hh\:mm"),
                         heureFin = cr.HeureFin.ToString(@"hh\:mm"),
                         matiere = c.Matiere?.NomMatiere ?? "Cours",
-                        type = c.TypeCours ?? "CM",
+                        type = c.TypeCours ?? "Cours",
                         salle = c.Salle?.NomSalle ?? "À définir"
                     })).OrderBy(c => c.heureDebut).ToList();
 

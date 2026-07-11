@@ -75,7 +75,14 @@
             };
 
             // Prepare events from model
-            const rawEvents = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CreneauxSemaine));
+            const rawEvents = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CreneauxSemaine.Select(c => new {
+                c.NomMatiere,
+                c.NomClasse,
+                c.TypeCours,
+                c.JourSemaine,
+                HeureDebut = c.HeureDebut.ToString(@"hh\:mm\:ss"),
+                HeureFin = c.HeureFin.ToString(@"hh\:mm\:ss")
+            })));
             const events = rawEvents.map(e => {
                 const dayInt = dayMap[e.JourSemaine] !== undefined ? dayMap[e.JourSemaine] : 1;
                 return {

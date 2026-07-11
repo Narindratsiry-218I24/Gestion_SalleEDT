@@ -50,6 +50,8 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(p => p.Cours)
                     .ThenInclude(c => c.Salle)
                 .Include(p => p.Cours)
+                    .ThenInclude(c => c.AffectationMatiere)
+                .Include(p => p.Cours)
                     .ThenInclude(c => c.Creneaux)
                 .Include(p => p.Disponibilites)
                 .FirstOrDefaultAsync(p => p.Email == email);
@@ -111,6 +113,39 @@ namespace Gestion_SalleClasseEDT.Controllers
         }
 
         // ─────────────────────────────────────────────────────────────
+        // PLANIFIER CRÉNEAUX — interface interactive
+        // ─────────────────────────────────────────────────────────────
+        public async Task<IActionResult> PlanifierCreneaux(string email)
+        {
+            var prof = await GetProfesseurFromRequest();
+            if (prof == null) return View("ProfNonTrouve");
+
+            var vm = new ProfesseurDashboardViewModel(prof, _db);
+            await vm.LoadAsync();
+            
+            // Charger les affectations du professeur
+            var mesAffectations = prof.AffectationsMatieres?.ToList() ?? new List<AffectationMatiere>();
+            var mesClassesIds = mesAffectations.Select(a => a.IdClasse).Distinct().ToList();
+            var mesMatieresIds = mesAffectations.Select(a => a.IdMatiere).Distinct().ToList();
+
+            vm.Classes = await _db.Classes
+                .Include(c => c.Filiere).ThenInclude(f => f.Mention)
+                .Include(c => c.Niveau)
+                .Where(c => mesClassesIds.Contains(c.IdClasse))
+                .OrderBy(c => c.NomClasse)
+                .ToListAsync();
+                
+            vm.Matieres = await _db.Matieres
+                .Where(m => mesMatieresIds.Contains(m.IdMatiere))
+                .OrderBy(m => m.NomMatiere)
+                .ToListAsync();
+                
+            vm.Salles = await _db.Salles.OrderBy(s => s.NomSalle).ToListAsync();
+
+            return View(vm);
+        }
+
+        // ─────────────────────────────────────────────────────────────
         // NOUVELLE DEMANDE — formulaire
         // ─────────────────────────────────────────────────────────────
         public async Task<IActionResult> NouvelleDemande(string email)
@@ -120,13 +155,60 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             var vm = new ProfesseurDashboardViewModel(prof, _db);
             await vm.LoadAsync();
-            // Charger données pour le formulaire
+            
+            // Charger données pour le formulaire: UNIQUEMENT Celles enseignées par le prof
+            var mesAffectations = prof.AffectationsMatieres?.ToList() ?? new List<AffectationMatiere>();
+            
+            var mesClassesIds = mesAffectations.Select(a => a.IdClasse).Distinct().ToList();
+            var mesMatieresIds = mesAffectations.Select(a => a.IdMatiere).Distinct().ToList();
+
+            var heuresPlanifieesDict = new System.Collections.Generic.Dictionary<string, int>();
+            if (prof.Cours != null)
+            {
+                foreach (var c in prof.Cours)
+                {
+                    var key = $"{c.IdMatiere}|{c.IdClasse}";
+                    var heures = c.Creneaux?.Sum(cr => (int)(cr.HeureFin - cr.HeureDebut).TotalHours) ?? 0;
+                    
+                    if (heuresPlanifieesDict.ContainsKey(key))
+                        heuresPlanifieesDict[key] += heures;
+                    else
+                        heuresPlanifieesDict[key] = heures;
+                }
+            }
+            ViewBag.HeuresPlanifiees = heuresPlanifieesDict;
+
             vm.Classes = await _db.Classes
+                .Include(c => c.Filiere).ThenInclude(f => f.Mention)
+                .Include(c => c.Niveau)
                 .Include(c => c.AnneeAcademique)
+                .Where(c => mesClassesIds.Contains(c.IdClasse))
                 .OrderBy(c => c.NomClasse)
                 .ToListAsync();
-            vm.Matieres = await _db.Matieres.OrderBy(m => m.NomMatiere).ToListAsync();
+                
+            vm.Matieres = await _db.Matieres
+                .Include(m => m.RefSemestre).ThenInclude(s => s.Niveau)
+                .Include(m => m.Filiere).ThenInclude(f => f.Mention)
+                .Where(m => mesMatieresIds.Contains(m.IdMatiere))
+                .OrderBy(m => m.NomMatiere)
+                .ToListAsync();
+                
             vm.Salles = await _db.Salles.OrderBy(s => s.NomSalle).ToListAsync();
+            
+            if (prof.Utilisateur != null)
+            {
+                vm.MesDemandes = await _db.DemandesEdt
+                    .Where(d => d.IdDemandeur == prof.Utilisateur.IdUtilisateur)
+                    .Include(d => d.Cours).ThenInclude(c => c.Matiere)
+                    .Include(d => d.Matiere)
+                    .Include(d => d.Classe)
+                    .Include(d => d.Salle)
+                    .Include(d => d.Propositions)
+                    .OrderByDescending(d => d.IdDemande)
+                    .Take(5) // only recent 5 for sidebar
+                    .ToListAsync();
+            }
+
             return View(vm);
         }
 
@@ -329,6 +411,8 @@ namespace Gestion_SalleClasseEDT.Controllers
             var endOfWeek = startOfWeek.AddDays(7);
 
             var creneaux = Professeur.Cours?
+                .Where(c => c.AffectationMatiere == null || 
+                           (today.Date >= c.AffectationMatiere.DateDebut.Date && today.Date <= c.AffectationMatiere.DateFin.Date))
                 .SelectMany(c => c.Creneaux?.Select(cr => new CreneauAgenda
                 {
                     Cours         = c,

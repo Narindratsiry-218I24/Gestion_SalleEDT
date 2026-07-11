@@ -351,6 +351,38 @@ namespace Gestion_SalleClasseEDT.Controllers
             try
             {
                 db.SaveChanges();
+                
+                // --- AJOUT : Notification au professeur après validation ---
+                int profIdToNotify = 0;
+                if (demande.IdCours.HasValue && demande.Cours != null && demande.Cours.IdProfesseur.HasValue)
+                {
+                    profIdToNotify = demande.Cours.IdProfesseur.Value;
+                }
+                else
+                {
+                    var demandeurObj = db.Utilisateurs.Find(demande.IdDemandeur);
+                    if (demandeurObj != null)
+                    {
+                        var profMatch = db.Professeurs.FirstOrDefault(p => p.Email == demandeurObj.Email);
+                        if (profMatch != null) profIdToNotify = profMatch.IdProfesseur;
+                    }
+                }
+                
+                if (profIdToNotify > 0)
+                {
+                    db.Notifications.Add(new Notification
+                    {
+                        IdProfesseur = profIdToNotify,
+                        Titre = "Proposition validée",
+                        Message = $"Votre proposition de créneau a été validée pour la date du {finalDate:dd/MM/yyyy}.",
+                        Type = "succes",
+                        DateCreation = DateTime.UtcNow,
+                        EstLue = false,
+                        Lien = "/ProfesseurDashboard/MesDemandes"
+                    });
+                    db.SaveChanges();
+                }
+                // -----------------------------------------------------------
             }
             catch (Exception ex)
             {
@@ -367,7 +399,7 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("{id:int}/Refuser")]
         public IActionResult RefuserDemande(int id)
         {
-            var demande = db.DemandesEdt.Find(id);
+            var demande = db.DemandesEdt.Include(d => d.Cours).FirstOrDefault(d => d.IdDemande == id);
             if (demande == null) return NotFound();
 
             var ctx = UserContextHelper.FromRequest(ControllerContext);
@@ -376,6 +408,39 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             demande.Statut = "refusee";
             db.SaveChanges();
+            
+            // --- AJOUT : Notification au professeur après refus ---
+            int profIdToNotify = 0;
+            if (demande.IdCours.HasValue && demande.Cours != null && demande.Cours.IdProfesseur.HasValue)
+            {
+                profIdToNotify = demande.Cours.IdProfesseur.Value;
+            }
+            else
+            {
+                var demandeurObj = db.Utilisateurs.Find(demande.IdDemandeur);
+                if (demandeurObj != null)
+                {
+                    var profMatch = db.Professeurs.FirstOrDefault(p => p.Email == demandeurObj.Email);
+                    if (profMatch != null) profIdToNotify = profMatch.IdProfesseur;
+                }
+            }
+            
+            if (profIdToNotify > 0)
+            {
+                db.Notifications.Add(new Notification
+                {
+                    IdProfesseur = profIdToNotify,
+                    Titre = "Proposition refusée",
+                    Message = $"Votre proposition de créneau du {demande.DateSouhaitee:dd/MM/yyyy} a été refusée.",
+                    Type = "erreur",
+                    DateCreation = DateTime.UtcNow,
+                    EstLue = false,
+                    Lien = "/ProfesseurDashboard/MesDemandes"
+                });
+                db.SaveChanges();
+            }
+            // -----------------------------------------------------------
+            
             return Ok(demande);
         }
     }

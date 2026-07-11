@@ -67,6 +67,54 @@ namespace Gestion_SalleClasseEDT.Controllers
 
                 db.Matieres.Add(matiere);
                 db.SaveChanges();
+
+                // Si un enseignant est assigné lors de la création
+                if (matiere.IdProfesseurResponsable.HasValue)
+                {
+                    var refSemestre = db.RefSemestres.Find(matiere.IdRefSemestre);
+                    if (refSemestre != null)
+                    {
+                        var semestre = db.Semestres.FirstOrDefault(s => s.IdRefSemestre == matiere.IdRefSemestre && !s.EstArchivee);
+                        var classe = db.Classes.FirstOrDefault(c => c.IdFiliere == matiere.IdFiliere && c.IdNiveau == refSemestre.IdNiveau && !c.EstArchivee);
+
+                        if (semestre != null && classe != null)
+                        {
+                            var maxAffId = db.AffectationsMatieres.Select(a => (int?)a.IdAffectation).Max() ?? 0;
+                            var affectation = new AffectationMatiere
+                            {
+                                IdAffectation = maxAffId + 1,
+                                IdMatiere = matiere.IdMatiere,
+                                IdProfesseur = matiere.IdProfesseurResponsable.Value,
+                                IdClasse = classe.IdClasse,
+                                IdSemestre = semestre.IdSemestre,
+                                VolumeHoraireTotal = matiere.VolumeHoraire,
+                                HeuresCm = matiere.VolumeHoraire, // Tout est simple "Cours"
+                                DateDebut = semestre.DateDebut,
+                                DateFin = semestre.DateFin,
+                                EstActif = true
+                            };
+                            db.AffectationsMatieres.Add(affectation);
+                            db.SaveChanges();
+
+                            var maxCoursId = db.Cours.Select(c => (int?)c.IdCours).Max() ?? 0;
+                            var cours = new Cours
+                            {
+                                IdCours = maxCoursId + 1,
+                                IdMatiere = matiere.IdMatiere,
+                                IdProfesseur = matiere.IdProfesseurResponsable.Value,
+                                IdClasse = classe.IdClasse,
+                                IdSemestre = semestre.IdSemestre,
+                                IdAffectation = affectation.IdAffectation,
+                                TypeCours = "Cours",
+                                VolumeHours = matiere.VolumeHoraire,
+                                Statut = "a_planifier"
+                            };
+                            db.Cours.Add(cours);
+                            db.SaveChanges();
+                        }
+                    }
+                }
+
                 return CreatedAtAction(nameof(GetMatiere), new { id = matiere.IdMatiere }, matiere);
             }
             catch (Exception ex)
