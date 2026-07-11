@@ -1,0 +1,329 @@
+@model Gestion_SalleClasseEDT.Models.Professeur
+
+@{
+    ViewData["Title"] = "Ajouter un professeur";
+    var photoUrl = string.IsNullOrWhiteSpace(Model?.PhotoUrl) ? null : Model.PhotoUrl;
+    var matricule = ViewBag.NewMatricule ?? "PROF-0001";
+}
+
+<link rel="stylesheet" href="~/css/prof-create.css" asp-append-version="true" />
+
+<div class="prof-create-page">
+    <div class="prof-shell">
+        <!-- ═══ Banner ═══ -->
+        <div class="prof-banner">
+            <div class="prof-banner__title">Profile</div>
+            <div class="prof-banner__subtitle">Ajouter un professeur</div>
+            <div class="prof-banner__actions">
+                <label class="profile-upload" for="photoInput">
+                    <i data-lucide="camera" class="h-4 w-4"></i>
+                    Changer la photo
+                </label>
+            </div>
+        </div>
+
+        <!-- ═══ Form ═══ -->
+        <form asp-action="Create" enctype="multipart/form-data" method="post" id="profForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="VerificationCode" id="hiddenVerificationCode" value="" />
+            <input type="hidden" name="Matricule" value="@matricule" />
+
+            <div class="prof-grid">
+                <!-- ═══ Profile Card (Left) ═══ -->
+                <div class="prof-card prof-card--profile">
+                    <div class="photo-wrap">
+                        @if (!string.IsNullOrWhiteSpace(photoUrl))
+                        {
+                            <img id="photoPreview" src="@photoUrl" alt="Aperçu" />
+                        }
+                        else
+                        {
+                            <img id="photoPreview" class="hidden" alt="Aperçu" />
+                            <i data-lucide="user" class="h-10 w-10 text-[#c8ced9]" id="photoPlaceholder"></i>
+                        }
+                        <span class="photo-badge"><i data-lucide="camera" class="h-3.5 w-3.5"></i></span>
+                    </div>
+
+                    <div class="profile-name">Nouveau professeur</div>
+                    <div class="profile-role">Enseignant</div>
+
+                    <div class="profile-meta">
+                        <div class="row">
+                            <div class="label">Matricule</div>
+                            <div class="value">@matricule</div>
+                        </div>
+                        <div class="row">
+                            <div class="label">Spécialité</div>
+                            <div class="value" id="profileSpecialite">-</div>
+                        </div>
+                        <div class="row">
+                            <div class="label">Grade</div>
+                            <div class="value" id="profileGrade">-</div>
+                        </div>
+                        <div class="row">
+                            <div class="label">Statut</div>
+                            <div class="value">Actif</div>
+                        </div>
+                    </div>
+
+                    <input asp-for="photoFile" id="photoInput" class="screen-reader-input" type="file" accept="image/*" onchange="previewImage(this)" />
+                </div>
+
+                <!-- ═══ Main Form Area (Right) ═══ -->
+                <div class="prof-main">
+                    <div class="prof-card">
+                        <!-- ── Tabs ── -->
+                        <div class="tabs">
+                            <div class="tab active" data-tab="0">
+                                <span class="tab-number">
+                                    <span class="tab-number-text">1</span>
+                                    <span class="tab-check">✓</span>
+                                </span>
+                                Informations personnelles
+                            </div>
+                            <div class="tab" data-tab="1">
+                                <span class="tab-number">
+                                    <span class="tab-number-text">2</span>
+                                    <span class="tab-check">✓</span>
+                                </span>
+                                Informations professionnelles
+                            </div>
+                            <div class="tab" data-tab="2">
+                                <span class="tab-number">
+                                    <span class="tab-number-text">3</span>
+                                    <span class="tab-check">✓</span>
+                                </span>
+                                Compte utilisateur
+                            </div>
+                        </div>
+
+                        <div asp-validation-summary="All" class="mb-4 text-sm font-medium text-red-600"></div>
+
+                        <!-- ── Tab Panels ── -->
+                        <div class="tab-panels">
+
+                            <!-- ══════ Panel 1: Informations personnelles ══════ -->
+                            <div class="tab-panel active" id="panel-0">
+                                <h3 class="section-title">Informations personnelles</h3>
+                                <p class="section-subtitle">Renseignez les données personnelles du professeur</p>
+
+                                <div class="field-grid">
+                                    <div class="field" data-rules="required">
+                                        <label asp-for="Nom"><span class="required-dot">*</span> Nom</label>
+                                        <input asp-for="Nom" placeholder="Ex: RAKOTO" />
+                                    </div>
+                                    <div class="field" data-rules="required">
+                                        <label asp-for="Prenom"><span class="required-dot">*</span> Prénom</label>
+                                        <input asp-for="Prenom" placeholder="Ex: Jean" />
+                                    </div>
+
+                                    <div class="field" data-rules="required,phone">
+                                        <label asp-for="Telephone"><span class="required-dot">*</span> Téléphone</label>
+                                        <input asp-for="Telephone" placeholder="Ex: +261 20 22 123 45" />
+                                    </div>
+                                    <div class="field" data-rules="phone">
+                                        <label asp-for="TelephonePortable">Téléphone Portable</label>
+                                        <input asp-for="TelephonePortable" placeholder="Ex: +261 34 00 000 00" />
+                                    </div>
+                                    <div class="field" data-rules="required,email">
+                                        <label asp-for="Email"><span class="required-dot">*</span> Email</label>
+                                        <input asp-for="Email" type="email" placeholder="Ex: jean.rakoto@emit.mg" id="Email" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ══════ Panel 2: Informations professionnelles ══════ -->
+                            <div class="tab-panel" id="panel-1">
+                                <h3 class="section-title">Informations professionnelles</h3>
+                                <p class="section-subtitle">Détails de la fonction et de l'affectation</p>
+
+                                <div class="field-grid">
+                                    <div class="field">
+                                        <label>Matricule (automatique)</label>
+                                        <input type="text" value="@matricule" readonly style="background:#f8fafc;color:#9aa3b2;cursor:not-allowed;" />
+                                    </div>
+                                    <div class="field">
+                                        <label asp-for="Titre">Titre</label>
+                                        <select asp-for="Titre">
+                                            <option value="">Sélectionner...</option>
+                                            <option value="M.">M.</option>
+                                            <option value="Mme">Mme</option>
+                                            <option value="Dr">Dr</option>
+                                            <option value="Prof">Prof</option>
+                                        </select>
+                                    </div>
+                                    <div class="field" data-rules="required">
+                                        <label asp-for="Grade"><span class="required-dot">*</span> Grade</label>
+                                        <select asp-for="Grade">
+                                            <option value="">Sélectionner...</option>
+                                            <option>Assistant</option>
+                                            <option>Maître de conférences</option>
+                                            <option>Professeur</option>
+                                            <option>Docteur</option>
+                                            <option>Vacataire</option>
+                                        </select>
+                                    </div>
+                                    <div class="field" data-rules="required">
+                                        <label asp-for="Specialite"><span class="required-dot">*</span> Spécialité / Matière principale</label>
+                                        <input asp-for="Specialite" placeholder="Ex: Algorithme et programmation" />
+                                    </div>
+                                    <div class="field" data-rules="required">
+                                        <label asp-for="DateEmbauche"><span class="required-dot">*</span> Date de recrutement</label>
+                                        <input asp-for="DateEmbauche" type="date" />
+                                    </div>
+                                    <div class="field" data-rules="required">
+                                        <label asp-for="Statut"><span class="required-dot">*</span> Statut</label>
+                                        <select asp-for="Statut">
+                                            <option value="Actif">Actif</option>
+                                            <option value="Inactif">Inactif</option>
+                                            <option value="En congé">En congé</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label asp-for="CapaciteHoraireMax">Charge horaire (heures/semaine)</label>
+                                        <input asp-for="CapaciteHoraireMax" type="number" min="1" max="40" value="20" placeholder="20" />
+                                    </div>
+                                    <div class="field" style="grid-column: 1 / -1;">
+                                        <label asp-for="Biographie">Biographie</label>
+                                        <textarea asp-for="Biographie" rows="3" placeholder="Présentez brièvement le professeur..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Preview -->
+                                <div class="info-preview">
+                                    <h4><i data-lucide="eye" class="h-4 w-4"></i> Prévisualisation</h4>
+                                    <div class="preview-grid">
+                                        <div class="preview-item">
+                                            <div class="p-label">Matricule</div>
+                                            <div class="p-value" id="previewMatricule">@matricule</div>
+                                        </div>
+                                        <div class="preview-item">
+                                            <div class="p-label">Grade</div>
+                                            <div class="p-value" id="previewGrade">-</div>
+                                        </div>
+                                        <div class="preview-item">
+                                            <div class="p-label">Spécialité</div>
+                                            <div class="p-value" id="previewSpecialite">-</div>
+                                        </div>
+                                        <div class="preview-item">
+                                            <div class="p-label">Statut</div>
+                                            <div class="p-value" id="previewStatut">Actif</div>
+                                        </div>
+                                        <div class="preview-item">
+                                            <div class="p-label">Date de recrutement</div>
+                                            <div class="p-value" id="previewDateEmbauche">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ══════ Panel 3: Compte utilisateur ══════ -->
+                            <div class="tab-panel" id="panel-2">
+                                <h3 class="section-title">Création du compte utilisateur</h3>
+                                <p class="section-subtitle">Configurez les accès du professeur au portail académique</p>
+
+                                <div class="field-grid">
+                                    <div class="field">
+                                        <label>Email du compte <span style="font-size:11px;color:#9aa3b2;">(depuis le profil)</span></label>
+                                        @* Affichage de l'email saisi dans Panel 1 — lecture seule, non soumis *@
+                                        <input id="AccountEmailDisplay" type="email" placeholder="Renseignez l'email dans l'onglet 1" readonly
+                                               style="background:#f8fafc;color:#6b7280;cursor:not-allowed;" />
+                                        <div id="emailStatus"></div>
+                                    </div>
+                                    <div class="field" data-rules="required,minlen:8">
+                                        <label for="Password"><span class="required-dot">*</span> Mot de passe temporaire</label>
+                                        <input id="Password" name="Password" type="password" placeholder="Minimum 8 caractères" />
+                                        <div class="password-strength">
+                                            <div class="strength-bar-bg"><div class="strength-bar" id="strengthBar"></div></div>
+                                            <div class="strength-label" id="strengthLabel"></div>
+                                        </div>
+                                    </div>
+                                    <div class="field" data-rules="required,match:Password">
+                                        <label for="ConfirmPassword"><span class="required-dot">*</span> Confirmation</label>
+                                        <input id="ConfirmPassword" name="ConfirmPassword" type="password" placeholder="Confirmer le mot de passe" />
+                                    </div>
+                                </div>
+
+                                <!-- Checkboxes -->
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="autoGenPassword" />
+                                    <label for="autoGenPassword">Générer automatiquement le mot de passe</label>
+                                </div>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="sendCredentials" name="sendCredentials" checked />
+                                    <label for="sendCredentials">Envoyer les identifiants par Email</label>
+                                </div>
+
+                                <!-- Email Verification Card -->
+                                <div class="account-section-card">
+                                    <h4><i data-lucide="shield-check" class="h-4 w-4"></i> Vérification Email</h4>
+                                    <p>Vérifiez l'adresse email avant de finaliser la création du compte</p>
+
+                                    <button type="button" class="btn-primary-like" id="btnSendCode" style="height:40px;font-size:13px;">
+                                        Envoyer un code
+                                    </button>
+
+                                    <!-- OTP Section -->
+                                    <div class="otp-section">
+                                        <div id="otpSentMsg" class="otp-sent-msg hidden">
+                                            <i data-lucide="mail-check" class="h-4 w-4"></i>
+                                            Un code de vérification vient d'être envoyé.
+                                        </div>
+
+                                        <div id="otpInputSection" class="hidden">
+                                            <div class="otp-label">Entrer le code</div>
+                                            <div class="otp-inputs">
+                                                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" />
+                                                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" />
+                                                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" />
+                                                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" />
+                                                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" />
+                                                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" />
+                                            </div>
+                                            <div class="otp-resend">
+                                                Renvoyer dans <span class="otp-timer" id="otpTimerText">01:30</span>
+                                                &nbsp;
+                                                <a href="#" id="otpResendBtn" class="disabled"></a>
+                                            </div>
+                                        </div>
+
+                                        <div id="otpSuccessMsg" class="otp-success hidden">
+                                            <span class="otp-success-icon">✓</span>
+                                            <span class="otp-success-text">Adresse Email vérifiée</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Footer Buttons ── -->
+                        <div class="form-actions">
+                            <a asp-action="Index" class="btn-secondary-like text-decoration-none">Annuler</a>
+
+                            <button type="button" class="btn-secondary-like" id="btnPrev" style="display:none;">
+                                <i data-lucide="arrow-left" class="h-4 w-4"></i> Précédent
+                            </button>
+
+                            <button type="button" class="btn-primary-like" id="btnNext">
+                                Suivant <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                            </button>
+
+                            <button type="submit" class="btn-primary-like" id="btnSave" style="display:none;" name="action" value="save">
+                                <i data-lucide="save" class="h-4 w-4"></i> Enregistrer
+                            </button>
+
+                            <button type="submit" class="btn-success-like" id="btnSaveCreate" style="display:none;" disabled name="action" value="saveAndCreate">
+                                <i data-lucide="user-plus" class="h-4 w-4"></i> Enregistrer et créer le compte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script src="~/js/prof-create.js" asp-append-version="true"></script>
+}

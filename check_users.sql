@@ -1,0 +1,1 @@
+SELECT email, password_hash FROM public.utilisateur;

@@ -82,7 +82,7 @@
             const [filieres, niveaux, semestres, profs] = await Promise.all([
                 app.apiGet('/api/Filiere'),
                 app.apiGet('/api/Niveau'),
-                app.apiGet('/api/Semestre/RefSemestre'), // endpoint to get all RefSemestre if available, otherwise adjust
+                app.apiGet('/api/Matiere/RefSemestres'),
                 app.apiGet('/api/Professeur')
             ]);
             

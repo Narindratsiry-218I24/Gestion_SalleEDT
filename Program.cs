@@ -1,10 +1,13 @@
 using Gestion_SalleClasseEDT.Models;
 using Gestion_SalleClasseEDT.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 using QuestPDF.Infrastructure;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+Env.Load();
 
 // Register EMITDbContext with PostgreSQL
 builder.Services.AddDbContext<EMITDbContext>(options =>
@@ -25,6 +28,11 @@ builder.Services.AddControllersWithViews()
         options.JsonSerializerOptions.PropertyNamingPolicy = null; // Prevent camelCase conversion to match PascalCase used in JS views
     });
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
 // Allow frontend to call the API (CORS)
 builder.Services.AddCors(options =>
 {
@@ -32,27 +40,20 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-
 QuestPDF.Settings.License = LicenseType.Community;
 
+// Register application services
 builder.Services.AddScoped<IPlanningService, PlanningService>();
+builder.Services.AddScoped<IClasseGenerationService, ClasseGenerationService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IAutoPlanningService, AutoPlanningService>();
+builder.Services.AddHttpContextAccessor();
+
 
 var app = builder.Build();
-
-// Run seed.sql if it exists
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<EMITDbContext>();
-    var seedPath = Path.Combine(Directory.GetCurrentDirectory(), "seed.sql");
-    if (File.Exists(seedPath))
-    {
-        var sql = File.ReadAllText(seedPath);
-        dbContext.Database.ExecuteSqlRaw(sql);
-        Console.WriteLine("seed.sql applied successfully.");
-    }
-}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

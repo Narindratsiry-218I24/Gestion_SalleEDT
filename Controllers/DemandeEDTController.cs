@@ -321,12 +321,12 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             string jourSemaine = MapDayOfWeek(finalDate.Value.DayOfWeek);
 
-            int finalClasseId = demande.IdClasse ?? (demande.Cours != null ? demande.Cours.IdClasse : 0);
+            int finalClasseId = demande.IdClasse ?? (demande.Cours != null ? (demande.Cours.IdClasse ?? 0) : 0);
 
             int finalProfId = 0;
             if (demande.IdCours.HasValue && demande.Cours != null)
             {
-                finalProfId = demande.Cours.IdProfesseur;
+                finalProfId = demande.Cours.IdProfesseur ?? 0;
             }
             else
             {
@@ -395,8 +395,26 @@ namespace Gestion_SalleClasseEDT.Controllers
                         ?? db.Professeurs.FirstOrDefault();
                 int idProf = prof?.IdProfesseur ?? 1;
 
-                var classe    = db.Classes.Find(demande.IdClasse.Value);
-                int idSemestre = classe?.IdSemestre ?? 1;
+                var classe = db.Classes.Find(demande.IdClasse.Value);
+                if (classe == null) return BadRequest("Classe introuvable.");
+
+                var matiere = db.Matieres.Find(demande.IdMatiere.Value);
+                if (matiere == null) return BadRequest("Matiere introuvable.");
+
+                var semestre = db.Semestres.FirstOrDefault(s =>
+                    s.IdAnnee == classe.IdAnneeAcademique &&
+                    s.IdRefSemestre == matiere.IdRefSemestre)
+                    ?? db.Semestres.FirstOrDefault(s => s.IdAnnee == classe.IdAnneeAcademique);
+
+                if (semestre == null)
+                    return BadRequest("Aucun semestre n'est configure pour l'annee academique de cette classe.");
+
+                int idSemestre = semestre.IdSemestre;
+                var affectation = db.AffectationsMatieres.FirstOrDefault(a =>
+                    a.IdClasse == demande.IdClasse.Value &&
+                    a.IdMatiere == demande.IdMatiere.Value &&
+                    a.IdSemestre == idSemestre &&
+                    a.EstActif);
 
                 int newCoursId = (db.Cours.Max(c => (int?)c.IdCours) ?? 0) + 1;
                 var nouveauCours = new Cours
@@ -407,6 +425,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                     IdClasse     = demande.IdClasse.Value,
                     IdSalle      = finalSalleId,
                     IdSemestre   = idSemestre,
+                    IdAffectation = affectation?.IdAffectation,
                     TypeCours    = demande.TypeDemande == "examen" ? "examen" : "cours",
                     Statut       = "planifié"
                 };

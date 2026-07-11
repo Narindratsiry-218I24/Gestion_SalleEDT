@@ -1,0 +1,210 @@
+@{
+    ViewBag.Title = "Matières";
+}
+
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Matières</h1>
+            <p class="text-gray-500 mt-1">Gérez le catalogue des matières, crédits et volumes horaires.</p>
+        </div>
+        <div class="flex gap-2">
+            <button type="button" class="flex items-center gap-2 bg-[#17203A] hover:bg-[#12192B] text-white px-4 py-2 rounded-lg transition-colors font-medium" data-modal-target="matiere-modal" data-modal-toggle="matiere-modal" onclick="openCreateModal()">
+                <i data-lucide="plus" class="w-4 h-4"></i> Ajouter une Matière
+            </button>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
+        <div class="p-6 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h3 class="font-bold text-lg text-[#17203A] m-0">Catalogue</h3>
+            <div class="relative w-full md:w-[300px]">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <input type="text" id="searchMatieres" oninput="filterMatieres()" placeholder="Rechercher par nom ou code..." class="w-full pl-9 pr-3 h-10 bg-gray-50 border border-gray-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Nom de la Matière</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Filière / Semestre</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-center">Crédits</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-center">Volume (h)</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100" id="matieresTableBody">
+                    <tr><td colspan="6" class="text-center py-8 text-gray-500"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter/modifier une matière -->
+    <div id="matiere-modal" tabindex="-1" aria-hidden="true" class="hidden fixed inset-0 z-[100] w-full h-full bg-black/50 backdrop-blur-sm overflow-y-auto overflow-x-hidden justify-center items-center transition-opacity">
+        <div class="relative p-4 w-full max-w-xl max-h-full mx-auto">
+            <div class="relative bg-white rounded-xl shadow-2xl">
+                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                    <h3 class="text-xl font-bold text-gray-900" id="modalTitle">
+                        Ajouter une Matière
+                    </h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center" onclick="closeMatiereModal()">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-4 md:p-5">
+                    <partial name="_MatiereForm" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allMatieres = [];
+
+        async function loadMatieres() {
+            try {
+                const matieres = await app.apiGet('/api/Matiere');
+                allMatieres = matieres || [];
+                renderMatieres(allMatieres);
+            } catch (err) {
+                document.getElementById("matieresTableBody").innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-600 font-bold">Erreur: ${app.escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function renderMatieres(matieres) {
+            const tbody = document.getElementById("matieresTableBody");
+            tbody.innerHTML = "";
+
+            if (matieres.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Aucune matière trouvée.</td></tr>';
+                return;
+            }
+
+            matieres.forEach(function(m) {
+                const id = m.IdMatiere;
+                const nom = app.escapeHtml(m.NomMatiere || "N/A");
+                const code = app.escapeHtml(m.CodeMatiere || "N/A");
+                const credit = m.Credit || 0;
+                const volume = m.VolumeHoraire || 0;
+                
+                const filiereStr = app.escapeHtml(m.Filiere?.NomFiliere || "Non assignée");
+                const semestreStr = app.escapeHtml(m.RefSemestre?.CodeSemestre || "");
+
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50/50 transition-colors group";
+                tr.innerHTML = `
+                    <td class="py-4 px-6"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${code}</span></td>
+                    <td class="py-4 px-6 font-semibold text-[#17203A]">${nom}</td>
+                    <td class="py-4 px-6 text-sm text-gray-600">
+                        <div class="flex flex-col">
+                            <span>${filiereStr}</span>
+                            <span class="text-xs text-gray-400">${semestreStr}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-center font-medium">${credit}</td>
+                    <td class="py-4 px-6 text-center font-medium">${volume}h</td>
+                    <td class="py-4 px-6 text-right">
+                        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" onclick="openEditModal(${id})" title="Modifier">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                            <button class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" onclick="deleteMatiere(${id})" title="Supprimer">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function filterMatieres() {
+            const query = document.getElementById("searchMatieres").value.toLowerCase().trim();
+            if (!query) { renderMatieres(allMatieres); return; }
+            const filtered = allMatieres.filter(m => {
+                const nom = (m.NomMatiere || "").toLowerCase();
+                const code = (m.CodeMatiere || "").toLowerCase();
+                return nom.includes(query) || code.includes(query);
+            });
+            renderMatieres(filtered);
+        }
+
+        // --- Modals Logic ---
+        function toggleModal(show) {
+            const modal = document.getElementById('matiere-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function closeMatiereModal() {
+            toggleModal(false);
+            document.getElementById('matiereForm').reset();
+            document.getElementById('idMatiere').value = "0";
+        }
+
+        async function openCreateModal() {
+            document.getElementById('modalTitle').innerText = "Ajouter une Matière";
+            document.getElementById('idMatiere').value = "0";
+            document.getElementById('matiereForm').reset();
+            await loadMatiereFormData(); // Ensure dropdowns are loaded
+            toggleModal(true);
+        }
+
+        async function openEditModal(id) {
+            document.getElementById('modalTitle').innerText = "Modifier la Matière";
+            const matiere = allMatieres.find(m => m.IdMatiere === id);
+            if (!matiere) return;
+
+            await loadMatiereFormData();
+
+            document.getElementById('idMatiere').value = matiere.IdMatiere;
+            document.getElementById('codeMatiere').value = matiere.CodeMatiere || "";
+            document.getElementById('nomMatiere').value = matiere.NomMatiere || "";
+            document.getElementById('idFiliere').value = matiere.IdFiliere || "";
+            document.getElementById('idNiveau').value = matiere.RefSemestre?.IdNiveau || "";
+            
+            // Trigger cascade manually if needed
+            onNiveauChange();
+            
+            document.getElementById('idRefSemestre').value = matiere.IdRefSemestre || "";
+            document.getElementById('credit').value = matiere.Credit || "";
+            document.getElementById('volumeHoraire').value = matiere.VolumeHoraire || "";
+            document.getElementById('idProfesseurResponsable').value = matiere.IdProfesseurResponsable || "";
+
+            toggleModal(true);
+        }
+
+        async function deleteMatiere(id) {
+            if (!confirm("Êtes-vous sûr de vouloir supprimer cette matière ?")) return;
+            try {
+                await app.apiDelete(`/api/Matiere/${id}`);
+                loadMatieres();
+            } catch (err) {
+                alert("Erreur lors de la suppression : " + err.message);
+            }
+        }
+
+        // Callback from _MatiereForm.cshtml
+        function onMatiereSaved(res) {
+            alert("Matière enregistrée avec succès !");
+            loadMatieres();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadMatieres();
+        });
+    </script>
+}

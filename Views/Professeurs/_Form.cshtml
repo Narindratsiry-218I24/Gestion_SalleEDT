@@ -1,0 +1,141 @@
+@model Gestion_SalleClasseEDT.Models.Professeur
+
+<div asp-validation-summary="All" class="rounded-xl bg-red-50 p-4 text-red-600 text-sm font-medium mb-6"></div>
+
+<!-- SECTION 1: IDENTITÉ -->
+<section>
+    <h3 class="text-2xl font-bold text-gray-900 mb-6">Personal Information</h3>
+    
+    <div class="mb-6">
+        <label asp-for="Titre" class="text-sm font-medium text-gray-500 mb-1 block">Titre</label>
+        <select asp-for="Titre" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-orange-500">
+            <option value="">Sélectionner...</option>
+            <option value="M.">M.</option>
+            <option value="Mme">Mme</option>
+            <option value="Dr">Dr</option>
+            <option value="Prof">Prof</option>
+        </select>
+        <span asp-validation-for="Titre" class="text-xs text-red-500 mt-1 block"></span>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 mb-6">
+        <div>
+            <label asp-for="Prenom" class="text-sm font-medium text-gray-500 mb-1 block">First Name</label>
+            <input asp-for="Prenom" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-orange-500" placeholder="Roland" required oninput="updateName()" />
+            <span asp-validation-for="Prenom" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="Nom" class="text-sm font-medium text-gray-500 mb-1 block">Last Name</label>
+            <input asp-for="Nom" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-orange-500" placeholder="Donald" required oninput="updateName()" />
+            <span asp-validation-for="Nom" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+    </div>
+    
+    <div class="mb-6">
+        <label asp-for="Email" class="text-sm font-medium text-gray-500 mb-1 block">Email</label>
+        <div class="flex gap-2">
+            <input asp-for="Email" id="EmailInput" type="email" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-orange-500" placeholder="rolandDonald@mail.com" required />
+            <button type="button" id="btnSendCode" onclick="sendCode()" class="whitespace-nowrap px-4 py-2 bg-gray-800 text-white rounded-xl text-sm font-semibold hover:bg-gray-700">Envoyer le code</button>
+        </div>
+        <span asp-validation-for="Email" class="text-xs text-red-500 mt-1 block"></span>
+        <div id="codeFeedback" class="text-xs mt-1 hidden font-semibold"></div>
+    </div>
+
+    <div class="mb-6" id="codeVerificationBlock" style="display:none;">
+        <label for="VerificationCode" class="text-sm font-medium text-gray-500 mb-1 block">Code de vérification (envoyé par email)</label>
+        <input type="text" id="VerificationCode" name="VerificationCode" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="Ex: 123456" />
+        <span class="text-xs text-red-500 mt-1 block">@Html.ValidationMessage("VerificationCode")</span>
+    </div>
+
+    <script>
+        function sendCode() {
+            var email = document.getElementById("EmailInput").value;
+            if (!email) {
+                alert("Veuillez saisir un email d'abord.");
+                return;
+            }
+            var btn = document.getElementById("btnSendCode");
+            var feedback = document.getElementById("codeFeedback");
+            
+            btn.disabled = true;
+            btn.textContent = "Envoi...";
+            
+            fetch('/Professeurs/SendVerificationCode?email=' + encodeURIComponent(email), {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                feedback.classList.remove("hidden");
+                if (data.success) {
+                    feedback.className = "text-xs mt-1 font-semibold text-emerald-600";
+                    feedback.textContent = "Code envoyé avec succès !";
+                    document.getElementById("codeVerificationBlock").style.display = "block";
+                    btn.textContent = "Code envoyé";
+                } else {
+                    feedback.className = "text-xs mt-1 font-semibold text-red-600";
+                    feedback.textContent = "Erreur: " + data.message;
+                    btn.disabled = false;
+                    btn.textContent = "Envoyer le code";
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.textContent = "Envoyer le code";
+                alert("Erreur réseau");
+            });
+        }
+    </script>
+
+    <div class="mb-6">
+        <label asp-for="Grade" class="text-sm font-medium text-gray-500 mb-1 block">Grade</label>
+        <select asp-for="Grade" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500">
+            <option value="Docteur">Docteur</option>
+            <option value="Professeur">Professeur</option>
+            <option value="Maître de conférences">Maître de conférences</option>
+            <option value="Assistant">Assistant</option>
+            <option value="Vacataire">Vacataire</option>
+        </select>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 mb-6">
+        <div>
+            <label asp-for="Telephone" class="text-sm font-medium text-gray-500 mb-1 block">Téléphone</label>
+            <input asp-for="Telephone" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="+261 20 22 123 45" />
+        </div>
+        <div>
+            <label asp-for="TelephonePortable" class="text-sm font-medium text-gray-500 mb-1 block">Téléphone Portable</label>
+            <input asp-for="TelephonePortable" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="+261 34 00 000 00" />
+        </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 mb-6">
+        <div>
+            <label asp-for="Specialite" class="text-sm font-medium text-gray-500 mb-1 block">Spécialité</label>
+            <input asp-for="Specialite" type="text" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="Ex: Informatique, Management, Communication..." />
+        </div>
+        <div>
+            <label asp-for="DateEmbauche" class="text-sm font-medium text-gray-500 mb-1 block">Date d'embauche</label>
+            <input asp-for="DateEmbauche" type="date" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" />
+        </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 mb-6">
+        <div>
+            <label asp-for="Statut" class="text-sm font-medium text-gray-500 mb-1 block">Statut</label>
+            <select asp-for="Statut" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500">
+                <option value="Actif">Actif</option>
+                <option value="Inactif">Inactif</option>
+                <option value="En congé">En congé</option>
+            </select>
+        </div>
+        <div>
+            <label for="MatriculeDisplay" class="text-sm font-medium text-gray-500 mb-1 block">Matricule</label>
+            <input id="MatriculeDisplay" type="text" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 opacity-70" readonly value="@(ViewBag.NewMatricule ?? Model?.Matricule)" disabled />
+        </div>
+    </div>
+
+    <div class="mb-6">
+        <label asp-for="Biographie" class="text-sm font-medium text-gray-500 mb-1 block">Biographie</label>
+        <textarea asp-for="Biographie" rows="4" class="w-full rounded-xl bg-gray-50 border-none px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500" placeholder="Présentez brièvement le professeur..."></textarea>
+    </div>
+</section>

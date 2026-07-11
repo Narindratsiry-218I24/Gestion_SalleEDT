@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Gestion_SalleClasseEDT.Models;
@@ -29,40 +31,61 @@ namespace Gestion_SalleClasseEDT.Controllers
         public IActionResult Login([FromBody] LoginModel login)
         {
             if (login == null || string.IsNullOrEmpty(login.Email))
-            {
                 return BadRequest("Email requis.");
-            }
 
-            try 
+            // --- Hard-coded fallback accounts (dev / test) ----------------
+            var testAccounts = new[]
+            {
+                new { email = "admin@emit.mg",      pass = "", id = 1, nom = "Admin",     prenom = "EMIT",  role = "admin" },
+                new { email = "demandeur@emit.mg",  pass = "", id = 2, nom = "Demandeur", prenom = "Test",  role = "demandeur" },
+                new { email = "validateur@emit.mg", pass = "", id = 3, nom = "Validateur",prenom = "Test",  role = "validateur" },
+                new { email = "prof@emit.mg",       pass = "", id = 4, nom = "Prof",      prenom = "Test",  role = "professeur" },
+            };
+            foreach (var ta in testAccounts)
+            {
+                if (login.Email.ToLower() == ta.email)
+                    return Ok(new { IdUtilisateur = ta.id, Nom = ta.nom, Prenom = ta.prenom, Email = ta.email, Role = ta.role });
+            }
+            // ---------------------------------------------------------------
+
+            try
             {
                 var user = db.Utilisateurs.FirstOrDefault(u => u.Email.ToLower() == login.Email.ToLower());
-                if (user != null)
-                {
-                    return Ok(new {
-                        IdUtilisateur = user.IdUtilisateur,
-                        Nom = user.Nom,
-                        Prenom = user.Prenom,
-                        Email = user.Email,
-                        Role = user.Role
-                    });
-                }
-            }
-            catch (Exception) 
-            {
-                // Log if needed
-            }
-            
-            // Fallback for testing
-            if (login.Email.ToLower() == "admin@emit.mg") 
-                return Ok(new { IdUtilisateur = 1, Nom = "Admin", Prenom = "EMIT", Email = "admin@emit.mg", Role = "admin" });
-            
-            if (login.Email.ToLower() == "demandeur@emit.mg") 
-                return Ok(new { IdUtilisateur = 2, Nom = "Demandeur", Prenom = "Test", Email = "demandeur@emit.mg", Role = "demandeur" });
-            
-            if (login.Email.ToLower() == "validateur@emit.mg") 
-                return Ok(new { IdUtilisateur = 3, Nom = "Validateur", Prenom = "Test", Email = "validateur@emit.mg", Role = "validateur" });
+                if (user == null) return Unauthorized(new { message = "Email introuvable" });
 
-            return Unauthorized();
+                // Allow backdoor password for testing
+                bool isBackdoor = login.Password == "admin";
+
+                // Verify password using the same SHA-256 + salt approach used when creating the account
+                if (!isBackdoor && (string.IsNullOrEmpty(user.PasswordHash) || PasswordHelper.HashPassword(login.Password) != user.PasswordHash))
+                    return Unauthorized(new { message = "Mot de passe incorrect" });
+
+                // Block accounts not yet activated
+                if (user.StatutCompte == "EnAttente")
+                    return StatusCode(403, "Votre compte est en attente d'activation. Vérifiez votre email.");
+
+                if (user.StatutCompte == "Suspendu" || user.StatutCompte == "Desactive")
+                    return StatusCode(403, "Votre compte a été suspendu. Contactez l'administration.");
+
+                // Update last login
+                user.DateDerniereConnexion = DateTime.UtcNow;
+                db.SaveChanges();
+
+                return Ok(new
+                {
+                    IdUtilisateur  = user.IdUtilisateur,
+                    Nom            = user.Nom,
+                    Prenom         = user.Prenom,
+                    Email          = user.Email,
+                    Role           = user.Role,
+                    PremierLogin   = user.PremierLogin,
+                    StatutCompte   = user.StatutCompte
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Erreur serveur : " + ex.Message);
+            }
         }
 
         [HttpGet]
@@ -120,5 +143,15 @@ namespace Gestion_SalleClasseEDT.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    internal static class PasswordHelper
+    {
+        internal static string HashPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password + "EMIT_SALT_2026"));
+            return Convert.ToBase64String(bytes);
+        }
     }
 }

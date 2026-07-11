@@ -1,0 +1,77 @@
+@model Gestion_SalleClasseEDT.Controllers.AdminController.AdminAnneeViewModel
+
+@{
+    ViewData["Title"] = "Gestion des Classes";
+}
+
+<h1>Gestion des Classes</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<section>
+    <h2>Ajouter une classe</h2>
+    <form asp-action="CreerClasse" method="post">
+        @Html.AntiForgeryToken()
+        <div>
+            <label>Année</label>
+            <select name="idAnnee">
+                @foreach (var a in Model.Annees ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.AnneeAcademique>())
+                {
+                    <option value="@a.IdAnnee">@a.Libelle</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Filière</label>
+            <select name="idFiliere">
+                @foreach (var f in Model.Filieres ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.Filiere>())
+                {
+                    <option value="@f.IdFiliere">@f.NomFiliere</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label>Nom de la classe</label>
+            <input name="nomClasse" />
+        </div>
+        <div>
+            <label>Code</label>
+            <input name="codeClasse" />
+        </div>
+        <div>
+            <button type="submit">Créer</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Liste des classes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Code</th>
+                <th>Filière</th>
+                <th>Année</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Classes ?? new System.Collections.Generic.List<Gestion_SalleClasseEDT.Models.Classe>())
+            {
+                <tr>
+                    <td>@c.NomClasse</td>
+                    <td>@c.CodeClasse</td>
+                    <td>@c.Filiere?.NomFiliere</td>
+                    <td>@c.AnneeAcademique?.Libelle</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>

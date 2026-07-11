@@ -1,0 +1,46 @@
+@model Gestion_SalleClasseEDT.Models.Professeur
+
+@{
+    ViewData["Title"] = "Supprimer professeur";
+}
+
+<div class="max-w-2xl mx-auto py-12 px-4">
+    <div class="bg-white rounded-3xl shadow-xl shadow-gray-200/40 border border-red-100 overflow-hidden">
+        <div class="bg-red-50 px-8 py-6 border-b border-red-100 flex items-center gap-4">
+            <div class="flex-shrink-0 h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-red-900">Supprimer ce professeur ?</h1>
+                <p class="text-sm text-red-700 mt-1">Cette action est irréversible et supprimera également son compte utilisateur.</p>
+            </div>
+        </div>
+
+        <div class="p-8">
+            <dl class="space-y-4">
+                <div class="grid grid-cols-3 gap-4 border-b border-gray-100 pb-4">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Nom complet</dt>
+                    <dd class="col-span-2 text-sm font-medium text-gray-900">@Model.Nom @Model.Prenom</dd>
+                </div>
+                <div class="grid grid-cols-3 gap-4 border-b border-gray-100 pb-4">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Email</dt>
+                    <dd class="col-span-2 text-sm font-medium text-gray-900">@Model.Email</dd>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <dt class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Spécialité</dt>
+                    <dd class="col-span-2 text-sm font-medium text-gray-900">@(string.IsNullOrEmpty(Model.Specialite) ? "-" : Model.Specialite)</dd>
+                </div>
+            </dl>
+
+            <form asp-action="Delete" class="mt-8 flex items-center gap-4">
+                <input type="hidden" asp-for="IdProfesseur" />
+                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/30 transition-all hover:bg-red-700">
+                    <i data-lucide="trash-2" class="h-4 w-4 mr-2"></i> Confirmer la suppression
+                </button>
+                <a asp-action="Index" class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-6 py-3 text-sm font-bold text-gray-700 transition-all hover:bg-gray-200">
+                    Annuler
+                </a>
+            </form>
+        </div>
+    </div>
+</div>

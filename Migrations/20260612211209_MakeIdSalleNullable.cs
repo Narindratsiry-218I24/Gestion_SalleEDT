@@ -10,10 +10,7 @@ namespace Gestion_SalleClasseEDT.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_cours_salle_id_salle",
-                schema: "public",
-                table: "cours");
+            migrationBuilder.Sql("ALTER TABLE public.cours DROP CONSTRAINT IF EXISTS \"FK_cours_salle_id_salle\";");
 
             migrationBuilder.AlterColumn<int>(
                 name: "id_salle",
@@ -37,10 +34,7 @@ namespace Gestion_SalleClasseEDT.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_cours_salle_id_salle",
-                schema: "public",
-                table: "cours");
+            migrationBuilder.Sql("ALTER TABLE public.cours DROP CONSTRAINT IF EXISTS \"FK_cours_salle_id_salle\";");
 
             migrationBuilder.AlterColumn<int>(
                 name: "id_salle",

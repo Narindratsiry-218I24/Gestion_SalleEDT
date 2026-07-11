@@ -1,0 +1,87 @@
+@model Gestion_SalleClasseEDT.Models.Professeur
+
+@{
+    ViewData["Title"] = "Détails de l'enseignant";
+}
+
+<div class="max-w-4xl mx-auto py-8">
+    <div class="mb-6 flex items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-[#17203A]">Détails de l'enseignant</h1>
+            <p class="text-gray-500 mt-1">Toutes les informations enregistrées pour ce professeur.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a asp-action="Edit" asp-route-id="@Model.IdProfesseur" class="inline-flex items-center gap-2 rounded-lg bg-[#5C8ABF] px-4 py-2 text-sm font-medium text-white hover:bg-[#47679c]">Modifier</a>
+            <a asp-action="Index" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Retour</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-col items-center text-center gap-4">
+                @if (!string.IsNullOrEmpty(Model.PhotoUrl))
+                {
+                    <img src="@Model.PhotoUrl" alt="Photo profil" class="h-32 w-32 rounded-3xl object-cover" />
+                }
+                else
+                {
+                    <div class="flex h-32 w-32 items-center justify-center rounded-3xl bg-[#F0F4FF] text-4xl font-black text-[#17203A]">@((Model.Nom?.Substring(0,1) ?? "") + (Model.Prenom?.Substring(0,1) ?? ""))</div>
+                }
+                <div>
+                    <p class="text-lg font-semibold text-[#17203A]">@Model.Titre @Model.Nom @Model.Prenom</p>
+                    <p class="text-sm text-gray-500">@Model.Grade</p>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600">
+                    <p><span class="font-semibold text-gray-800">Spécialité :</span> @Model.Specialite</p>
+                    <p><span class="font-semibold text-gray-800">Statut :</span> @Model.Statut</p>
+                </div>
+            </div>
+        </div>
+        <div class="lg:col-span-2 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Matricule</p>
+                    <p class="mt-2 text-base text-gray-900">@Model.Matricule</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Email</p>
+                    <p class="mt-2 text-base text-gray-900">@Model.Email</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Téléphone fixe</p>
+                    <p class="mt-2 text-base text-gray-900">@Model.Telephone</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Téléphone portable</p>
+                    <p class="mt-2 text-base text-gray-900">@Model.TelephonePortable</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Date d'embauche</p>
+                    <p class="mt-2 text-base text-gray-900">@Model.DateEmbauche?.ToString("yyyy-MM-dd")</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Charge max</p>
+                    <p class="mt-2 text-base text-gray-900">@Model.CapaciteHoraireMax h</p>
+                </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">Biographie</p>
+                    <p class="mt-2 text-gray-700">@(!string.IsNullOrEmpty(Model.Biographie) ? Model.Biographie : "Aucune biographie renseignée.")</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-gray-400">CV</p>
+                    @if (!string.IsNullOrEmpty(Model.CvUrl))
+                    {
+                        <a href="@Model.CvUrl" target="_blank" class="text-blue-600 underline">Télécharger le CV</a>
+                    }
+                    else
+                    {
+                        <p class="text-gray-600">Aucun CV uploadé.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -35,6 +35,14 @@ namespace Gestion_SalleClasseEDT.Controllers
             return Ok(matiere);
         }
 
+        [HttpGet]
+        [Route("RefSemestres")]
+        public IActionResult GetRefSemestres()
+        {
+            var semestres = db.RefSemestres.Include(r => r.Niveau).ToList();
+            return Ok(semestres);
+        }
+
         [HttpPost]
         [Route("")]
         public IActionResult CreateMatiere([FromBody] Matiere matiere)
@@ -45,6 +53,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             ModelState.Remove("RefSemestre");
             ModelState.Remove("ProfesseurResponsable");
             ModelState.Remove("Cours");
+            ModelState.Remove("AffectationsMatieres");
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 

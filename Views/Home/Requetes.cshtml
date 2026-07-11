@@ -352,10 +352,17 @@
                 loadFormDependencies();
             }, []);
 
+<<<<<<< HEAD
             // Filtering cascading selectors in the form
             const formFilteredNiveaux = useMemo(
                 () => niveaux.filter(n => formMention && n.IdMention == formMention),
                 [niveaux, formMention]
+=======
+<<<<<<< HEAD
+            const filteredNiveaux = useMemo(
+                () => niveaux.filter(n => selectedMention && n.IdMention == selectedMention),
+                [niveaux, selectedMention]
+>>>>>>> 405587672dff84745892c6627893fd7e36400cca
             );
             const formFilteredFilieres = useMemo(
                 () => filieres.filter(f => formMention && f.IdMention == formMention),
@@ -495,6 +502,7 @@
                 window.dispatchEvent(new Event('reload-notifications'));
                 alert('Demande envoyée avec succès.');
             };
+
 
             return (
                 <div className="space-y-6">

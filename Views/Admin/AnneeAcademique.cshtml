@@ -1,0 +1,183 @@
+@{
+    ViewData["Title"] = "Gestion des Années Académiques";
+}
+<link rel="stylesheet" href="~/css/admin-annee.css" asp-append-version="true" />
+
+<div class="admin-year-page max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div>
+            <p class="text-sm uppercase tracking-[0.2em] text-slate-500">Administration</p>
+            <h1 class="mt-3 text-3xl font-semibold text-slate-900">Gestion des Années Académiques</h1>
+            <p class="mt-2 max-w-2xl text-sm text-slate-600">Gérez les années, semestres, classes et la génération des emplois du temps.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <button id="openCreateYear" type="button" class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                <span>+</span>
+                <span>Nouvelle année</span>
+            </button>
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                Année active : <strong id="activeYearLabel">-</strong>
+            </div>
+        </div>
+    </header>
+
+    <section class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="card-stats bg-white p-5 shadow-sm">
+            <p class="text-sm text-slate-500">Années total</p>
+            <p id="statTotalAnnees" class="mt-3 text-3xl font-semibold text-slate-900">0</p>
+        </div>
+        <div class="card-stats bg-emerald-50 p-5 shadow-sm">
+            <p class="text-sm text-slate-500">Années actives</p>
+            <p id="statActiveAnnees" class="mt-3 text-3xl font-semibold text-slate-900">0</p>
+        </div>
+        <div class="card-stats bg-sky-50 p-5 shadow-sm">
+            <p class="text-sm text-slate-500">Années archivées</p>
+            <p id="statArchivees" class="mt-3 text-3xl font-semibold text-slate-900">0</p>
+        </div>
+        <div class="card-stats bg-slate-50 p-5 shadow-sm">
+            <p class="text-sm text-slate-500">Classes totales</p>
+            <p id="statTotalClasses" class="mt-3 text-3xl font-semibold text-slate-900">0</p>
+        </div>
+    </section>
+
+    <section class="mb-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="flex-1 min-w-0">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Rechercher une année</label>
+                <input id="searchInput" type="search" placeholder="Ex: 2025-2026" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200" />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <label class="text-sm font-semibold text-slate-700">Statut</label>
+                <select id="statusFilter" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none">
+                    <option value="">Toutes</option>
+                    <option value="active">Actives</option>
+                    <option value="archivee">Archivées</option>
+                    <option value="avenir">À venir</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <section id="cardsSection" class="grid gap-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1"></section>
+
+    <section class="mt-8 flex flex-col items-center justify-between gap-3 rounded-3xl bg-white px-5 py-4 shadow-sm sm:flex-row">
+        <div class="text-sm text-slate-600" id="pagerInfo">Affichage 0 sur 0 années</div>
+        <div class="flex items-center gap-2">
+            <button id="prevPage" type="button" class="pagination-button">⬅️ Précédent</button>
+            <button id="nextPage" type="button" class="pagination-button">Suivant ➡️</button>
+        </div>
+    </section>
+</div>
+
+<div id="createYearModal" class="modal hidden">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div>
+                <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Nouvelle année académique</p>
+                <h2 class="mt-2 text-2xl font-semibold text-slate-900">Créer une année</h2>
+            </div>
+            <button type="button" class="modal-close" onclick="closeCreateModal()">✕</button>
+        </div>
+
+        <form id="createYearForm" class="space-y-6" onsubmit="event.preventDefault(); submitCreateYear();">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Libellé</span>
+                    <input id="yearLabel" type="text" placeholder="2026-2027" class="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none shadow-sm focus:border-slate-900 focus:ring-2 focus:ring-slate-200" required />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Date début</span>
+                    <input id="yearStart" type="date" class="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none shadow-sm focus:border-slate-900 focus:ring-2 focus:ring-slate-200" required />
+                </label>
+                <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Date fin</span>
+                    <input id="yearEnd" type="date" class="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none shadow-sm focus:border-slate-900 focus:ring-2 focus:ring-slate-200" required />
+                </label>
+                <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <input id="yearActive" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900" />
+                    <span class="text-sm text-slate-700">Définir comme année active</span>
+                </label>
+            </div>
+
+            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <p class="text-sm font-semibold text-slate-800">Aperçu</p>
+                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                    <div class="rounded-2xl bg-white p-4 shadow-sm">
+                        <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Semestres générés</p>
+                        <div id="previewSemestres" class="mt-3 text-sm text-slate-700">Chargement...</div>
+                    </div>
+                    <div class="rounded-2xl bg-white p-4 shadow-sm">
+                        <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Classes générées</p>
+                        <div id="previewClasses" class="mt-3 text-sm text-slate-700">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeCreateModal()" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Annuler</button>
+                <button id="createYearSubmit" type="submit" class="rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Créer l'année</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="yearDetailsModal" class="modal hidden">
+    <div class="modal-panel max-w-4xl">
+        <div class="modal-header">
+            <div>
+                <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Détails de l'année</p>
+                <h2 id="detailsYearLabel" class="mt-2 text-2xl font-semibold text-slate-900">2025-2026</h2>
+            </div>
+            <button type="button" class="modal-close" onclick="closeDetailsModal()">✕</button>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Dates</p>
+                    <p id="detailsDates" class="mt-2 text-slate-700"></p>
+                </div>
+                <div>
+                    <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Statut</p>
+                    <p id="detailsStatus" class="mt-2 text-slate-700"></p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-2xl bg-slate-50 p-4 text-center">
+                        <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Semestres</p>
+                        <p id="detailsSemestresCount" class="mt-2 text-2xl font-semibold text-slate-900">0</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4 text-center">
+                        <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Classes</p>
+                        <p id="detailsClassesCount" class="mt-2 text-2xl font-semibold text-slate-900">0</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4 text-center">
+                        <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Professeurs</p>
+                        <p id="detailsProfCount" class="mt-2 text-2xl font-semibold text-slate-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Semestres</p>
+                    <div id="detailsSemestres" class="mt-3 flex flex-wrap gap-2"></div>
+                </div>
+                <div>
+                    <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Classes</p>
+                    <div id="detailsClasses" class="mt-3 grid gap-2 text-sm text-slate-700"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button type="button" onclick="generateEdt(currentDetailsId)" class="action-button bg-slate-900 text-white">Générer les EDT</button>
+            <button type="button" onclick="archiveAnnee(currentDetailsId)" class="action-button bg-orange-500 text-white">Archiver</button>
+            <button type="button" onclick="restoreAnnee(currentDetailsId)" class="action-button bg-sky-600 text-white">Restaurer</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin-annee.js" asp-append-version="true"></script>
+}

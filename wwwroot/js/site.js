@@ -1,4 +1,4 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
 window.app = window.app || {};
@@ -36,6 +36,17 @@ window.app.apiGet = function (url) {
 window.app.apiPost = function (url, data) {
     return appRequest(url, {
         method: "POST",
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+};
+
+window.app.apiPut = function (url, data) {
+    return appRequest(url, {
+        method: "PUT",
         headers: {
             "Accept": "application/json",
             "Content-Type": "application/json"
