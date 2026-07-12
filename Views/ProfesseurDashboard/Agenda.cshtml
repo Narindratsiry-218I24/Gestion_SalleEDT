@@ -55,6 +55,9 @@
             <a href="@Url.Action("Index", "ProfesseurDashboard", new { email })" class="back-btn">
                 <i data-lucide="arrow-left" class="h-4 w-4"></i> Retour
             </a>
+            <select id="anneeSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2" onchange="changerAnnee()">
+                <option value="">Chargement des années...</option>
+            </select>
             <div class="nav-semaine">
                 <button class="nav-btn" onclick="changerSemaine(-1)"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
                 <span id="labelSemaine">Chargement...</span>
@@ -114,14 +117,101 @@
         const joursList = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
         const joursLabels = { "MON": "Lundi", "TUE": "Mardi", "WED": "Mercredi", "THU": "Jeudi", "FRI": "Vendredi", "SAT": "Samedi" };
         const heures = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        
+        let anneesList = [];
+        let selectedAnnee = null;
+        let semaineEnCoursDebut = null;
+        let semaineEnCoursFin = null;
 
         function initIcons() {
             if (window.lucide) lucide.createIcons();
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
+            await chargerAnnees();
             chargerAgenda();
         });
+
+        async function chargerAnnees() {
+            try {
+                const res = await fetch('/api/AnneeAcademique');
+                if (res.ok) {
+                    anneesList = await res.json();
+                    const select = document.getElementById('anneeSelect');
+                    select.innerHTML = '';
+                    
+                    if (anneesList.length === 0) {
+                        select.innerHTML = '<option value="">Aucune année disponible</option>';
+                        return;
+                    }
+
+                    // Trouver l'année la plus récente ou active
+                    let defaultAnnee = anneesList.find(a => a.estActive || a.EstActive);
+                    if (!defaultAnnee) defaultAnnee = anneesList[anneesList.length - 1];
+                    
+                    anneesList.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.idAnnee || a.IdAnnee;
+                        opt.textContent = a.libelle || a.Libelle;
+                        if ((a.idAnnee || a.IdAnnee) === (defaultAnnee.idAnnee || defaultAnnee.IdAnnee)) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+                    
+                    selectedAnnee = defaultAnnee;
+                }
+            } catch (error) {
+                console.error("Erreur chargement des années:", error);
+            }
+        }
+
+        function changerAnnee() {
+            const select = document.getElementById('anneeSelect');
+            const id = parseInt(select.value);
+            selectedAnnee = anneesList.find(a => (a.idAnnee || a.IdAnnee) === id);
+            
+            // Re-centrer sur l'année selectionnée si on était en dehors
+            currentOffset = 0;
+            chargerAgenda();
+        }
+
+        function verifierLimitesSemaine() {
+            if (!selectedAnnee || !semaineEnCoursDebut) return;
+            
+            const btnPrev = document.querySelector('.nav-btn[onclick="changerSemaine(-1)"]');
+            const btnNext = document.querySelector('.nav-btn[onclick="changerSemaine(1)"]');
+            
+            const dateDebutAnnee = new Date(selectedAnnee.dateDebutAnnee || selectedAnnee.DateDebutAnnee);
+            const dateFinAnnee = new Date(selectedAnnee.dateFinAnnee || selectedAnnee.DateFinAnnee);
+            
+            const semaineDebut = new Date(semaineEnCoursDebut);
+            const semaineFin = new Date(semaineEnCoursFin);
+            
+            // Si la semaine précédente commence avant la date de début de l'année
+            const semainePrec = new Date(semaineDebut);
+            semainePrec.setDate(semainePrec.getDate() - 7);
+            
+            if (semainePrec < dateDebutAnnee && semaineDebut <= dateDebutAnnee) {
+                btnPrev.style.opacity = '0.5';
+                btnPrev.style.pointerEvents = 'none';
+            } else {
+                btnPrev.style.opacity = '1';
+                btnPrev.style.pointerEvents = 'auto';
+            }
+            
+            // Si la semaine suivante commence après la date de fin de l'année
+            const semaineSuivante = new Date(semaineFin);
+            semaineSuivante.setDate(semaineSuivante.getDate() + 1);
+            
+            if (semaineSuivante > dateFinAnnee) {
+                btnNext.style.opacity = '0.5';
+                btnNext.style.pointerEvents = 'none';
+            } else {
+                btnNext.style.opacity = '1';
+                btnNext.style.pointerEvents = 'auto';
+            }
+        }
 
         function changerSemaine(delta) {
             currentOffset += delta;
@@ -130,21 +220,32 @@
 
         async function chargerAgenda() {
             try {
-                const response = await fetch(`/api/Professeur/Agenda?email=${encodeURIComponent(userEmail)}&semaineOffset=${currentOffset}`);
+                // Si on a une année selectionnée, on peut passer un paramètre anneeId (optionnel pour le moment si l'API ne le gère pas, mais utile)
+                let url = `/api/Professeur/Agenda?email=${encodeURIComponent(userEmail)}&semaineOffset=${currentOffset}`;
+                if (selectedAnnee) {
+                    url += `&anneeId=${selectedAnnee.idAnnee || selectedAnnee.IdAnnee}`;
+                }
+                
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
                 
-                const dStart = new Date(data.SemaineDebut);
-                const dEnd = new Date(data.SemaineFin);
+                semaineEnCoursDebut = data.SemaineDebut || data.semaineDebut;
+                semaineEnCoursFin = data.SemaineFin || data.semaineFin;
+                
+                const dStart = new Date(semaineEnCoursDebut);
+                const dEnd = new Date(semaineEnCoursFin);
                 document.getElementById('labelSemaine').textContent = 
                     `${dStart.toLocaleDateString('fr-FR', {day:'numeric', month:'short'})} - ${dEnd.toLocaleDateString('fr-FR', {day:'numeric', month:'short'})}`;
 
-                document.getElementById('statNbCours').textContent = data.Stats.NbCours;
-                document.getElementById('statHeures').textContent = data.Stats.HeuresTotales + 'h';
+                document.getElementById('statNbCours').textContent = data.Stats ? data.Stats.NbCours : 0;
+                document.getElementById('statHeures').textContent = (data.Stats ? data.Stats.HeuresTotales : 0) + 'h';
 
                 renderGrid(data);
                 renderList(data);
                 initIcons();
+                
+                verifierLimitesSemaine();
             } catch (error) {
                 console.error("Erreur lors du chargement de l'agenda:", error);
             }

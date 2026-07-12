@@ -176,7 +176,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                                 IdAffectation = affectation.IdAffectation,
                                 TypeCours = "Cours",
                                 VolumeHours = matiere.VolumeHoraire,
-                                Statut = "a_planifier"
+                                Statut = "Cree"
                             };
                             db.Cours.Add(cours);
                             db.SaveChanges();

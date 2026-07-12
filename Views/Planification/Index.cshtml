@@ -51,10 +51,9 @@
                 <p class="text-sm text-gray-500 mt-1 font-medium">Vérifiez les volumes horaires et les heures planifiées avant de poursuivre.</p>
             </div>
 
-            <!-- Course Switcher -->
-            <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200/60 max-w-xl">
-                <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Choisir le cours à planifier</label>
-                <select id="wizardCourseSwitcher" class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="onWizardCourseSelect(this.value)">
+            <!-- Course Switcher (Supprimé car le cours est passé en paramètre) -->
+            <div class="hidden">
+                <select id="wizardCourseSwitcher" class="w-full" onchange="onWizardCourseSelect(this.value)">
                     <option value="">Sélectionnez un cours...</option>
                 </select>
             </div>
@@ -90,6 +89,16 @@
                     </div>
                     <div class="w-full bg-indigo-150/40 rounded-full h-3.5 overflow-hidden">
                         <div id="wizardStep1ProgressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- History of planned sessions -->
+                <div class="mt-6">
+                    <h5 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-indigo-500"></i> Historique des séances de ce cours
+                    </h5>
+                    <div id="wizardStep1History" class="bg-gray-50 border border-gray-200/60 rounded-xl p-4 text-sm text-gray-600 max-h-48 overflow-y-auto space-y-2">
+                        Chargement de l'historique...
                     </div>
                 </div>
 
@@ -130,11 +139,48 @@
                             <input type="date" id="wizardDate" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all" onchange="onWizardDateTimeChange()" />
                         </div>
 
+                        <!-- Filtres Salles -->
+                        <div class="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 border border-indigo-100 bg-indigo-50/30 p-4 rounded-xl mt-4">
+                            <div class="col-span-3 text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2 border-b border-indigo-100 pb-2">
+                                <i data-lucide="filter" class="w-4 h-4 inline-block mr-1"></i> Filtrer les salles libres
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Bâtiment</label>
+                                <select id="filterBatiment" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="onBatimentChange()">
+                                    <option value="all">Tous</option>
+                                    <option value="A">Bâtiment A</option>
+                                    <option value="B">Bâtiment B</option>
+                                    <option value="C">Bâtiment C</option>
+                                    <option value="D">Bâtiment D</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Type de salle</label>
+                                <select id="filterTypeSalle" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="loadAvailableSalles()">
+                                    <option value="all">Tous types</option>
+                                    <option value="cours">Salle de cours</option>
+                                    <option value="amphi">Amphithéâtre</option>
+                                    <option value="bibliotheque">Bibliothèque</option>
+                                    <option value="administration">Administration</option>
+                                </select>
+                            </div>
+                            <div id="etageFilterContainer">
+                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Étage</label>
+                                <select id="filterEtage" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="loadAvailableSalles()">
+                                    <option value="">Tous les étages</option>
+                                    <option value="0">Rez-de-chaussée (0)</option>
+                                    <option value="1">Étage 1</option>
+                                    <option value="2">Étage 2</option>
+                                    <option value="3">Étage 3</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <!-- Room -->
-                        <div class="col-span-2 md:col-span-1">
-                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Salle de classe <span class="text-red-500">*</span></label>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Salle disponible (sans conflit) <span class="text-red-500">*</span></label>
                             <select id="wizardSalleId" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all" onchange="onWizardSalleChange()">
-                                <option value="">Sélectionnez une salle</option>
+                                <option value="">Sélectionnez d'abord la date et l'heure</option>
                             </select>
                         </div>
 
@@ -396,6 +442,33 @@
         const progPercent = totalHours > 0 ? Math.min(100, (plannedHours / totalHours) * 100) : 0;
         document.getElementById('wizardStep1ProgressBar').style.width = `${progPercent}%`;
 
+        // Load History
+        const historyContainer = document.getElementById('wizardStep1History');
+        if (wizardCourse.Seances && wizardCourse.Seances.length > 0) {
+            historyContainer.innerHTML = '';
+            wizardCourse.Seances.forEach((s, idx) => {
+                const dateObj = new Date(s.Date);
+                const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                historyContainer.innerHTML += `
+                    <div class="flex items-center justify-between bg-white border border-gray-100 rounded-lg p-2.5 shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">${idx + 1}</span>
+                            <div>
+                                <strong class="text-gray-800 capitalize">${dateStr}</strong>
+                                <span class="text-gray-500 ml-2">${s.HeureDebut} - ${s.HeureFin}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-gray-500">${s.Duree}h</span>
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold ${s.Statut === 'Annulee' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}">${s.Statut || 'Planifiée'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            historyContainer.innerHTML = `<div class="text-center py-4 text-gray-400 italic">Aucune séance planifiée pour l'instant.</div>`;
+        }
+
         // Switch color based on completed volume
         const progressBar = document.getElementById('wizardStep1ProgressBar');
         if (remainingHours <= 0) {
@@ -528,8 +601,106 @@
         }
 
         if (startVal && endVal) {
+            await loadAvailableSalles();
             await performLiveConflictVerification();
         }
+    }
+
+    function onBatimentChange() {
+        const batiment = document.getElementById('filterBatiment').value;
+        const etageContainer = document.getElementById('etageFilterContainer');
+        const etageSelect = document.getElementById('filterEtage');
+        const typeSelect = document.getElementById('filterTypeSalle');
+        
+        // Gérer les étages
+        etageSelect.innerHTML = '<option value="">Tous les étages</option>';
+        if (batiment === 'B') {
+            etageContainer.classList.remove('hidden');
+            etageSelect.innerHTML += '<option value="0">Rez-de-chaussée (0)</option>';
+            etageSelect.innerHTML += '<option value="1">Étage 1</option>';
+            etageSelect.innerHTML += '<option value="2">Étage 2</option>';
+            etageSelect.innerHTML += '<option value="3">Étage 3</option>';
+        } else if (batiment === 'D') {
+            etageContainer.classList.remove('hidden');
+            etageSelect.innerHTML += '<option value="0">Rez-de-chaussée (0)</option>';
+            etageSelect.innerHTML += '<option value="1">Étage 1</option>';
+        } else if (batiment === 'C' || batiment === 'A') {
+            etageContainer.classList.remove('hidden');
+            etageSelect.innerHTML += '<option value="0">Rez-de-chaussée (0)</option>';
+        } else {
+            etageContainer.classList.add('hidden');
+            etageSelect.value = ''; // Reset etage if hidden
+        }
+        
+        // Gérer les types selon le bâtiment
+        typeSelect.innerHTML = '<option value="all">Tous types</option>';
+        if (batiment === 'B') {
+            typeSelect.innerHTML += '<option value="cours">Salle de cours</option>';
+            typeSelect.value = 'cours';
+        } else if (batiment === 'C') {
+            typeSelect.innerHTML += '<option value="cours">Salle de cours</option>';
+            typeSelect.innerHTML += '<option value="bibliotheque">Bibliothèque</option>';
+        } else if (batiment === 'D') {
+            typeSelect.innerHTML += '<option value="amphi">Amphithéâtre</option>';
+            typeSelect.value = 'amphi';
+        } else {
+            typeSelect.innerHTML += '<option value="cours">Salle de cours</option>';
+            typeSelect.innerHTML += '<option value="amphi">Amphithéâtre</option>';
+            typeSelect.innerHTML += '<option value="bibliotheque">Bibliothèque</option>';
+            typeSelect.innerHTML += '<option value="administration">Administration</option>';
+        }
+        
+        loadAvailableSalles();
+    }
+
+    async function loadAvailableSalles() {
+        const dateVal = document.getElementById('wizardDate').value;
+        let startVal = document.getElementById('wizardStartTime').value;
+        let endVal = document.getElementById('wizardEndTime').value;
+        const batiment = document.getElementById('filterBatiment').value;
+        const typeSalle = document.getElementById('filterTypeSalle').value;
+        const etage = document.getElementById('filterEtage').value;
+
+        const sel = document.getElementById('wizardSalleId');
+
+        if (!dateVal || !startVal || !endVal) {
+            sel.innerHTML = '<option value="">Sélectionnez d\'abord la date et les horaires</option>';
+            return;
+        }
+
+        if (startVal.length === 5) startVal += ':00';
+        if (endVal.length === 5) endVal += ':00';
+
+        sel.innerHTML = '<option value="">Recherche des salles libres...</option>';
+        sel.disabled = true;
+
+        let url = `/api/Salle/Disponibles?date=${dateVal}&startTime=${startVal}&endTime=${endVal}`;
+        if (batiment && batiment !== 'all') url += `&batiment=${batiment}`;
+        if (typeSalle && typeSalle !== 'all') url += `&type=${typeSalle}`;
+        if (etage) url += `&etage=${etage}`;
+
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                const salles = await res.json();
+                if (salles.length === 0) {
+                    sel.innerHTML = '<option value="">Aucune salle libre trouvée pour ces critères</option>';
+                } else {
+                    sel.innerHTML = '<option value="">Sélectionnez une salle libre</option>';
+                    salles.forEach(s => {
+                        sel.innerHTML += `<option value="${s.idSalle || s.IdSalle}">${s.nomSalle || s.NomSalle} (Capacité: ${s.capacite || s.Capacite}) - Bât: ${s.codeBatiment || s.CodeBatiment} Etage: ${s.etage || s.Etage}</option>`;
+                    });
+                    sel.disabled = false;
+                }
+            } else {
+                const errText = await res.text();
+                throw new Error("HTTP " + res.status + " : " + errText);
+            }
+        } catch(e) {
+            console.error("LoadSalles Error: ", e);
+            sel.innerHTML = `<option value="">Erreur: ${e.message}</option>`;
+        }
+        await performLiveConflictVerification();
     }
 
     async function onWizardSalleChange() {

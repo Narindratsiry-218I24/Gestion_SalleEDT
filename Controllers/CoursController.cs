@@ -135,6 +135,14 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             var realizedHours = course.Seances?.Where(s => s.Statut != "Annulee").Sum(s => (int)(s.EndTime - s.StartTime).TotalHours) ?? 0;
 
+            var seancesInfo = course.Seances?.OrderBy(s => s.Date).Select(s => new {
+                Date = s.Date.ToString("yyyy-MM-dd"),
+                HeureDebut = s.StartTime.ToString(@"hh\:mm"),
+                HeureFin = s.EndTime.ToString(@"hh\:mm"),
+                Duree = (int)(s.EndTime - s.StartTime).TotalHours,
+                Statut = s.Statut
+            }).ToList();
+
             return Ok(new
             {
                 course.IdCours,
@@ -147,7 +155,8 @@ namespace Gestion_SalleClasseEDT.Controllers
                 ClasseEffectif = course.Classe?.Effectif ?? 0,
                 course.IdProfesseur,
                 course.IdClasse,
-                course.IdGroupe
+                course.IdGroupe,
+                Seances = seancesInfo
             });
         }
 

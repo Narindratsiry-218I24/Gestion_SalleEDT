@@ -35,7 +35,7 @@ namespace Gestion_SalleClasseEDT.Services
             var seancesQuery = _db.Seances
                 .Include(s => s.Cours)
                 .Where(s =>
-                    s.Date == date.Date &&
+                    s.Date == DateTime.SpecifyKind(date.Date, DateTimeKind.Utc) &&
                     s.Statut != "Annulee" &&
                     // Chevauchement : (début1 < fin2) ET (fin1 > début2)
                     s.StartTime < heureFin &&
@@ -43,7 +43,7 @@ namespace Gestion_SalleClasseEDT.Services
 
             // Exclure le cours lui-même si mise à jour
             if (excludeCoursId.HasValue)
-                seancesQuery = seancesQuery.Where(s => s.CourseId != excludeCoursId.Value);
+                seancesQuery = seancesQuery.Where(s => s.IdCours != excludeCoursId.Value);
 
             // Exclure la séance elle-même si mise à jour d'une séance
             if (excludeSeanceId.HasValue)
@@ -55,7 +55,7 @@ namespace Gestion_SalleClasseEDT.Services
             // --- 1. Conflit de salle ---
             if (salleId.HasValue && salleId.Value > 0)
             {
-                var conflitSalle = seancesEnConflit.FirstOrDefault(s => s.SalleId == salleId.Value);
+                var conflitSalle = seancesEnConflit.FirstOrDefault(s => s.IdSalle == salleId.Value);
                 if (conflitSalle != null)
                 {
                     var matiere = await _db.Matieres.FindAsync(conflitSalle.Cours?.IdMatiere);
@@ -108,3 +108,4 @@ namespace Gestion_SalleClasseEDT.Services
         }
     }
 }
+

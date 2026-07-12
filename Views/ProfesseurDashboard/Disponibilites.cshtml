@@ -79,6 +79,9 @@
             <p class="text-gray-500 text-sm mt-1">Sélectionnez vos jours et créneaux disponibles pour les cours</p>
         </div>
         <div class="flex items-center gap-3">
+            <select id="anneeSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 mr-4" onchange="changerAnnee()">
+                <option value="">Chargement des années...</option>
+            </select>
             <button id="btnReset" class="bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center gap-2">
                 <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Rétablir par défaut
             </button>
@@ -117,7 +120,6 @@
                 <div class="calendar-day-header">JEU</div>
                 <div class="calendar-day-header">VEN</div>
                 <div class="calendar-day-header">SAM</div>
-                <div class="calendar-day-header">DIM</div>
             </div>
 
             <div id="calendarGrid" class="calendar-grid">
@@ -180,12 +182,15 @@
         let currentDate = new Date(); // Today
         let monthData = [];
         let selectedDayIndex = -1;
+        
+        let anneesList = [];
+        let selectedAnnee = null;
 
         // Modèle de données par date spécifique (yyyy-MM-dd)
         let dispoModel = {};
 
         const moisNoms = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-        const joursFr = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+        const joursFr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]; // Dimanche retiré de l'affichage
 
         document.addEventListener('DOMContentLoaded', async () => {
             if (window.lucide) lucide.createIcons();
@@ -201,11 +206,104 @@
             document.getElementById('btnApremOui').addEventListener('click', () => updateSelectedDay(null, true));
             document.getElementById('btnApremNon').addEventListener('click', () => updateSelectedDay(null, false));
 
+            await chargerAnnees();
+            verifierLimitesMois();
             await fetchMonthData();
         });
 
+        async function chargerAnnees() {
+            try {
+                const res = await fetch('/api/AnneeAcademique');
+                if (res.ok) {
+                    anneesList = await res.json();
+                    const select = document.getElementById('anneeSelect');
+                    select.innerHTML = '';
+                    
+                    if (anneesList.length === 0) {
+                        select.innerHTML = '<option value="">Aucune année disponible</option>';
+                        return;
+                    }
+
+                    // Trouver l'année la plus récente ou active
+                    let defaultAnnee = anneesList.find(a => a.estActive || a.EstActive);
+                    if (!defaultAnnee) defaultAnnee = anneesList[anneesList.length - 1];
+                    
+                    anneesList.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.idAnnee || a.IdAnnee;
+                        opt.textContent = a.libelle || a.Libelle;
+                        if ((a.idAnnee || a.IdAnnee) === (defaultAnnee.idAnnee || defaultAnnee.IdAnnee)) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+                    
+                    selectedAnnee = defaultAnnee;
+                    // Mettre currentDate à la date de début de l'année si on est en dehors
+                    const currentNow = new Date();
+                    const dateDebut = new Date(selectedAnnee.dateDebutAnnee || selectedAnnee.DateDebutAnnee);
+                    const dateFin = new Date(selectedAnnee.dateFinAnnee || selectedAnnee.DateFinAnnee);
+                    
+                    if (currentNow < dateDebut || currentNow > dateFin) {
+                        currentDate = new Date(dateDebut);
+                    }
+                }
+            } catch (error) {
+                console.error("Erreur chargement des années:", error);
+            }
+        }
+
+        async function changerAnnee() {
+            const select = document.getElementById('anneeSelect');
+            const id = parseInt(select.value);
+            selectedAnnee = anneesList.find(a => (a.idAnnee || a.IdAnnee) === id);
+            
+            if (selectedAnnee) {
+                const dateDebut = new Date(selectedAnnee.dateDebutAnnee || selectedAnnee.DateDebutAnnee);
+                currentDate = new Date(dateDebut); // Revenir au début de l'année sélectionnée
+                await fetchMonthData();
+            }
+        }
+
+        function verifierLimitesMois() {
+            if (!selectedAnnee) return;
+            
+            const btnPrev = document.getElementById('btnPrevMonth');
+            const btnNext = document.getElementById('btnNextMonth');
+            
+            const dateDebutAnnee = new Date(selectedAnnee.dateDebutAnnee || selectedAnnee.DateDebutAnnee);
+            const dateFinAnnee = new Date(selectedAnnee.dateFinAnnee || selectedAnnee.DateFinAnnee);
+            
+            // Premier jour du mois actuel
+            const premierJourMois = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            // Dernier jour du mois actuel
+            const dernierJourMois = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            // Si le mois précédent (dernier jour) est avant la date de début de l'année
+            const dernierJourMoisPrec = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+            if (dernierJourMoisPrec < dateDebutAnnee) {
+                btnPrev.style.opacity = '0.5';
+                btnPrev.style.pointerEvents = 'none';
+            } else {
+                btnPrev.style.opacity = '1';
+                btnPrev.style.pointerEvents = 'auto';
+            }
+            
+            // Si le mois suivant (premier jour) est après la date de fin de l'année
+            const premierJourMoisSuivant = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+            if (premierJourMoisSuivant > dateFinAnnee) {
+                btnNext.style.opacity = '0.5';
+                btnNext.style.pointerEvents = 'none';
+            } else {
+                btnNext.style.opacity = '1';
+                btnNext.style.pointerEvents = 'auto';
+            }
+        }
+
         async function fetchMonthData() {
             try {
+                // Ajouter anneeId si possible dans l'API, sinon filtrer localement n'est pas idéal mais l'API prend l'email, mois, annee. 
+                // L'année académique s'assure qu'on reste dans les bornes.
                 const res = await fetch(`/api/Disponibilite/Mois?email=${encodeURIComponent(userEmail)}&mois=${currentDate.getMonth() + 1}&annee=${currentDate.getFullYear()}`);
                 if (res.ok) {
                     const data = await res.json();
@@ -226,12 +324,30 @@
                     });
                     
                     renderCalendar();
+                    verifierLimitesMois();
                 }
             } catch (err) { console.error(err); }
         }
 
+ else {
+                    btnPrev.disabled = false;
+                    btnPrev.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                
+                // Disable next if current is >= end
+                if (curY > maxY || (curY === maxY && curM >= maxM)) {
+                    btnNext.disabled = true;
+                    btnNext.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btnNext.disabled = false;
+                    btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
         function changeMonth(delta) {
             currentDate.setMonth(currentDate.getMonth() + delta);
+            verifierLimitesMois();
             fetchMonthData();
         }
 
@@ -254,8 +370,8 @@
 
             // Remplir les jours vides avant le 1er du mois
             const firstDayDate = new Date(monthData[0].date || monthData[0].Date);
-            let firstDayIndex = firstDayDate.getDay() - 1; // 0=Lundi, ..., 6=Dimanche
-            if (firstDayIndex === -1) firstDayIndex = 6;
+            let firstDayIndex = firstDayDate.getDay() - 1; // 0=Lundi, ..., 5=Samedi
+            if (firstDayIndex === -1) firstDayIndex = 0; // Si c'est dimanche, aucun décalage nécessaire
 
             for (let i = 0; i < firstDayIndex; i++) {
                 grid.innerHTML += `<div class="calendar-day empty"></div>`;
@@ -264,8 +380,15 @@
             // Afficher les jours
             monthData.forEach((day, index) => {
                 const dateStr = day.date || day.Date;
+                const dateObj = new Date(dateStr);
+                
+                // Ne pas rendre le dimanche (0 dans getDay())
+                if (dateObj.getDay() === 0) {
+                    return; // ignorer le dimanche
+                }
+
                 const status = getStatusForDay(dateStr);
-                const isToday = new Date().toDateString() === new Date(dateStr).toDateString();
+                const isToday = new Date().toDateString() === dateObj.toDateString();
                 const todayRing = isToday ? 'ring-2 ring-offset-2 ring-[#5C8ABF]' : '';
                 
                 const hasCours = day.hasCours !== undefined ? day.hasCours : day.HasCours;
@@ -274,7 +397,7 @@
                 const el = document.createElement('div');
                 el.className = `calendar-day status-${status} ${todayRing}`;
                 el.dataset.index = index;
-                el.innerHTML = `<span class="text-xl font-bold">${index + 1}</span>${dotHtml}`;
+                el.innerHTML = `<span class="text-xl font-bold">${dateObj.getDate()}</span>${dotHtml}`;
                 
                 el.addEventListener('click', () => selectDay(index));
                 el.addEventListener('dblclick', () => toggleDayFull(index));
