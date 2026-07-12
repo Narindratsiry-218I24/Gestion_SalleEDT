@@ -54,5 +54,9 @@ namespace Gestion_SalleClasseEDT.Models
 
         [ForeignKey("SemestreId")]
         public virtual Semestre Semestre { get; set; }
+    // Parcours (optional, not persisted)
+    [NotMapped]
+    public string Parcours { get; set; }
     }
+
 }

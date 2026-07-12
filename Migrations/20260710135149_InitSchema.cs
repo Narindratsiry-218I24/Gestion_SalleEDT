@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gestion_SalleClasseEDT.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -29,6 +29,25 @@ namespace Gestion_SalleClasseEDT.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_annee_academique", x => x.id_annee);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "audit_logs",
+                schema: "public",
+                columns: table => new
+                {
+                    id_audit = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    entity = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    entity_id = table.Column<int>(type: "integer", nullable: true),
+                    operation = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    changed_by = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    changed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    details = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_audit_logs", x => x.id_audit);
                 });
 
             migrationBuilder.CreateTable(
@@ -200,7 +219,9 @@ namespace Gestion_SalleClasseEDT.Migrations
                     code_matiere = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     nom_matiere = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     id_ref_semestre = table.Column<int>(type: "integer", nullable: false),
-                    credit = table.Column<int>(type: "integer", nullable: false)
+                    credit = table.Column<int>(type: "integer", nullable: false),
+                    volume_horaire = table.Column<int>(type: "integer", nullable: false),
+                    id_professeur_responsable = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -212,6 +233,12 @@ namespace Gestion_SalleClasseEDT.Migrations
                         principalTable: "filiere",
                         principalColumn: "id_filiere",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_matiere_professeur_id_professeur_responsable",
+                        column: x => x.id_professeur_responsable,
+                        principalSchema: "public",
+                        principalTable: "professeur",
+                        principalColumn: "id_professeur");
                     table.ForeignKey(
                         name: "FK_matiere_ref_semestre_id_ref_semestre",
                         column: x => x.id_ref_semestre,
@@ -253,6 +280,35 @@ namespace Gestion_SalleClasseEDT.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "prerequisites",
+                schema: "public",
+                columns: table => new
+                {
+                    id_prerequisite = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_matiere = table.Column<int>(type: "integer", nullable: false),
+                    id_prerequisite_matiere = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_prerequisites", x => x.id_prerequisite);
+                    table.ForeignKey(
+                        name: "FK_prerequisites_matiere_id_matiere",
+                        column: x => x.id_matiere,
+                        principalSchema: "public",
+                        principalTable: "matiere",
+                        principalColumn: "id_matiere",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_prerequisites_matiere_id_prerequisite_matiere",
+                        column: x => x.id_prerequisite_matiere,
+                        principalSchema: "public",
+                        principalTable: "matiere",
+                        principalColumn: "id_matiere",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "classe",
                 schema: "public",
                 columns: table => new
@@ -283,6 +339,112 @@ namespace Gestion_SalleClasseEDT.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "subjects",
+                schema: "public",
+                columns: table => new
+                {
+                    id_subject = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    code = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    label = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    credits = table.Column<int>(type: "integer", nullable: false),
+                    hours = table.Column<int>(type: "integer", nullable: false),
+                    type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    id_niveau = table.Column<int>(type: "integer", nullable: true),
+                    id_mention = table.Column<int>(type: "integer", nullable: true),
+                    id_filiere = table.Column<int>(type: "integer", nullable: true),
+                    id_semestre = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_subjects", x => x.id_subject);
+                    table.ForeignKey(
+                        name: "FK_subjects_filiere_id_filiere",
+                        column: x => x.id_filiere,
+                        principalSchema: "public",
+                        principalTable: "filiere",
+                        principalColumn: "id_filiere");
+                    table.ForeignKey(
+                        name: "FK_subjects_mention_id_mention",
+                        column: x => x.id_mention,
+                        principalSchema: "public",
+                        principalTable: "mention",
+                        principalColumn: "id_mention");
+                    table.ForeignKey(
+                        name: "FK_subjects_niveau_id_niveau",
+                        column: x => x.id_niveau,
+                        principalSchema: "public",
+                        principalTable: "niveau",
+                        principalColumn: "id_niveau");
+                    table.ForeignKey(
+                        name: "FK_subjects_semestre_id_semestre",
+                        column: x => x.id_semestre,
+                        principalSchema: "public",
+                        principalTable: "semestre",
+                        principalColumn: "id_semestre");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "groupes",
+                schema: "public",
+                columns: table => new
+                {
+                    id_groupe = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    id_classe = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_groupes", x => x.id_groupe);
+                    table.ForeignKey(
+                        name: "FK_groupes_classe_id_classe",
+                        column: x => x.id_classe,
+                        principalSchema: "public",
+                        principalTable: "classe",
+                        principalColumn: "id_classe",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "schedules",
+                schema: "public",
+                columns: table => new
+                {
+                    id_schedule = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_subject = table.Column<int>(type: "integer", nullable: true),
+                    id_professeur = table.Column<int>(type: "integer", nullable: true),
+                    id_salle = table.Column<int>(type: "integer", nullable: true),
+                    date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    heure_debut = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    heure_fin = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    session_type = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_schedules", x => x.id_schedule);
+                    table.ForeignKey(
+                        name: "FK_schedules_professeur_id_professeur",
+                        column: x => x.id_professeur,
+                        principalSchema: "public",
+                        principalTable: "professeur",
+                        principalColumn: "id_professeur");
+                    table.ForeignKey(
+                        name: "FK_schedules_salle_id_salle",
+                        column: x => x.id_salle,
+                        principalSchema: "public",
+                        principalTable: "salle",
+                        principalColumn: "id_salle");
+                    table.ForeignKey(
+                        name: "FK_schedules_subjects_id_subject",
+                        column: x => x.id_subject,
+                        principalSchema: "public",
+                        principalTable: "subjects",
+                        principalColumn: "id_subject");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "cours",
                 schema: "public",
                 columns: table => new
@@ -290,12 +452,22 @@ namespace Gestion_SalleClasseEDT.Migrations
                     id_cours = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     id_matiere = table.Column<int>(type: "integer", nullable: false),
-                    id_professeur = table.Column<int>(type: "integer", nullable: false),
-                    id_classe = table.Column<int>(type: "integer", nullable: false),
-                    id_salle = table.Column<int>(type: "integer", nullable: false),
-                    id_semestre = table.Column<int>(type: "integer", nullable: false),
-                    type_cours = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    statut = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                    id_professeur = table.Column<int>(type: "integer", nullable: true),
+                    id_classe = table.Column<int>(type: "integer", nullable: true),
+                    id_semestre = table.Column<int>(type: "integer", nullable: true),
+                    id_groupe = table.Column<int>(type: "integer", nullable: true),
+                    volume_hours = table.Column<int>(type: "integer", nullable: false),
+                    capacity = table.Column<int>(type: "integer", nullable: false),
+                    type_cours = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    teaching_mode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    language = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    statut = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    objectives = table.Column<string>(type: "text", nullable: true),
+                    skills = table.Column<string>(type: "text", nullable: true),
+                    methods = table.Column<string>(type: "text", nullable: true),
+                    evaluation = table.Column<string>(type: "text", nullable: true),
+                    bibliography = table.Column<string>(type: "text", nullable: true),
+                    id_salle = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -305,8 +477,13 @@ namespace Gestion_SalleClasseEDT.Migrations
                         column: x => x.id_classe,
                         principalSchema: "public",
                         principalTable: "classe",
-                        principalColumn: "id_classe",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id_classe");
+                    table.ForeignKey(
+                        name: "FK_cours_groupes_id_groupe",
+                        column: x => x.id_groupe,
+                        principalSchema: "public",
+                        principalTable: "groupes",
+                        principalColumn: "id_groupe");
                     table.ForeignKey(
                         name: "FK_cours_matiere_id_matiere",
                         column: x => x.id_matiere,
@@ -319,22 +496,19 @@ namespace Gestion_SalleClasseEDT.Migrations
                         column: x => x.id_professeur,
                         principalSchema: "public",
                         principalTable: "professeur",
-                        principalColumn: "id_professeur",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id_professeur");
                     table.ForeignKey(
                         name: "FK_cours_salle_id_salle",
                         column: x => x.id_salle,
                         principalSchema: "public",
                         principalTable: "salle",
-                        principalColumn: "id_salle",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id_salle");
                     table.ForeignKey(
                         name: "FK_cours_semestre_id_semestre",
                         column: x => x.id_semestre,
                         principalSchema: "public",
                         principalTable: "semestre",
-                        principalColumn: "id_semestre",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id_semestre");
                 });
 
             migrationBuilder.CreateTable(
@@ -431,6 +605,40 @@ namespace Gestion_SalleClasseEDT.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "seances",
+                schema: "public",
+                columns: table => new
+                {
+                    id_seance = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_cours = table.Column<int>(type: "integer", nullable: false),
+                    CourseId = table.Column<int>(type: "integer", nullable: false),
+                    id_salle = table.Column<int>(type: "integer", nullable: true),
+                    date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    start_time = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    end_time = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    statut = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    id_groupe = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_seances", x => x.id_seance);
+                    table.ForeignKey(
+                        name: "FK_seances_cours_CourseId",
+                        column: x => x.CourseId,
+                        principalSchema: "public",
+                        principalTable: "cours",
+                        principalColumn: "id_cours",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_seances_salle_id_salle",
+                        column: x => x.id_salle,
+                        principalSchema: "public",
+                        principalTable: "salle",
+                        principalColumn: "id_salle");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "proposition_admin",
                 schema: "public",
                 columns: table => new
@@ -480,6 +688,12 @@ namespace Gestion_SalleClasseEDT.Migrations
                 schema: "public",
                 table: "cours",
                 column: "id_classe");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_cours_id_groupe",
+                schema: "public",
+                table: "cours",
+                column: "id_groupe");
 
             migrationBuilder.CreateIndex(
                 name: "IX_cours_id_matiere",
@@ -566,10 +780,22 @@ namespace Gestion_SalleClasseEDT.Migrations
                 column: "id_mention");
 
             migrationBuilder.CreateIndex(
+                name: "IX_groupes_id_classe",
+                schema: "public",
+                table: "groupes",
+                column: "id_classe");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_matiere_id_filiere",
                 schema: "public",
                 table: "matiere",
                 column: "id_filiere");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_matiere_id_professeur_responsable",
+                schema: "public",
+                table: "matiere",
+                column: "id_professeur_responsable");
 
             migrationBuilder.CreateIndex(
                 name: "IX_matiere_id_ref_semestre",
@@ -589,6 +815,18 @@ namespace Gestion_SalleClasseEDT.Migrations
                 schema: "public",
                 table: "niveau",
                 column: "id_mention");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_prerequisites_id_matiere",
+                schema: "public",
+                table: "prerequisites",
+                column: "id_matiere");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_prerequisites_id_prerequisite_matiere",
+                schema: "public",
+                table: "prerequisites",
+                column: "id_prerequisite_matiere");
 
             migrationBuilder.CreateIndex(
                 name: "IX_professeur_email",
@@ -616,6 +854,36 @@ namespace Gestion_SalleClasseEDT.Migrations
                 column: "id_niveau");
 
             migrationBuilder.CreateIndex(
+                name: "IX_schedules_id_professeur",
+                schema: "public",
+                table: "schedules",
+                column: "id_professeur");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_schedules_id_salle",
+                schema: "public",
+                table: "schedules",
+                column: "id_salle");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_schedules_id_subject",
+                schema: "public",
+                table: "schedules",
+                column: "id_subject");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_seances_CourseId",
+                schema: "public",
+                table: "seances",
+                column: "CourseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_seances_id_salle",
+                schema: "public",
+                table: "seances",
+                column: "id_salle");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_semestre_id_annee",
                 schema: "public",
                 table: "semestre",
@@ -626,6 +894,37 @@ namespace Gestion_SalleClasseEDT.Migrations
                 schema: "public",
                 table: "semestre",
                 column: "id_ref_semestre");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_subjects_code",
+                schema: "public",
+                table: "subjects",
+                column: "code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_subjects_id_filiere",
+                schema: "public",
+                table: "subjects",
+                column: "id_filiere");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_subjects_id_mention",
+                schema: "public",
+                table: "subjects",
+                column: "id_mention");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_subjects_id_niveau",
+                schema: "public",
+                table: "subjects",
+                column: "id_niveau");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_subjects_id_semestre",
+                schema: "public",
+                table: "subjects",
+                column: "id_semestre");
 
             migrationBuilder.CreateIndex(
                 name: "IX_utilisateur_email",
@@ -639,6 +938,10 @@ namespace Gestion_SalleClasseEDT.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "audit_logs",
+                schema: "public");
+
+            migrationBuilder.DropTable(
                 name: "creneau",
                 schema: "public");
 
@@ -647,11 +950,27 @@ namespace Gestion_SalleClasseEDT.Migrations
                 schema: "public");
 
             migrationBuilder.DropTable(
+                name: "prerequisites",
+                schema: "public");
+
+            migrationBuilder.DropTable(
                 name: "proposition_admin",
                 schema: "public");
 
             migrationBuilder.DropTable(
+                name: "schedules",
+                schema: "public");
+
+            migrationBuilder.DropTable(
+                name: "seances",
+                schema: "public");
+
+            migrationBuilder.DropTable(
                 name: "demande_edt",
+                schema: "public");
+
+            migrationBuilder.DropTable(
+                name: "subjects",
                 schema: "public");
 
             migrationBuilder.DropTable(
@@ -663,7 +982,7 @@ namespace Gestion_SalleClasseEDT.Migrations
                 schema: "public");
 
             migrationBuilder.DropTable(
-                name: "classe",
+                name: "groupes",
                 schema: "public");
 
             migrationBuilder.DropTable(
@@ -671,19 +990,23 @@ namespace Gestion_SalleClasseEDT.Migrations
                 schema: "public");
 
             migrationBuilder.DropTable(
-                name: "professeur",
-                schema: "public");
-
-            migrationBuilder.DropTable(
                 name: "salle",
                 schema: "public");
 
             migrationBuilder.DropTable(
-                name: "semestre",
+                name: "classe",
+                schema: "public");
+
+            migrationBuilder.DropTable(
+                name: "professeur",
                 schema: "public");
 
             migrationBuilder.DropTable(
                 name: "filiere",
+                schema: "public");
+
+            migrationBuilder.DropTable(
+                name: "semestre",
                 schema: "public");
 
             migrationBuilder.DropTable(

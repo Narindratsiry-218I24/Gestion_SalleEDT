@@ -24,58 +24,31 @@ namespace Gestion_SalleClasseEDT.Controllers
             return Ok(filieres);
         }
 
-        [HttpGet]
-        [Route("{id:int}")]
-        public IActionResult GetFiliere(int id)
-        {
-            var filiere = db.Filieres.Include(f => f.Mention).FirstOrDefault(f => f.IdFiliere == id);
-            if (filiere == null) return NotFound();
-            return Ok(filiere);
-        }
-
+        // POST endpoint to create a Filiere
         [HttpPost]
         [Route("")]
         public IActionResult CreateFiliere([FromBody] Filiere filiere)
         {
+            if (filiere == null)
+                return BadRequest("Filiere payload is null.");
+
+            // Remove navigation properties from validation if present
             ModelState.Remove("Mention");
             ModelState.Remove("Classes");
             ModelState.Remove("Matieres");
-            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            if (filiere.IdFiliere <= 0)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (filiere.IdFiliere == 0)
             {
-                filiere.IdFiliere = db.Filieres.Any() ? db.Filieres.Max(f => f.IdFiliere) + 1 : 1;
+                var maxId = db.Filieres.Select(f => (int?)f.IdFiliere).Max() ?? 0;
+                filiere.IdFiliere = maxId + 1;
             }
+
             db.Filieres.Add(filiere);
             db.SaveChanges();
-            return CreatedAtAction(nameof(GetFiliere), new { id = filiere.IdFiliere }, filiere);
-        }
-
-        [HttpPut]
-        [Route("{id:int}")]
-        public IActionResult UpdateFiliere(int id, [FromBody] Filiere filiere)
-        {
-            if (id != filiere.IdFiliere) return BadRequest();
-            ModelState.Remove("Mention");
-            ModelState.Remove("Classes");
-            ModelState.Remove("Matieres");
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            db.Entry(filiere).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-            db.SaveChanges();
-            return NoContent();
-        }
-
-        [HttpDelete]
-        [Route("{id:int}")]
-        public IActionResult DeleteFiliere(int id)
-        {
-            var filiere = db.Filieres.Find(id);
-            if (filiere == null) return NotFound();
-
-            db.Filieres.Remove(filiere);
-            db.SaveChanges();
-            return Ok(filiere);
+            return CreatedAtAction(nameof(GetFilieres), new { id = filiere.IdFiliere }, filiere);
         }
     }
 }

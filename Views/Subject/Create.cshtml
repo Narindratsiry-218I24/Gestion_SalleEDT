@@ -1,38 +1,116 @@
 @model Gestion_SalleClasseEDT.Models.Subject
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = "Créer une matière";
+    var mentionOptions = new[] {
+        new { Id = 1, Name = "Informatique" },
+        new { Id = 2, Name = "Management" },
+        new { Id = 3, Name = "Multimédia" }
+    };
+    var niveauOptions = new[] {
+        new { Id = 1, Name = "Licence 1" },
+        new { Id = 2, Name = "Licence 2" },
+        new { Id = 3, Name = "Licence 3" },
+        new { Id = 4, Name = "Master 1" },
+        new { Id = 5, Name = "Master 2" }
+    };
 }
 
-<div class="max-w-2xl mx-auto py-8">
-    <div class="mb-8 flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Créer une matière</h1>
-            <p class="text-sm text-gray-500 mt-2">Ajoutez une nouvelle matière au système.</p>
-        </div>
-        <a href="/Subject" class="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:text-blue-600 transition-all">
-            <i data-lucide="arrow-left" class="h-4 w-4"></i> Retour
-        </a>
-    </div>
+<h2>Créer une matière</h2>
 
-    <form method="post" action="/api/Subject" class="bg-white rounded-3xl shadow-xl shadow-gray-200/40 border border-gray-100 overflow-hidden p-8 space-y-6">
-        <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Code de la matière</label>
-            <input name="Code" class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="Ex: INFO-101" required />
-        </div>
-        <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Libellé</label>
-            <input name="Label" class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="Ex: Algorithmique et Structures de données" required />
-        </div>
-        <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Crédits ECTS</label>
-            <input name="Credits" type="number" min="1" max="30" class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="Ex: 5" required />
-        </div>
-        
-        <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
-            <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition-all hover:bg-blue-700">
-                <i data-lucide="save" class="h-4 w-4 mr-2"></i> Créer la matière
-            </button>
-        </div>
-    </form>
-</div>
+<form method="post" action="/api/Subject">
+    <div>
+        <label>Code *</label>
+        <input name="Code" required />
+    </div>
+    <div>
+        <label>Label *</label>
+        <input name="Label" required />
+    </div>
+    <div>
+        <label>Credits *</label>
+        <input name="Credits" type="number" required />
+    </div>
+    <div>
+        <label>Hours *</label>
+        <input name="Hours" type="number" required />
+    </div>
+    <div>
+        <label>Mention *</label>
+        <select name="MentionId" id="mentionSelect" required>
+            <option value="">-- Sélectionner --</option>
+            @foreach (var m in mentionOptions)
+            {
+                <option value="@m.Id">@m.Name</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label>Niveau *</label>
+        <select name="NiveauId" id="niveauSelect" required>
+            <option value="">-- Sélectionner --</option>
+            @foreach (var n in niveauOptions)
+            {
+                <option value="@n.Id">@n.Name</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label>Parcours *</label>
+        <select name="Parcours" id="parcoursSelect" required>
+            <option value="">-- Sélectionner --</option>
+        </select>
+    </div>
+    <div>
+        <label>Semestre *</label>
+        <select name="SemestreId" id="semestreSelect" required>
+            <option value="">-- Sélectionner --</option>
+        </select>
+    </div>
+    <div>
+        <button type="submit">Créer</button>
+    </div>
+</form>
+
+<script>
+    const parcoursMap = {
+        1: { licence: ["DA2I"], master: ["M2I", "SDIA", "SIGD"] },
+        2: { licence: ["AES"], master: ["AE", "MEAS"] },
+        3: { licence: ["ICM"], master: ["RPO", "RCPO"] }
+    };
+    const licenceIds = [1, 2, 3];
+    const masterIds = [4, 5];
+    function updateParcours() {
+        const mentionId = parseInt(document.getElementById('mentionSelect').value);
+        const niveauId = parseInt(document.getElementById('niveauSelect').value);
+        const select = document.getElementById('parcoursSelect');
+        select.innerHTML = '<option value="">-- Sélectionner --</option>';
+        if (!mentionId || !niveauId) return;
+        const map = parcoursMap[mentionId];
+        if (!map) return;
+        const type = licenceIds.includes(niveauId) ? 'licence' : (masterIds.includes(niveauId) ? 'master' : null);
+        if (!type) return;
+        const options = map[type] || [];
+        options.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o;
+            opt.text = o;
+            select.appendChild(opt);
+        });
+    }
+    document.getElementById('mentionSelect').addEventListener('change', updateParcours);
+    document.getElementById('niveauSelect').addEventListener('change', updateParcours);
+
+    // Load semestres via API (assumes /api/Semestre returns [{id, label}])
+    fetch('/api/Semestre')
+        .then(r => r.json())
+        .then(data => {
+            const semSelect = document.getElementById('semestreSelect');
+            data.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.text = s.label;
+                semSelect.appendChild(opt);
+            });
+        })
+        .catch(() => console.warn('Unable to load semestres'));
+</script>

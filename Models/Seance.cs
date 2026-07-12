@@ -9,12 +9,26 @@ namespace Gestion_SalleClasseEDT.Models
     {
         [Key]
         [Column("id_seance")]
-        public int Id { get; set; }
+        public int IdSeance { get; set; }
+
+        [NotMapped]
+        public int Id { get => IdSeance; set => IdSeance = value; }
 
         [Column("id_cours")]
-        public int CourseId { get; set; }
+        public int IdCours { get; set; }
 
-        [Column("date", TypeName = "date")]
+        // Alias for PlanningService (not mapped to DB)
+        [NotMapped]
+        public int CourseId { get => IdCours; set => IdCours = value; }
+
+        [Column("id_salle")]
+        public int? IdSalle { get; set; }
+
+        // Alias for PlanningService (not mapped to DB)
+        [NotMapped]
+        public int? SalleId { get => IdSalle; set => IdSalle = value; }
+
+        [Column("date")]
         public DateTime Date { get; set; }
 
         [Column("start_time")]
@@ -23,25 +37,26 @@ namespace Gestion_SalleClasseEDT.Models
         [Column("end_time")]
         public TimeSpan EndTime { get; set; }
 
-        [Column("id_salle")]
-        public int? SalleId { get; set; }
+        [StringLength(50)]
+        [Column("statut")]
+        public string? Statut { get; set; } = "Planifiee"; // Planifiee, Realisee, Annulee
 
+        [ForeignKey("IdCours")]
+        public virtual Cours? Cours { get; set; }
+
+        [ForeignKey("IdSalle")]
+        public virtual Salle? Salle { get; set; }
+
+        [NotMapped]
+        // Computed duration in hours
+
+        public int DurationHours => (int)(EndTime - StartTime).TotalHours;
+
+        // Additional fields for planning service
         [Column("id_groupe")]
         public int? GroupeId { get; set; }
 
-        [Column("realized_hours")]
+        [NotMapped]
         public int RealizedHours { get; set; }
-
-        [Column("attendance")]
-        public double? Attendance { get; set; }
-
-        [ForeignKey("CourseId")]
-        public virtual Cours Cours { get; set; }
-
-        [ForeignKey("SalleId")]
-        public virtual Salle Salle { get; set; }
-
-        [ForeignKey("GroupeId")]
-        public virtual Groupe Groupe { get; set; }
     }
 }

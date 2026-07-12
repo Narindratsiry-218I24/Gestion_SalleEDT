@@ -1,167 +1,349 @@
 @model Gestion_SalleClasseEDT.Models.Cours
 @{
     ViewBag.Title = "Détails du Cours - " + (Model.Matiere?.NomMatiere ?? "N/A");
+    var salles = ViewBag.Salles as List<Gestion_SalleClasseEDT.Models.Salle> ?? new List<Gestion_SalleClasseEDT.Models.Salle>();
+    var professeurs = ViewBag.Professeurs as List<Gestion_SalleClasseEDT.Models.Professeur> ?? new List<Gestion_SalleClasseEDT.Models.Professeur>();
+    var isPlanifie = Model.Seances?.Any() == true;
 }
 
 <div class="space-y-6">
+    <!-- En-tête -->
     <div class="flex flex-col md:flex-row justify-between md:items-end gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div>
             <h1 class="text-2xl font-bold text-[#17203A] mb-1">@(Model.Matiere?.NomMatiere ?? "Cours")</h1>
-            <p class="text-gray-500 m-0">@Model.Matiere?.NomMatiere - @Model.TypeCours</p>
+            <p class="text-gray-500 m-0">
+                @(Model.Matiere?.CodeMatiere ?? "") - @Model.TypeCours
+                <span class="mx-2">•</span>
+                @(Model.Matiere?.Filiere?.Mention?.NomMention ?? "") @(Model.Matiere?.RefSemestre?.Niveau?.CodeNiveau ?? "")
+            </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
             @{
-                var badgeClass = Model.Statut == "Planifie" || Model.Statut == "EnCours" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800";
+                var badgeClass = Model.Statut switch
+                {
+                    "Planifie" or "EnCours" => "bg-emerald-100 text-emerald-800 border-emerald-200",
+                    "Cree" or "EnAttente" => "bg-blue-100 text-blue-800 border-blue-200",
+                    "Suspendu" => "bg-amber-100 text-amber-800 border-amber-200",
+                    "Termine" or "Archive" => "bg-gray-100 text-gray-800 border-gray-200",
+                    _ => "bg-gray-100 text-gray-800 border-gray-200"
+                };
             }
-            <span class="px-3 py-1 rounded-full text-sm font-medium @badgeClass">@Model.Statut</span>
+            <span class="px-3 py-1 rounded-full text-sm font-medium border @badgeClass">@Model.Statut</span>
+            
+            @if (!isPlanifie)
+            {
+                <button onclick="openPlanificationModal(@Model.IdCours)" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2">
+                    <i data-lucide="calendar-plus" class="w-4 h-4"></i> Planifier
+                </button>
+            }
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Colonne principale -->
         <div class="lg:col-span-2 space-y-6">
+            <!-- Progression -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 class="text-lg font-bold text-[#17203A] mb-4">Progression</h2>
+                <h2 class="text-lg font-bold text-[#17203A] mb-4">Progression du cours</h2>
                 
                 <div class="flex justify-between text-sm text-gray-500 mb-2">
-                    <span>Réalisé : @Model.RealizedHours h</span>
-                    <span>Restant : @Model.RemainingHours h</span>
-                    <span>Total : @Model.VolumeHours h</span>
+                    <span>Réalisé : <strong class="text-[#17203A]">@Model.RealizedHours h</strong></span>
+                    <span>Restant : <strong class="text-amber-600">@Model.RemainingHours h</strong></span>
+                    <span>Total : <strong class="text-[#17203A]">@Model.VolumeHours h</strong></span>
                 </div>
                 
-                <div class="w-full bg-gray-200 rounded-full h-4">
-                    <div class="bg-blue-600 h-4 rounded-full" style="width: @Math.Round(Model.Progression)%"></div>
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                    <div class="h-4 rounded-full transition-all duration-700 @(Model.Progression >= 80 ? "bg-emerald-500" : Model.Progression >= 50 ? "bg-blue-500" : "bg-amber-500")" 
+                         style="width: @Math.Round(Model.Progression)%">
+                    </div>
+                </div>
+                <div class="mt-2 text-right text-sm font-medium text-[#17203A]">
+                    @Math.Round(Model.Progression)% réalisé
                 </div>
             </div>
 
+            <!-- Séances -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 class="text-lg font-bold text-[#17203A] mb-4">Séances (@Model.Seances.Count)</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-600">
-                        <thead class="text-xs uppercase bg-gray-50 text-gray-500">
-                            <tr>
-                                <th class="px-4 py-3">Date</th>
-                                <th class="px-4 py-3">Heure</th>
-                                <th class="px-4 py-3">Salle</th>
-                                <th class="px-4 py-3">Heures Validées</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var s in Model.Seances.OrderByDescending(x => x.Date))
-                            {
-                                <tr class="border-b border-gray-100 hover:bg-gray-50">
-                                    <td class="px-4 py-3">@s.Date.ToShortDateString()</td>
-                                    <td class="px-4 py-3">@s.StartTime.ToString(@"hh\:mm") - @s.EndTime.ToString(@"hh\:mm")</td>
-                                    <td class="px-4 py-3">@(s.Salle?.NomSalle ?? "N/A")</td>
-                                    <td class="px-4 py-3 font-medium text-[#17203A]">@s.RealizedHours h</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-[#17203A]">Séances (@(Model.Seances?.Count ?? 0))</h2>
+                    @if (!isPlanifie)
+                    {
+                        <button onclick="openPlanificationModal(@Model.IdCours)" 
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            + Ajouter une séance
+                        </button>
+                    }
                 </div>
+                
+                @if (Model.Seances?.Any() == true)
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs uppercase bg-gray-50 text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-3">Date</th>
+                                    <th class="px-4 py-3">Heure</th>
+                                    <th class="px-4 py-3">Salle</th>
+                                    <th class="px-4 py-3">Durée</th>
+                                    <th class="px-4 py-3">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in Model.Seances.OrderByDescending(x => x.Date))
+                                {
+                                    var seanceBadge = s.Statut switch
+                                    {
+                                        "Realisee" => "bg-emerald-100 text-emerald-800",
+                                        "Annulee" => "bg-red-100 text-red-800",
+                                        _ => "bg-blue-100 text-blue-800"
+                                    };
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                        <td class="px-4 py-3 font-medium">@s.Date.ToShortDateString()</td>
+                                        <td class="px-4 py-3">@s.StartTime.ToString(@"hh\:mm") - @s.EndTime.ToString(@"hh\:mm")</td>
+                                        <td class="px-4 py-3">@(s.Salle?.NomSalle ?? "N/A")</td>
+                                        <td class="px-4 py-3">@s.DurationHours h</td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-0.5 rounded-full text-xs font-medium @seanceBadge">@s.Statut</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-8 text-gray-400">
+                        <i data-lucide="calendar" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                        <p>Aucune séance planifiée</p>
+                        <button onclick="openPlanificationModal(@Model.IdCours)" 
+                                class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            Planifier la première séance
+                        </button>
+                    </div>
+                }
             </div>
         </div>
 
+        <!-- Colonne latérale -->
         <div class="space-y-6">
+            <!-- Informations -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 class="text-lg font-bold text-[#17203A] mb-4">Informations</h2>
-                <ul class="space-y-4 text-sm">
+                <ul class="space-y-3 text-sm">
                     <li class="flex items-start gap-3">
                         <i data-lucide="user" class="w-5 h-5 text-gray-400 mt-0.5"></i>
                         <div>
-                            <span class="block text-gray-500">Professeur</span>
-                            <span class="font-medium text-gray-900">@(Model.Professeur?.Nom ?? "N/A") @(Model.Professeur?.Prenom)</span>
+                            <span class="block text-gray-500 text-xs">Enseignant</span>
+                            <span class="font-medium text-gray-900">@(Model.Professeur != null ? $"{Model.Professeur.Prenom} {Model.Professeur.Nom}" : "Non assigné")</span>
                         </div>
                     </li>
                     <li class="flex items-start gap-3">
                         <i data-lucide="users" class="w-5 h-5 text-gray-400 mt-0.5"></i>
                         <div>
-                            <span class="block text-gray-500">Classe</span>
-                            <span class="font-medium text-gray-900">@(Model.Classe?.NomClasse ?? "N/A")</span>
+                            <span class="block text-gray-500 text-xs">Classe</span>
+                            <span class="font-medium text-gray-900">@(Model.Classe?.NomClasse ?? "Non assignée")</span>
+                            <span class="block text-xs text-gray-400">@(Model.Classe?.Filiere?.CodeFiliere ?? "")</span>
                         </div>
                     </li>
+                    @if (Model.Groupe != null)
+                    {
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="users" class="w-5 h-5 text-gray-400 mt-0.5"></i>
+                            <div>
+                                <span class="block text-gray-500 text-xs">Groupe</span>
+                                <span class="font-medium text-gray-900">@Model.Groupe.Name</span>
+                            </div>
+                        </li>
+                    }
                     <li class="flex items-start gap-3">
                         <i data-lucide="monitor-play" class="w-5 h-5 text-gray-400 mt-0.5"></i>
                         <div>
-                            <span class="block text-gray-500">Mode d'enseignement</span>
+                            <span class="block text-gray-500 text-xs">Mode</span>
                             <span class="font-medium text-gray-900">@Model.Mode</span>
                         </div>
                     </li>
                     <li class="flex items-start gap-3">
                         <i data-lucide="users" class="w-5 h-5 text-gray-400 mt-0.5"></i>
                         <div>
-                            <span class="block text-gray-500">Capacité</span>
+                            <span class="block text-gray-500 text-xs">Capacité</span>
                             <span class="font-medium text-gray-900">@Model.Capacity étudiants</span>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="book-open" class="w-5 h-5 text-gray-400 mt-0.5"></i>
+                        <div>
+                            <span class="block text-gray-500 text-xs">Matière</span>
+                            <span class="font-medium text-gray-900">@(Model.Matiere?.NomMatiere ?? "N/A")</span>
+                            <span class="block text-xs text-gray-400">@(Model.Matiere?.Credit ?? 0) crédits</span>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="calendar" class="w-5 h-5 text-gray-400 mt-0.5"></i>
+                        <div>
+                            <span class="block text-gray-500 text-xs">Semestre</span>
+                            <span class="font-medium text-gray-900">@(Model.Semestre?.RefSemestre?.CodeSemestre ?? "N/A")</span>
                         </div>
                     </li>
                 </ul>
             </div>
-            
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 class="text-lg font-bold text-[#17203A] mb-4">Planifier une Séance</h2>
-                <form id="planSeanceForm" class="space-y-3">
-                    <input type="hidden" id="courseId" value="@Model.IdCours" />
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" id="sDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" required />
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
+
+            <!-- Informations pédagogiques -->
+            @if (!string.IsNullOrEmpty(Model.Objectives) || !string.IsNullOrEmpty(Model.Skills))
+            {
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold text-[#17203A] mb-4">Pédagogie</h2>
+                    @if (!string.IsNullOrEmpty(Model.Objectives))
+                    {
+                        <div class="mb-3">
+                            <span class="text-xs font-bold text-gray-500 uppercase">Objectifs</span>
+                            <p class="text-sm text-gray-700 mt-1">@Model.Objectives</p>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Skills))
+                    {
+                        <div class="mb-3">
+                            <span class="text-xs font-bold text-gray-500 uppercase">Compétences</span>
+                            <p class="text-sm text-gray-700 mt-1">@Model.Skills</p>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Evaluation))
+                    {
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Début</label>
-                            <input type="time" id="sStart" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" required />
+                            <span class="text-xs font-bold text-gray-500 uppercase">Évaluation</span>
+                            <p class="text-sm text-gray-700 mt-1">@Model.Evaluation</p>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal de planification (réutilisé) -->
+<div id="planificationModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm">
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-white rounded-t-xl">
+                <h3 class="text-xl font-bold text-[#17203A]">
+                    <i data-lucide="calendar-plus" class="w-5 h-5 inline mr-2 text-indigo-600"></i> Planifier une séance
+                </h3>
+                <button onclick="closePlanificationModal()" class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="planificationForm" class="space-y-4">
+                    <input type="hidden" id="planCoursId" value="@Model.IdCours" />
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="planDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Heure début <span class="text-red-500">*</span></label>
+                            <input type="time" id="planStartTime" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Fin</label>
-                            <input type="time" id="sEnd" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" required />
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Heure fin <span class="text-red-500">*</span></label>
+                            <input type="time" id="planEndTime" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Salle (ID)</label>
-                        <input type="number" id="sSalle" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" placeholder="Optionnel" />
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Salle</label>
+                        <select id="planSalleId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Aucune salle</option>
+                            @foreach (var s in salles)
+                            {
+                                <option value="@s.IdSalle">@s.NomSalle (Cap: @s.Capacite)</option>
+                            }
+                        </select>
                     </div>
-                    <button type="submit" class="w-full bg-[#17203A] hover:bg-[#12192b] text-white py-2 rounded-md text-sm font-medium transition-colors">
-                        Ajouter Séance
-                    </button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Enseignant</label>
+                        <select id="planProfesseurId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Non assigné</option>
+                            @foreach (var p in professeurs)
+                            {
+                                <option value="@p.IdProfesseur">@p.Prenom @p.Nom</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" onclick="closePlanificationModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Annuler
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                            <i data-lucide="check" class="w-4 h-4 inline mr-1"></i> Planifier
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        document.getElementById('planSeanceForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.textContent = 'En cours...';
+<script>
+    function openPlanificationModal(coursId) {
+        document.getElementById('planCoursId').value = coursId;
+        document.getElementById('planificationModal').classList.remove('hidden');
+        
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('planDate').value = tomorrow.toISOString().split('T')[0];
+    }
 
-            const courseId = document.getElementById('courseId').value;
-            const payload = {
-                Date: document.getElementById('sDate').value,
-                StartTime: document.getElementById('sStart').value + ":00",
-                EndTime: document.getElementById('sEnd').value + ":00",
-                SalleId: document.getElementById('sSalle').value ? parseInt(document.getElementById('sSalle').value) : null
-            };
+    function closePlanificationModal() {
+        document.getElementById('planificationModal').classList.add('hidden');
+        document.getElementById('planificationForm').reset();
+    }
 
-            try {
-                const res = await fetch(`/api/Cours/${courseId}/Seance`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if(res.ok) {
-                    alert('Séance planifiée !');
-                    window.location.reload();
-                } else {
-                    const err = await res.json();
-                    alert("Erreur: " + err.Message);
-                }
-            } catch (err) {
-                alert("Erreur réseau");
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Ajouter Séance';
+    document.getElementById('planificationForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const coursId = parseInt(document.getElementById('planCoursId').value);
+        const payload = {
+            Date: document.getElementById('planDate').value,
+            StartTime: document.getElementById('planStartTime').value + ':00',
+            EndTime: document.getElementById('planEndTime').value + ':00',
+            SalleId: document.getElementById('planSalleId').value ? parseInt(document.getElementById('planSalleId').value) : null,
+            ProfesseurId: document.getElementById('planProfesseurId').value ? parseInt(document.getElementById('planProfesseurId').value) : null
+        };
+
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Planification...';
+
+        try {
+            const response = await fetch(`/Home/PlanifierSeance/${coursId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(' Séance planifiée avec succès !');
+                window.location.reload();
+            } else {
+                alert(' ' + (result.Message || 'Erreur lors de la planification'));
             }
-        });
-    </script>
-}
+        } catch (err) {
+            alert(' Erreur réseau: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 inline mr-1"></i> Planifier';
+        }
+    });
+
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+</script>
