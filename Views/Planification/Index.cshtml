@@ -1,0 +1,882 @@
+@{
+    ViewBag.Title = "Assistant de Planification";
+    var courseId = ViewBag.CourseId as int?;
+}
+
+<div class="space-y-6 animate-in fade-in duration-300">
+    <!-- Header -->
+    <div class="rounded-3xl bg-white p-6 border border-gray-150 shadow-sm">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+            <div>
+                <span class="text-xs uppercase tracking-wider text-[#5C8ABF] font-bold" id="wizardHeaderStepLabel">Étape 1 sur 3</span>
+                <h1 class="text-3xl font-black text-[#17203A] tracking-tight mt-1" id="wizardCourseTitle">Assistant de Planification</h1>
+                <p class="text-sm text-gray-500 mt-1" id="wizardCourseSubtitle">Sélectionnez ou créez un cours pour débuter la planification.</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="/Home/Cours" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#17203A] font-bold rounded-xl text-sm transition-colors flex items-center gap-1.5">
+                    <i data-lucide="list" class="w-4 h-4"></i> Liste des Cours
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3-Step Wizard Navigation Indicators -->
+    <div class="px-6 py-4 bg-white rounded-2xl border border-gray-150 shadow-sm flex items-center justify-center gap-4 md:gap-8 flex-wrap">
+        <button onclick="if(currentStep > 1) goToStep(1)" id="stepIndicator1" class="flex items-center gap-2 font-bold text-indigo-600 text-sm transition-all">
+            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">1</span>
+            Choix du Cours
+        </button>
+        <div class="w-8 md:w-12 h-px bg-gray-200"></div>
+        <button onclick="if(currentStep > 2) goToStep(2)" id="stepIndicator2" class="flex items-center gap-2 font-semibold text-gray-400 text-sm transition-all" disabled>
+            <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-bold">2</span>
+            Créneau &amp; Salle
+        </button>
+        <div class="w-8 md:w-12 h-px bg-gray-200"></div>
+        <button id="stepIndicator3" class="flex items-center gap-2 font-semibold text-gray-400 text-sm transition-all" disabled>
+            <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-bold">3</span>
+            Confirmation
+        </button>
+    </div>
+
+    <!-- Wizard Main Content Wrapper -->
+    <div class="bg-white border border-gray-150 shadow-sm rounded-3xl overflow-hidden min-h-[500px]">
+
+        <!-- STEP 1: CHOICE OF COURSE AND PROGRESS -->
+        <div id="wizardStep1Content" class="p-6 space-y-6">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="book-open" class="text-indigo-600 w-5 h-5"></i>
+                    1. Sélection et Progression du Cours
+                </h4>
+                <p class="text-sm text-gray-500 mt-1 font-medium">Vérifiez les volumes horaires et les heures planifiées avant de poursuivre.</p>
+            </div>
+
+            <!-- Course Switcher -->
+            <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200/60 max-w-xl">
+                <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Choisir le cours à planifier</label>
+                <select id="wizardCourseSwitcher" class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" onchange="onWizardCourseSelect(this.value)">
+                    <option value="">Sélectionnez un cours...</option>
+                </select>
+            </div>
+
+            <!-- Course Progress Card -->
+            <div class="bg-white border border-gray-200/80 rounded-2xl p-6 shadow-sm space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-gray-150">
+                    <div>
+                        <span class="text-xs uppercase text-gray-400 font-bold block mb-1">Matière &amp; Type</span>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-xs" id="wizardStep1Type">CM</span>
+                            <span class="font-extrabold text-[#17203A] text-lg" id="wizardStep1Matiere">—</span>
+                        </div>
+                    </div>
+                    <div class="md:pl-6">
+                        <span class="text-xs uppercase text-gray-400 font-bold block mb-1">Classe Cible</span>
+                        <span class="font-bold text-[#17203A] text-lg block" id="wizardStep1Classe">—</span>
+                    </div>
+                    <div class="md:pl-6">
+                        <span class="text-xs uppercase text-gray-400 font-bold block mb-1">Enseignant</span>
+                        <span class="font-bold text-[#17203A] text-lg block" id="wizardStep1Professeur">—</span>
+                    </div>
+                </div>
+
+                <!-- Horaires progress -->
+                <div class="bg-indigo-50/40 rounded-xl p-5 border border-indigo-100/55">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
+                        <span class="text-sm font-bold text-indigo-950 flex items-center gap-1.5">
+                            <i data-lucide="clock" class="w-4.5 h-4.5 text-indigo-500"></i>
+                            État d'avancement des heures
+                        </span>
+                        <span class="text-sm font-extrabold text-indigo-800" id="wizardStep1ProgressText">0h / 0h (Reste: 0h)</span>
+                    </div>
+                    <div class="w-full bg-indigo-150/40 rounded-full h-3.5 overflow-hidden">
+                        <div id="wizardStep1ProgressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Warning if fully completed -->
+                <div id="wizardStep1Warning" class="hidden bg-rose-50 border border-rose-100 rounded-xl p-4 flex items-start gap-3 text-rose-800 text-sm">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600 shrink-0"></i>
+                    <div>
+                        <strong class="font-bold">Attention :</strong> Le volume horaire de ce cours est déjà entièrement planifié. Ajouter un créneau dépassera la limite fixée.
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-150">
+                <button type="button" onclick="goToStep(2)" id="wizardStep1NextBtn" disabled class="px-6 py-3 bg-[#17203A] text-white rounded-xl hover:bg-[#12192B] transition-colors font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    Continuer
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: SCHEDULING TIME & ROOM (Two Columns layout) -->
+        <div id="wizardStep2Content" class="hidden grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-gray-150">
+            <!-- Left: Form Parameters -->
+            <div class="lg:col-span-7 p-6 space-y-6">
+                <div>
+                    <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="calendar" class="text-indigo-600 w-5 h-5"></i>
+                        2. Paramètres du Créneau &amp; Salle
+                    </h4>
+                    <p class="text-sm text-gray-500 mt-1">Renseignez la date, les heures et sélectionnez la salle compatible.</p>
+                </div>
+
+                <form id="wizardPlanningForm" class="space-y-4" onsubmit="event.preventDefault(); goToStep(3);">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Date -->
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Date de la séance <span class="text-red-500">*</span></label>
+                            <input type="date" id="wizardDate" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all" onchange="onWizardDateTimeChange()" />
+                        </div>
+
+                        <!-- Room -->
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Salle de classe <span class="text-red-500">*</span></label>
+                            <select id="wizardSalleId" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all" onchange="onWizardSalleChange()">
+                                <option value="">Sélectionnez une salle</option>
+                            </select>
+                        </div>
+
+                        <!-- Start Time -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Heure de début <span class="text-red-500">*</span></label>
+                            <input type="time" id="wizardStartTime" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all" onchange="onWizardDateTimeChange()" />
+                        </div>
+
+                        <!-- End Time -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Heure de fin <span class="text-red-500">*</span></label>
+                            <input type="time" id="wizardEndTime" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all" onchange="onWizardDateTimeChange()" />
+                        </div>
+
+                        <!-- Groupe -->
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Groupe d'étudiants (Optionnel)</label>
+                            <select id="wizardGroupeId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all">
+                                <option value="">Classe entière</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Recurrence switch -->
+                    <div class="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100 flex items-start gap-3 mt-4">
+                        <input type="checkbox" id="wizardRecurrent" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-1" />
+                        <div>
+                            <label for="wizardRecurrent" class="text-sm font-bold text-indigo-900 block">🔁 Dupliquer chaque semaine</label>
+                            <p class="text-xs text-indigo-700 mt-0.5">Planifie automatiquement cette séance chaque semaine jusqu'à épuisement du volume restant.</p>
+                        </div>
+                    </div>
+
+                    <!-- Live Alert Feedback Box -->
+                    <div id="wizardValidationFeedback" class="hidden rounded-xl p-4 text-sm flex items-start gap-3 shadow-sm transition-all duration-200">
+                        <div id="wizardValidationIcon" class="text-lg"></div>
+                        <div class="flex-1 font-semibold" id="wizardValidationMessage"></div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-150">
+                        <button type="button" onclick="goToStep(1)" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                            Retour
+                        </button>
+                        <button type="submit" id="wizardStep2NextBtn" class="px-5 py-2.5 bg-[#17203A] text-white rounded-xl hover:bg-[#12192B] transition-colors font-semibold flex items-center gap-1.5 shadow-sm">
+                            Suivant
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Professor Availability Calendar -->
+            <div class="lg:col-span-5 p-6 bg-gray-50/50 flex flex-col space-y-6">
+                <div>
+                    <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="user-check" class="text-emerald-600 w-5 h-5"></i>
+                        Disponibilités Enseignant
+                    </h4>
+                    <p class="text-xs text-gray-500 mt-1">Visualisez les engagements du professeur pour la journée sélectionnée.</p>
+                </div>
+
+                <!-- Availability Card -->
+                <div id="profAvailabilityCard" class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm space-y-2">
+                    <span class="text-xs uppercase tracking-wider text-gray-400 font-bold block">Disponibilités Déclarées</span>
+                    <div id="profDisposList" class="text-sm font-semibold text-gray-700">
+                        Sélectionnez une date pour charger les disponibilités.
+                    </div>
+                </div>
+
+                <!-- Agenda timeline -->
+                <div class="flex-1 flex flex-col min-h-[220px]">
+                    <span class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-3 block">Séances déjà planifiées ce jour</span>
+                    
+                    <div class="bg-white border border-gray-100 rounded-xl flex-1 p-4 shadow-sm overflow-y-auto space-y-3" id="profTimelineContent">
+                        <div class="text-center py-8 text-gray-400">
+                            <i data-lucide="calendar" class="w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                            <span class="text-sm">Sélectionnez un jour pour voir l'agenda.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: SUMMARY AND PERSISTENCE -->
+        <div id="wizardStep3Content" class="hidden p-6 space-y-6">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="clipboard-check" class="text-indigo-600 w-5 h-5"></i>
+                    3. Récapitulatif et Validation Finale
+                </h4>
+                <p class="text-sm text-gray-500 mt-1">Vérifiez toutes les informations de planification avant d'enregistrer.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Pedagogy details -->
+                <div class="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h5 class="text-sm font-bold text-[#17203A] uppercase tracking-wider border-b pb-2 flex items-center gap-2">
+                        <i data-lucide="book" class="w-4 h-4 text-indigo-500"></i>
+                        Détails du Cours
+                    </h5>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-500">Matière :</span><strong id="summaryMatiere" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Type de Cours :</span><strong id="summaryType" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Enseignant :</span><strong id="summaryProfesseur" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Classe Cible :</span><strong id="summaryClasse" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Groupe :</span><strong id="summaryGroupe" class="text-gray-800">Classe entière</strong></div>
+                    </div>
+                </div>
+
+                <!-- Logistics details -->
+                <div class="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h5 class="text-sm font-bold text-[#17203A] uppercase tracking-wider border-b pb-2 flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-indigo-500"></i>
+                        Créneau &amp; Logistique
+                    </h5>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-500">Date prévue :</span><strong id="summaryDate" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Plage horaire :</span><strong id="summaryHours" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Salle retenue :</span><strong id="summarySalle" class="text-gray-800">—</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Mode :</span><strong id="summaryMode" class="text-gray-800">Présentiel</strong></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Répétition :</span><strong id="summaryRecurrence" class="text-gray-800">Non</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Availabilities validation alert -->
+            <div id="summaryAvailabilityAlert" class="rounded-2xl p-4 text-sm flex items-start gap-3 shadow-sm border">
+                <div id="summaryAvailabilityAlertIcon" class="text-lg"></div>
+                <div class="flex-1" id="summaryAvailabilityAlertText"></div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-150">
+                <button type="button" onclick="goToStep(2)" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                    Retour
+                </button>
+                <button type="button" onclick="confirmFinalPlanning()" id="wizardFinalSubmitBtn" class="px-6 py-2.5 bg-[#17203A] text-white rounded-xl hover:bg-[#12192B] transition-all font-bold flex items-center gap-1.5 shadow-md">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    Confirmer et Enregistrer
+                </button>
+            </div>
+        </div>
+
+        <!-- RECURRENCE PREVIEW INTERFACES -->
+        <div id="wizardRecurrencePreviewLayout" class="hidden p-6 space-y-6">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="calendar-range" class="text-indigo-600 w-5 h-5"></i>
+                    Aperçu de la planification en série
+                </h4>
+                <p class="text-sm text-gray-500 mt-1">Le système a généré la planification hebdomadaire. Veuillez valider les détails ci-dessous.</p>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b border-gray-100">
+                            <th class="px-6 py-4">Occurence</th>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4">Salle</th>
+                            <th class="px-6 py-4">Disponibilité</th>
+                            <th class="px-6 py-4">Statut / Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recurrencePreviewTableBody" class="divide-y divide-gray-100">
+                        <!-- Occurrences inserted by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-150">
+                <button type="button" onclick="goToStep(2)" class="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                    Retour
+                </button>
+                <button type="button" onclick="confirmBatchPlanning()" id="wizardBatchSubmitBtn" class="px-6 py-2.5 bg-indigo-650 hover:bg-indigo-700 bg-indigo-600 text-white rounded-xl transition-all font-bold flex items-center gap-1.5 shadow-md">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    Confirmer la planification en série
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentStep = 1;
+    let wizardCourse = null;
+    let wizardConflict = null;
+    let wizardBatchData = null;
+    let isAvailabilityCovered = true;
+    let wizardSalles = [];
+
+    const defaultCourseId = '@Html.Raw(courseId)';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.lucide) lucide.createIcons();
+        await initWizard();
+    });
+
+    async function initWizard() {
+        try {
+            // Load Salles
+            const sallesRes = await fetch('/api/Salle');
+            if (sallesRes.ok) wizardSalles = await sallesRes.json();
+
+            // Load all courses for the dropdown switcher
+            const coursesRes = await fetch('/api/Cours');
+            if (coursesRes.ok) {
+                const coursesList = await coursesRes.json();
+                const switcher = document.getElementById('wizardCourseSwitcher');
+                switcher.innerHTML = '<option value="">Sélectionnez un cours à planifier...</option>';
+                coursesList.forEach(c => {
+                    switcher.innerHTML += `<option value="${c.IdCours}">${c.MatiereNom || 'Cours'} (${c.TypeCours}) - Classe: ${c.ClasseNom || ''} - Prof: ${c.ProfesseurNom || 'Non assigné'}</option>`;
+                });
+            }
+
+            // Set default dates
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('wizardDate').value = tomorrow.toISOString().split('T')[0];
+            document.getElementById('wizardStartTime').value = "08:00";
+            document.getElementById('wizardEndTime').value = "10:00";
+
+            // If a course ID was passed in query or view bag, load it
+            if (defaultCourseId && defaultCourseId.trim() !== '') {
+                await loadWizardCourse(parseInt(defaultCourseId));
+            }
+
+            goToStep(1);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadWizardCourse(courseId) {
+        if (!courseId) return;
+
+        const response = await fetch(`/api/Cours/${courseId}`);
+        if (!response.ok) throw new Error("Impossible de charger les données du cours.");
+        wizardCourse = await response.json();
+
+        // Update headers and Step 1 details
+        document.getElementById('wizardCourseTitle').textContent = `Planification : ${wizardCourse.MatiereNom || 'Cours'}`;
+        document.getElementById('wizardCourseSubtitle').innerHTML = `
+            <span class="bg-indigo-500/30 text-indigo-900 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase mr-2">${wizardCourse.TypeCours}</span>
+            Enseignant : <strong>${wizardCourse.ProfesseurNom || 'Non assigné'}</strong> | Classe : <strong>${wizardCourse.ClasseNom || 'Non assignée'}</strong>
+        `;
+
+        document.getElementById('wizardStep1Matiere').textContent = wizardCourse.MatiereNom || '—';
+        document.getElementById('wizardStep1Type').textContent = wizardCourse.TypeCours;
+        document.getElementById('wizardStep1Classe').textContent = wizardCourse.ClasseNom || '—';
+        document.getElementById('wizardStep1Professeur').textContent = wizardCourse.ProfesseurNom || 'Non assigné';
+
+        // Horaires Progression
+        const plannedHours = wizardCourse.RealizedHours || 0;
+        const totalHours = wizardCourse.VolumeHours || 0;
+        const remainingHours = Math.max(0, totalHours - plannedHours);
+        document.getElementById('wizardStep1ProgressText').textContent = `${plannedHours}h / ${totalHours}h (Reste: ${remainingHours}h)`;
+        const progPercent = totalHours > 0 ? Math.min(100, (plannedHours / totalHours) * 100) : 0;
+        document.getElementById('wizardStep1ProgressBar').style.width = `${progPercent}%`;
+
+        // Switch color based on completed volume
+        const progressBar = document.getElementById('wizardStep1ProgressBar');
+        if (remainingHours <= 0) {
+            progressBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+            document.getElementById('wizardStep1Warning').classList.remove('hidden');
+        } else {
+            progressBar.className = "bg-indigo-600 h-full rounded-full transition-all duration-500";
+            document.getElementById('wizardStep1Warning').classList.add('hidden');
+        }
+
+        // Set switcher value
+        document.getElementById('wizardCourseSwitcher').value = courseId;
+
+        // Populate Salle Options with capacity relative to class effectif
+        const classEffectif = wizardCourse.ClasseEffectif || 0;
+        const salleSelect = document.getElementById('wizardSalleId');
+        salleSelect.innerHTML = '<option value="">Sélectionnez une salle</option>';
+        wizardSalles.forEach(s => {
+            let spaceLabel = `Capacité: ${s.Capacite}`;
+            if (classEffectif > 0) {
+                spaceLabel += ` (Classe: ${classEffectif})`;
+            }
+            salleSelect.innerHTML += `<option value="${s.IdSalle}">${s.NomSalle} (${s.TypeSalle}, ${spaceLabel})</option>`;
+        });
+
+        // Load groups
+        const groupeSelect = document.getElementById('wizardGroupeId');
+        groupeSelect.innerHTML = '<option value="">Classe entière</option>';
+        if (wizardCourse.IdClasse) {
+            try {
+                const groupsRes = await fetch(`/api/Groupe/ByClasse/${wizardCourse.IdClasse}`);
+                const groups = await groupsRes.json();
+                groups.forEach(g => {
+                    groupeSelect.innerHTML += `<option value="${g.Id}">Groupe: ${g.Name}</option>`;
+                });
+            } catch(e) { console.warn("Error loading groups:", e); }
+        }
+
+        // Allow Step 2
+        document.getElementById('stepIndicator2').disabled = false;
+        document.getElementById('wizardStep1NextBtn').disabled = false;
+    }
+
+    async function onWizardCourseSelect(courseId) {
+        if (!courseId) return;
+        try {
+            await loadWizardCourse(courseId);
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Erreur', text: e.message });
+        }
+    }
+
+    function goToStep(step) {
+        currentStep = step;
+        document.getElementById('wizardHeaderStepLabel').textContent = `Étape ${step} sur 3`;
+
+        if (step === 1) {
+            document.getElementById('wizardStep1Content').classList.remove('hidden');
+            document.getElementById('wizardStep2Content').classList.add('hidden');
+            document.getElementById('wizardStep3Content').classList.add('hidden');
+            document.getElementById('wizardRecurrencePreviewLayout').classList.add('hidden');
+            updateStepIndicators(1);
+        } else if (step === 2) {
+            document.getElementById('wizardStep1Content').classList.add('hidden');
+            document.getElementById('wizardStep2Content').classList.remove('hidden');
+            document.getElementById('wizardStep3Content').classList.add('hidden');
+            document.getElementById('wizardRecurrencePreviewLayout').classList.add('hidden');
+            updateStepIndicators(2);
+            onWizardDateTimeChange();
+        } else if (step === 3) {
+            const isRecurrent = document.getElementById('wizardRecurrent').checked;
+            if (isRecurrent) {
+                const dateVal = document.getElementById('wizardDate').value;
+                const startVal = document.getElementById('wizardStartTime').value;
+                const endVal = document.getElementById('wizardEndTime').value;
+                const salleIdVal = document.getElementById('wizardSalleId').value;
+                const groupeIdVal = document.getElementById('wizardGroupeId').value;
+
+                const payload = {
+                    Date: dateVal,
+                    StartTime: startVal + ':00',
+                    EndTime: endVal + ':00',
+                    SalleId: salleIdVal ? parseInt(salleIdVal) : null,
+                    GroupeId: groupeIdVal ? parseInt(groupeIdVal) : null
+                };
+                triggerRecurrencePreview(payload);
+            } else {
+                document.getElementById('wizardStep1Content').classList.add('hidden');
+                document.getElementById('wizardStep2Content').classList.add('hidden');
+                document.getElementById('wizardStep3Content').classList.remove('hidden');
+                document.getElementById('wizardRecurrencePreviewLayout').classList.add('hidden');
+                updateStepIndicators(3);
+                populateStep3Summary();
+            }
+        }
+    }
+
+    function updateStepIndicators(step) {
+        for (let i = 1; i <= 3; i++) {
+            const ind = document.getElementById(`stepIndicator${i}`);
+            const dot = ind.querySelector('span');
+            if (i === step) {
+                ind.className = "flex items-center gap-2 font-bold text-indigo-650 text-sm transition-all";
+                dot.className = "w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold";
+            } else if (i < step) {
+                ind.className = "flex items-center gap-2 font-semibold text-emerald-600 text-sm transition-all";
+                dot.className = "w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold";
+                dot.innerHTML = "✓";
+                ind.disabled = false;
+            } else {
+                ind.className = "flex items-center gap-2 font-semibold text-gray-400 text-sm transition-all";
+                dot.className = "w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-bold";
+                dot.innerHTML = i;
+            }
+        }
+        
+        if (step > 1) document.getElementById('stepIndicator2').disabled = false;
+        if (step > 2) document.getElementById('stepIndicator3').disabled = false;
+    }
+
+    async function onWizardDateTimeChange() {
+        const dateVal = document.getElementById('wizardDate').value;
+        const startVal = document.getElementById('wizardStartTime').value;
+        const endVal = document.getElementById('wizardEndTime').value;
+
+        if (!dateVal) return;
+
+        if (wizardCourse && wizardCourse.IdProfesseur) {
+            await reloadProfAvailabilityAndAgenda(wizardCourse.IdProfesseur, dateVal);
+        }
+
+        if (startVal && endVal) {
+            await performLiveConflictVerification();
+        }
+    }
+
+    async function onWizardSalleChange() {
+        await performLiveConflictVerification();
+    }
+
+    async function reloadProfAvailabilityAndAgenda(profId, dateStr) {
+        const disposList = document.getElementById('profDisposList');
+        const timeline = document.getElementById('profTimelineContent');
+
+        try {
+            const res = await fetch(`/api/Cours/Professeur/${profId}/Agenda?date=${dateStr}`);
+            if (!res.ok) throw new Error();
+
+            const data = await res.json();
+
+            // Render Declared Availabilities
+            if (data.Disponibilites && data.Disponibilites.length > 0) {
+                disposList.innerHTML = data.Disponibilites.map(d => `
+                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-100 shadow-sm">
+                        🟢 ${d.HeureDebut.substring(0,5)} - ${d.HeureFin.substring(0,5)}
+                    </span>
+                `).join(' ');
+                
+                const startVal = document.getElementById('wizardStartTime').value;
+                const endVal = document.getElementById('wizardEndTime').value;
+                if (startVal && endVal) {
+                    const reqStart = parseTimeSpan(startVal);
+                    const reqEnd = parseTimeSpan(endVal);
+                    isAvailabilityCovered = data.Disponibilites.some(d => parseTimeSpan(d.HeureDebut) <= reqStart && parseTimeSpan(d.HeureFin) >= reqEnd);
+                }
+            } else {
+                disposList.innerHTML = `<span class="text-xs bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full font-bold border border-rose-100 shadow-sm">🔴 Aucune disponibilité déclarée ce jour</span>`;
+                isAvailabilityCovered = false;
+            }
+
+            // Render existing sessions timeline
+            if (data.Seances && data.Seances.length > 0) {
+                timeline.innerHTML = data.Seances.map(s => `
+                    <div class="flex items-center gap-3 bg-gray-50 border border-gray-150 rounded-xl p-3 hover:bg-gray-100/50 transition-all">
+                        <div class="bg-[#17203A] text-white rounded-lg px-2.5 py-1.5 text-xs font-bold text-center">
+                            ${s.StartTime.substring(0,5)} <br/> ${s.EndTime.substring(0,5)}
+                        </div>
+                        <div class="flex-1">
+                            <span class="text-sm font-bold text-gray-805 block text-gray-800">${s.MatiereNom}</span>
+                            <span class="text-xs text-gray-400">Salle: ${s.SalleNom || 'N/A'} • Statut: ${s.Statut}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                timeline.innerHTML = `
+                    <div class="text-center py-6 text-gray-400">
+                        <i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2 text-emerald-500"></i>
+                        <span class="text-sm font-semibold text-emerald-800">Aucun engagement ce jour</span>
+                    </div>
+                `;
+            }
+
+            if (window.lucide) lucide.createIcons();
+
+        } catch (e) {
+            disposList.innerHTML = `<span class="text-xs text-gray-400">Erreur de chargement</span>`;
+            timeline.innerHTML = `<span class="text-xs text-gray-400">Erreur de chargement</span>`;
+        }
+    }
+
+    function parseTimeSpan(timeStr) {
+        const parts = timeStr.split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    async function performLiveConflictVerification() {
+        const dateVal = document.getElementById('wizardDate').value;
+        const startVal = document.getElementById('wizardStartTime').value;
+        const endVal = document.getElementById('wizardEndTime').value;
+        const salleIdVal = document.getElementById('wizardSalleId').value;
+
+        if (!dateVal || !startVal || !endVal || !wizardCourse) return;
+
+        const payload = {
+            Date: dateVal,
+            StartTime: startVal + ':00',
+            EndTime: endVal + ':00',
+            SalleId: salleIdVal ? parseInt(salleIdVal) : null
+        };
+
+        const feedbackBox = document.getElementById('wizardValidationFeedback');
+        const feedbackIcon = document.getElementById('wizardValidationIcon');
+        const feedbackMsg = document.getElementById('wizardValidationMessage');
+        const nextBtn = document.getElementById('wizardStep2NextBtn');
+
+        try {
+            const response = await fetch(`/api/Cours/${wizardCourse.IdCours}/VerifierCreneau`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error();
+
+            const result = await response.json();
+            wizardConflict = result;
+
+            feedbackBox.classList.remove('hidden');
+
+            if (result.HasConflict) {
+                if (result.IsWarningOnly) {
+                    feedbackBox.className = "rounded-xl p-4 text-sm flex items-start gap-3 bg-amber-50 border border-amber-100 text-amber-800";
+                    feedbackIcon.innerHTML = `⚠️`;
+                    feedbackMsg.innerHTML = `<strong>Avertissement :</strong><br/>${result.Message.replace(/\n/g, '<br/>')}`;
+                    nextBtn.disabled = false;
+                } else {
+                    feedbackBox.className = "rounded-xl p-4 text-sm flex items-start gap-3 bg-rose-50 border border-rose-100 text-rose-800";
+                    feedbackIcon.innerHTML = `❌`;
+                    feedbackMsg.innerHTML = `<strong>Conflit bloquant :</strong><br/>${result.Message}`;
+                    nextBtn.disabled = true;
+                }
+            } else {
+                feedbackBox.className = "rounded-xl p-4 text-sm flex items-start gap-3 bg-emerald-50 border border-emerald-100 text-emerald-800";
+                feedbackIcon.innerHTML = `✅`;
+                feedbackMsg.innerHTML = `<strong>Créneau libre et disponible.</strong>`;
+                nextBtn.disabled = false;
+            }
+
+        } catch (e) {
+            console.error("Live validation issue:", e);
+        }
+    }
+
+    function populateStep3Summary() {
+        const salleSelect = document.getElementById('wizardSalleId');
+        const salleName = salleSelect.options[salleSelect.selectedIndex]?.text || 'Non assignée';
+        const isRecurrent = document.getElementById('wizardRecurrent').checked;
+
+        document.getElementById('summaryMatiere').textContent = wizardCourse.MatiereNom || '—';
+        document.getElementById('summaryType').textContent = wizardCourse.TypeCours;
+        document.getElementById('summaryProfesseur').textContent = wizardCourse.ProfesseurNom || 'Non assigné';
+        document.getElementById('summaryClasse').textContent = wizardCourse.ClasseNom || '—';
+
+        const groupSelect = document.getElementById('wizardGroupeId');
+        document.getElementById('summaryGroupe').textContent = groupSelect.options[groupSelect.selectedIndex]?.text || 'Classe entière';
+
+        document.getElementById('summaryDate').textContent = new Date(document.getElementById('wizardDate').value).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+        document.getElementById('summaryHours').textContent = `${document.getElementById('wizardStartTime').value} - ${document.getElementById('wizardEndTime').value}`;
+        document.getElementById('summarySalle').textContent = salleName;
+        document.getElementById('summaryMode').textContent = "Présentiel";
+        document.getElementById('summaryRecurrence').textContent = isRecurrent ? 'Oui (Série hebdomadaire)' : 'Non';
+
+        const alertBox = document.getElementById('summaryAvailabilityAlert');
+        const alertIcon = document.getElementById('summaryAvailabilityAlertIcon');
+        const alertText = document.getElementById('summaryAvailabilityAlertText');
+
+        if (!isAvailabilityCovered) {
+            alertBox.className = "rounded-2xl p-4 text-sm flex items-start gap-3 bg-amber-50 border border-amber-100 text-amber-800";
+            alertIcon.innerHTML = `⚠️`;
+            alertText.innerHTML = `
+                <strong class="font-bold">Hors-disponibilité du professeur :</strong><br/>
+                Ce créneau n'est pas dans les disponibilités déclarées par ${wizardCourse.ProfesseurNom || 'l\'enseignant'}. 
+                Le système enregistrera la séance mais elle sera taguée comme <strong>'Hors disponibilité'</strong> pour l'enseignant.
+            `;
+        } else {
+            alertBox.className = "rounded-2xl p-4 text-sm flex items-start gap-3 bg-emerald-50 border border-emerald-100 text-emerald-800";
+            alertIcon.innerHTML = `✅`;
+            alertText.innerHTML = `
+                <strong class="font-bold">Disponibilité conforme :</strong> Le créneau coïncide avec les disponibilités déclarées du professeur.
+            `;
+        }
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function confirmFinalPlanning() {
+        const btn = document.getElementById('wizardFinalSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Enregistrement...`;
+
+        const dateVal = document.getElementById('wizardDate').value;
+        const startVal = document.getElementById('wizardStartTime').value;
+        const endVal = document.getElementById('wizardEndTime').value;
+        const salleIdVal = document.getElementById('wizardSalleId').value;
+        const groupeIdVal = document.getElementById('wizardGroupeId').value;
+
+        const payload = {
+            Date: dateVal,
+            StartTime: startVal + ':00',
+            EndTime: endVal + ':00',
+            SalleId: salleIdVal ? parseInt(salleIdVal) : null,
+            GroupeId: groupeIdVal ? parseInt(groupeIdVal) : null
+        };
+
+        try {
+            const response = await fetch(`/Home/PlanifierSeance/${wizardCourse.IdCours}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const resData = await response.json();
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Séance planifiée !',
+                    text: 'Le cours a été planifié avec succès.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                setTimeout(() => window.location.href = '/Home/Cours', 1500);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: resData.Message || 'Échec de la planification.'
+                });
+            }
+        } catch(err) {
+            Swal.fire({ icon: 'error', title: 'Erreur réseau', text: err.message });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Confirmer et Enregistrer`;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
+    async function triggerRecurrencePreview(initialPayload) {
+        const payload = {
+            DateDebut: initialPayload.Date,
+            StartTime: initialPayload.StartTime,
+            EndTime: initialPayload.EndTime,
+            SalleId: initialPayload.SalleId,
+            GroupeId: initialPayload.GroupeId,
+            DryRun: true
+        };
+
+        try {
+            const response = await fetch(`/api/Cours/${wizardCourse.IdCours}/PlanifierSerie`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.Message || "Impossible de générer l'aperçu de la série.");
+            }
+
+            const data = await response.json();
+            wizardBatchData = {
+                payload: payload,
+                occurrences: data.Occurrences
+            };
+
+            const tbody = document.getElementById('recurrencePreviewTableBody');
+            tbody.innerHTML = data.Occurrences.map(occ => {
+                let badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                let badgeText = "Disponible";
+                if (occ.HasConflict) {
+                    if (occ.IsWarningOnly) {
+                        badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+                        badgeText = "Avertissement";
+                    } else {
+                        badgeClass = "bg-rose-100 text-rose-800 border-rose-200";
+                        badgeText = "Bloqué";
+                    }
+                }
+
+                const dateStr = new Date(occ.Date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                return `
+                    <tr class="hover:bg-gray-50/50 transition-colors text-sm">
+                        <td class="px-6 py-4 font-bold text-gray-800">Semaine ${occ.Semaine}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-700">${dateStr}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-800">${occ.SalleNom || 'Non spécifiée'}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${badgeClass}">
+                                ${badgeText}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-xs text-gray-500">${occ.Message || 'Aucune remarque.'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('wizardStep1Content').classList.add('hidden');
+            document.getElementById('wizardStep2Content').classList.add('hidden');
+            document.getElementById('wizardStep3Content').classList.add('hidden');
+            document.getElementById('wizardRecurrencePreviewLayout').classList.remove('hidden');
+
+            if (window.lucide) lucide.createIcons();
+
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Erreur de génération', text: e.message });
+            goToStep(2);
+        }
+    }
+
+    async function confirmBatchPlanning() {
+        if (!wizardCourse || !wizardBatchData) return;
+
+        const hasHardConflict = wizardBatchData.occurrences.some(o => o.HasConflict && !o.IsWarningOnly);
+        if (hasHardConflict) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Conflits bloquants',
+                text: 'Certaines occurrences de la série présentent des conflits bloquants. Ajustez les horaires.'
+            });
+            return;
+        }
+
+        const btn = document.getElementById('wizardBatchSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Enregistrement...`;
+
+        const commitPayload = { ...wizardBatchData.payload, DryRun: false };
+
+        try {
+            const response = await fetch(`/api/Cours/${wizardCourse.IdCours}/PlanifierSerie`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(commitPayload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Série de cours créée !',
+                    text: `${wizardBatchData.occurrences.length} séances ont été planifiées avec succès.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                setTimeout(() => window.location.href = '/Home/Cours', 2000);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erreur',
+                    text: result.Message || 'Impossible d\'enregistrer la série.'
+                });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Erreur réseau', text: e.message });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Confirmer la planification en série`;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+</script>
+}

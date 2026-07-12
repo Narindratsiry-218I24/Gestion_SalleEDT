@@ -1,0 +1,100 @@
+:root {
+  --emit-navy: #17203A;
+  --emit-mid: #5C8ABF;
+  --emit-blue: #73A5D4;
+  --emit-surface: #12192B;
+  --emit-surface-alt: #1e293b;
+  --emit-text: #f8fafc;
+  --emit-muted: #94a3b8;
+  --emit-accent: #fbbf24;
+}
+
+.theme-soft {
+  --emit-navy: #17203A;
+  --emit-mid: #5C8ABF;
+  --emit-blue: #73A5D4;
+  --emit-surface: #16263b;
+  --emit-surface-alt: #1f334f;
+  --emit-accent: #93c5fd;
+}
+
+.theme-sunset {
+  --emit-navy: #17203A;
+  --emit-mid: #5C8ABF;
+  --emit-blue: #73A5D4;
+  --emit-surface: #1d2439;
+  --emit-surface-alt: #28354a;
+  --emit-accent: #fb7185;
+}
+
+.theme-forest {
+  --emit-navy: #17203A;
+  --emit-mid: #5C8ABF;
+  --emit-blue: #73A5D4;
+  --emit-surface: #12211f;
+  --emit-surface-alt: #24363b;
+  --emit-accent: #22c55e;
+}
+
+.scroll-appear {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  will-change: opacity, transform;
+}
+
+.scroll-appear.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hero-fade {
+  opacity: 0.14;
+  filter: blur(32px);
+}
+
+.hero-card {
+  backdrop-filter: blur(18px);
+  background: rgba(12, 23, 46, 0.86);
+  box-shadow: 0 40px 120px rgba(18, 32, 58, 0.32);
+}
+
+.feature-card {
+  transform-style: preserve-3d;
+  transition: transform 0.45s ease, box-shadow 0.45s ease, border-color 0.45s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px) rotateX(1deg) rotateY(1deg);
+  box-shadow: 0 24px 60px rgba(23, 32, 58, 0.24);
+  border-color: rgba(115, 165, 212, 0.35);
+}
+
+.button-hero {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.button-hero:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 18px 42px rgba(115, 165, 212, 0.28);
+}
+
+@keyframes float-card {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.card-float {
+  animation: float-card 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-appear,
+  .feature-card,
+  .button-hero,
+  .card-float {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

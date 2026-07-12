@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Gestion_SalleClasseEDT.Helpers;
 using Gestion_SalleClasseEDT.Models;
+using Gestion_SalleClasseEDT.Services;
 
 namespace Gestion_SalleClasseEDT.Controllers
 {
@@ -13,10 +15,12 @@ namespace Gestion_SalleClasseEDT.Controllers
     public class DemandeEDTController : ControllerBase
     {
         private readonly EMITDbContext db;
+        private readonly IConflitService _conflitService;
 
-        public DemandeEDTController(EMITDbContext context)
+        public DemandeEDTController(EMITDbContext context, IConflitService conflitService)
         {
             db = context;
+            _conflitService = conflitService;
         }
 
         private static bool IsPending(string statut)
@@ -198,6 +202,76 @@ namespace Gestion_SalleClasseEDT.Controllers
             try
             {
                 demande.Statut = NormalizeStatut(demande.Statut);
+                demande.DateCreation = DateTime.Now;
+
+                // Determine professor ID to evaluate availability
+                int? profId = null;
+                if (demande.IdCours.HasValue)
+                {
+                    var cours = db.Cours.Find(demande.IdCours.Value);
+                    profId = cours?.IdProfesseur;
+                }
+                else
+                {
+                    var demandeur = db.Utilisateurs.Find(demande.IdDemandeur);
+                    if (demandeur != null)
+                    {
+                        var prof = db.Professeurs.FirstOrDefault(p => p.Email == demandeur.Email);
+                        profId = prof?.IdProfesseur;
+                    }
+                }
+
+                if (profId.HasValue && demande.DateSouhaitee.HasValue && demande.HeureDebutSouhaitee.HasValue && demande.HeureFinSouhaitee.HasValue)
+                {
+                    var date = demande.DateSouhaitee.Value;
+                    var debut = demande.HeureDebutSouhaitee.Value;
+                    var fin = demande.HeureFinSouhaitee.Value;
+
+                    // Scoping academic year
+                    int? idAnnee = null;
+                    if (demande.IdClasse.HasValue)
+                    {
+                        var classe = db.Classes.Find(demande.IdClasse.Value);
+                        idAnnee = classe?.IdAnneeAcademique;
+                    }
+                    else if (demande.IdCours.HasValue)
+                    {
+                        var cours = db.Cours.Include(c => c.Classe).FirstOrDefault(c => c.IdCours == demande.IdCours.Value);
+                        idAnnee = cours?.Classe?.IdAnneeAcademique;
+                    }
+
+                    string dayCode = date.DayOfWeek switch
+                    {
+                        DayOfWeek.Monday => "MON",
+                        DayOfWeek.Tuesday => "TUE",
+                        DayOfWeek.Wednesday => "WED",
+                        DayOfWeek.Thursday => "THU",
+                        DayOfWeek.Friday => "FRI",
+                        DayOfWeek.Saturday => "SAT",
+                        _ => ""
+                    };
+
+                    // Fetch professor availabilities
+                    var profDispos = db.DisponibilitesProf
+                        .Where(d => d.IdProfesseur == profId.Value && (d.IdAnnee == null || d.IdAnnee == idAnnee))
+                        .ToList();
+
+                    var disposRecurrentes = profDispos.Where(d => d.TypeDisponibilite == TypeDisponibilite.Recurrente && d.JourSemaineCode == dayCode).ToList();
+                    var disposPonctuelles = profDispos.Where(d => d.TypeDisponibilite == TypeDisponibilite.Ponctuelle && d.DateSpecifique.HasValue && d.DateSpecifique.Value.Date == date.Date).ToList();
+
+                    var matchingDispos = disposPonctuelles.Any() ? disposPonctuelles : disposRecurrentes;
+
+                    if (!matchingDispos.Any())
+                    {
+                        demande.HorsDisponibilite = true;
+                    }
+                    else
+                    {
+                        bool isCovered = matchingDispos.Any(d => d.HeureDebut <= debut && d.HeureFin >= fin);
+                        demande.HorsDisponibilite = !isCovered;
+                    }
+                }
+
                 db.DemandesEdt.Add(demande);
                 db.SaveChanges();
                 return Ok(demande);
@@ -293,7 +367,7 @@ namespace Gestion_SalleClasseEDT.Controllers
 
         [HttpPost]
         [Route("{id:int}/Valider")]
-        public IActionResult ValiderDemande(int id)
+        public async Task<IActionResult> ValiderDemande(int id)
         {
             var demande = db.DemandesEdt
                 .Include(d => d.Cours.Creneaux)
@@ -336,27 +410,19 @@ namespace Gestion_SalleClasseEDT.Controllers
                 finalProfId = prof?.IdProfesseur ?? 1;
             }
 
-            var creneauConflit = db.Creneaux
-                .Include(c => c.Cours)
-                .FirstOrDefault(c =>
-                    (c.Cours.IdSalle == finalSalleId || c.Cours.IdClasse == finalClasseId || c.Cours.IdProfesseur == finalProfId) &&
-                    c.JourSemaine == jourSemaine &&
-                    c.IdCours != demande.IdCours &&
-                    ((finalHeureDebut.Value >= c.HeureDebut && finalHeureDebut.Value < c.HeureFin) ||
-                     (finalHeureFin.Value > c.HeureDebut && finalHeureFin.Value <= c.HeureFin) ||
-                     (finalHeureDebut.Value <= c.HeureDebut && finalHeureFin.Value >= c.HeureFin))
-                );
+            // 1.2 — Vérification via IConflitService (source : Seance, pas Creneau)
+            var conflitResult = await _conflitService.VerifierAsync(
+                date: finalDate.Value,
+                heureDebut: finalHeureDebut.Value,
+                heureFin: finalHeureFin.Value,
+                salleId: finalSalleId > 0 ? finalSalleId : null,
+                classeId: finalClasseId > 0 ? finalClasseId : null,
+                profId: finalProfId > 0 ? finalProfId : null,
+                excludeCoursId: demande.IdCours
+            );
 
-            if (creneauConflit != null)
-            {
-                if (creneauConflit.Cours.IdSalle == finalSalleId)
-                    return BadRequest("Conflit détecté : La salle demandée est déjà occupée par un autre cours sur ce créneau.");
-                if (creneauConflit.Cours.IdClasse == finalClasseId)
-                    return BadRequest("Conflit détecté : La classe sélectionnée a déjà un autre cours programmé à ce même moment.");
-                if (creneauConflit.Cours.IdProfesseur == finalProfId)
-                    return BadRequest("Conflit détecté : L'enseignant dispense déjà un autre cours sur ce créneau.");
-                return BadRequest("Conflit d'horaire détecté.");
-            }
+            if (conflitResult.HasConflict)
+                return BadRequest($"Conflit détecté : {conflitResult.Message}");
 
             if (demande.IdCours.HasValue)
             {
@@ -452,6 +518,38 @@ namespace Gestion_SalleClasseEDT.Controllers
             try
             {
                 db.SaveChanges();
+                
+                // --- AJOUT : Notification au professeur après validation ---
+                int profIdToNotify = 0;
+                if (demande.IdCours.HasValue && demande.Cours != null && demande.Cours.IdProfesseur.HasValue)
+                {
+                    profIdToNotify = demande.Cours.IdProfesseur.Value;
+                }
+                else
+                {
+                    var demandeurObj = db.Utilisateurs.Find(demande.IdDemandeur);
+                    if (demandeurObj != null)
+                    {
+                        var profMatch = db.Professeurs.FirstOrDefault(p => p.Email == demandeurObj.Email);
+                        if (profMatch != null) profIdToNotify = profMatch.IdProfesseur;
+                    }
+                }
+                
+                if (profIdToNotify > 0)
+                {
+                    db.Notifications.Add(new Notification
+                    {
+                        IdProfesseur = profIdToNotify,
+                        Titre = "Proposition validée",
+                        Message = $"Votre proposition de créneau a été validée pour la date du {finalDate:dd/MM/yyyy}.",
+                        Type = "succes",
+                        DateCreation = DateTime.UtcNow,
+                        EstLue = false,
+                        Lien = "/ProfesseurDashboard/MesDemandes"
+                    });
+                    db.SaveChanges();
+                }
+                // -----------------------------------------------------------
             }
             catch (Exception ex)
             {
@@ -468,7 +566,7 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("{id:int}/Refuser")]
         public IActionResult RefuserDemande(int id)
         {
-            var demande = db.DemandesEdt.Find(id);
+            var demande = db.DemandesEdt.Include(d => d.Cours).FirstOrDefault(d => d.IdDemande == id);
             if (demande == null) return NotFound();
 
             var ctx = UserContextHelper.FromRequest(ControllerContext);
@@ -477,6 +575,39 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             demande.Statut = "refusee";
             db.SaveChanges();
+            
+            // --- AJOUT : Notification au professeur après refus ---
+            int profIdToNotify = 0;
+            if (demande.IdCours.HasValue && demande.Cours != null && demande.Cours.IdProfesseur.HasValue)
+            {
+                profIdToNotify = demande.Cours.IdProfesseur.Value;
+            }
+            else
+            {
+                var demandeurObj = db.Utilisateurs.Find(demande.IdDemandeur);
+                if (demandeurObj != null)
+                {
+                    var profMatch = db.Professeurs.FirstOrDefault(p => p.Email == demandeurObj.Email);
+                    if (profMatch != null) profIdToNotify = profMatch.IdProfesseur;
+                }
+            }
+            
+            if (profIdToNotify > 0)
+            {
+                db.Notifications.Add(new Notification
+                {
+                    IdProfesseur = profIdToNotify,
+                    Titre = "Proposition refusée",
+                    Message = $"Votre proposition de créneau du {demande.DateSouhaitee:dd/MM/yyyy} a été refusée.",
+                    Type = "erreur",
+                    DateCreation = DateTime.UtcNow,
+                    EstLue = false,
+                    Lien = "/ProfesseurDashboard/MesDemandes"
+                });
+                db.SaveChanges();
+            }
+            // -----------------------------------------------------------
+            
             return Ok(demande);
         }
     }

@@ -85,48 +85,39 @@ INSERT INTO public.ref_semestre (id_ref_semestre, code_semestre, ordre, id_nivea
 ON CONFLICT (id_ref_semestre) DO NOTHING;
 
 -- 6. Seed ANNEE_ACADEMIQUE
-INSERT INTO public.annee_academique (id_annee, libelle, date_debut_annee, date_fin_annee) VALUES
-(1, '2025-2026', '2025-10-01', '2026-07-31')
+INSERT INTO public.annee_academique (id_annee, libelle, date_debut_annee, date_fin_annee, est_archivee, est_active) VALUES
+(1, '2025-2026', '2025-10-01', '2026-07-31', false, true)
 ON CONFLICT (id_annee) DO NOTHING;
 
 -- 7. Seed SEMESTRE (Année 2025-2026)
-INSERT INTO public.semestre (id_semestre, id_ref_semestre, id_annee, date_debut, date_fin) VALUES
-(1, 1, 1, '2025-10-01', '2026-02-28'), (2, 2, 1, '2026-03-01', '2026-07-31'),
-(3, 3, 1, '2025-10-01', '2026-02-28'), (4, 4, 1, '2026-03-01', '2026-07-31'),
-(5, 5, 1, '2025-10-01', '2026-02-28'), (6, 6, 1, '2026-03-01', '2026-07-31'),
-(7, 7, 1, '2025-10-01', '2026-02-28'), (8, 8, 1, '2026-03-01', '2026-07-31'),
-(9, 9, 1, '2025-10-01', '2026-02-28'), (10, 10, 1, '2026-03-01', '2026-07-31')
+INSERT INTO public.semestre (id_semestre, id_ref_semestre, id_annee, date_debut, date_fin, est_archivee) VALUES
+(1, 1, 1, '2025-10-01', '2026-02-28', false), (2, 2, 1, '2026-03-01', '2026-07-31', false),
+(3, 3, 1, '2025-10-01', '2026-02-28', false), (4, 4, 1, '2026-03-01', '2026-07-31', false),
+(5, 5, 1, '2025-10-01', '2026-02-28', false), (6, 6, 1, '2026-03-01', '2026-07-31', false),
+(7, 7, 1, '2025-10-01', '2026-02-28', false), (8, 8, 1, '2026-03-01', '2026-07-31', false),
+(9, 9, 1, '2025-10-01', '2026-02-28', false), (10, 10, 1, '2026-03-01', '2026-07-31', false)
 ON CONFLICT (id_semestre) DO NOTHING;
 
 -- 8. Seed CLASSE
-INSERT INTO public.classe (id_classe, id_filiere, id_annee_academique, nom_classe, id_niveau) VALUES
+INSERT INTO public.classe (id_classe, id_filiere, id_annee_academique, nom_classe, id_niveau, est_archivee, effectif) VALUES
 -- Info
-(1, 1, 1, 'L1 DA2I S1', 1),
-(2, 4, 1, 'M1 M2I S7', 4),
-(3, 5, 1, 'M1 SDIA S7', 4)
+(1, 1, 1, 'L1 DA2I S1', 1, false, 40),
+(2, 4, 1, 'M1 M2I S7', 4, false, 30),
+(3, 5, 1, 'M1 SDIA S7', 4, false, 25)
 ON CONFLICT (id_classe) DO NOTHING;
 
--- 9. Seed PROFESSEUR
-INSERT INTO public.professeur (id_professeur, matricule, nom, prenom, email, telephone) VALUES
-(1, 'PROF-0001', 'Randriana', 'Aristhène', 'a.randriana@emit.edu', '+261 34 00 000 01'),
-(2, 'PROF-0002', 'Rakoto', 'Jean', 'j.rakoto@emit.edu', '+261 34 00 000 02')
-ON CONFLICT (id_professeur) DO UPDATE SET matricule = EXCLUDED.matricule;
+-- 9. Seed UTILISATEUR
+INSERT INTO public.utilisateur (id_utilisateur, nom, prenom, email, role, password_hash, statut_compte, premier_login, date_creation) VALUES
+(1, 'Admin', 'EMIT', 'admin@emit.mg', 'admin', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01'),
+(2, 'Randriana', 'Aristhène', 'a.randriana@emit.edu', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01'),
+(3, 'Rakoto', 'Jean', 'j.rakoto@emit.edu', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01')
+ON CONFLICT (id_utilisateur) DO UPDATE SET password_hash = EXCLUDED.password_hash, statut_compte = EXCLUDED.statut_compte;
 
--- 10. Seed UTILISATEUR
-INSERT INTO public.utilisateur (id_utilisateur, nom, prenom, email, role) VALUES
-(1, 'Admin', 'EMIT', 'admin@emit.mg', 'admin')
-ON CONFLICT (id_utilisateur) DO NOTHING;
+-- 10. Seed PROFESSEUR
+INSERT INTO public.professeur (id_professeur, id_utilisateur, matricule, nom, prenom, email, telephone, grade, specialite, statut, capacite_horaire_max, heures_effectuees, est_actif, date_creation, titre, photo_url, cv_url, biographie, specialites_secondaires, telephone_portable) VALUES
+(2, 2, 'PROF-0001', 'Randriana', 'Aristhène', 'a.randriana@emit.edu', '+261 34 00 000 01', 'Docteur', 'Informatique', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', ''),
+(3, 3, 'PROF-0002', 'Rakoto', 'Jean', 'j.rakoto@emit.edu', '+261 34 00 000 02', 'M. Conf.', 'Management', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', '')
+ON CONFLICT (id_professeur) DO UPDATE SET matricule = EXCLUDED.matricule, id_utilisateur = EXCLUDED.id_utilisateur;
 
 ALTER TABLE matiere ADD COLUMN IF NOT EXISTS volume_horaire INT NOT NULL DEFAULT 0;
 ALTER TABLE matiere ADD COLUMN IF NOT EXISTS id_professeur_responsable INT REFERENCES professeur(id_professeur);
-
--- 9. Nettoyer les anciennes classes
-TRUNCATE public.classe RESTART IDENTITY CASCADE;
-
--- 10. Cr�er les classes pour l'ann�e 2025-2026
--- Ces classes seront g�n�r�es automatiquement par le syst�me
--- Mais on peut en ajouter manuellement si besoin
-
--- 11. Mettre � jour les s�quences
-SELECT setval('public.classe_id_classe_seq', (SELECT COALESCE(MAX(id_classe), 0) + 1 FROM public.classe), false);
-

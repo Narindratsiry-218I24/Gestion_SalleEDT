@@ -2,115 +2,358 @@
     ViewBag.Title = "Validation";
 }
 
-<div class="space-y-8 animate-in fade-in duration-500 mt-8">
-    <div class="flex items-center justify-between mb-8">
+<div class="space-y-8 animate-in fade-in duration-500">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail de Validation</h1>
-            <p class="text-gray-500 mt-1">Gérez les demandes d'emploi du temps et les réservations de salles en attente.</p>
+            <p class="text-gray-500 mt-1">Gérez les demandes de planification et alertes de disponibilité professeur.</p>
+        </div>
+        <div class="flex gap-2">
+            <button id="btnRefreshValidation" onclick="fetchValidationData()" class="flex items-center gap-2 border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Actualiser
+            </button>
         </div>
     </div>
 
-    <div id="app-validation-root">
+    <!-- Stats Strip -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="validationStatsStrip">
+        <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total en attente</span>
+            <span class="text-3xl font-black text-[#17203A]" id="statTotal">—</span>
+        </div>
+        <div class="bg-amber-50 rounded-xl p-4 border border-amber-100 shadow-sm flex flex-col">
+            <span class="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1">⚠️ Hors-Dispo Prof</span>
+            <span class="text-3xl font-black text-amber-700" id="statHorsDispo">—</span>
+        </div>
+        <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm flex flex-col">
+            <span class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">Contre-propositions</span>
+            <span class="text-3xl font-black text-blue-700" id="statContreProp">—</span>
+        </div>
+        <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 shadow-sm flex flex-col">
+            <span class="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-1">Validées aujourd'hui</span>
+            <span class="text-3xl font-black text-emerald-700" id="statValidated">—</span>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-wrap gap-3 items-center">
+        <span class="text-sm font-bold text-gray-600">Filtrer :</span>
+        <button onclick="setValidationFilter('all')" id="filterAll" class="filter-btn active px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors bg-[#17203A] text-white border-[#17203A]">Toutes</button>
+        <button onclick="setValidationFilter('hors_dispo')" id="filterHorsDispo" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors border-amber-200 text-amber-700 hover:bg-amber-50">⚠️ Hors-disponibilité</button>
+        <button onclick="setValidationFilter('en_attente_admin')" id="filterEnAttente" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors border-gray-200 text-gray-600 hover:bg-gray-50">En attente admin</button>
+        <button onclick="setValidationFilter('contre_proposition')" id="filterContreProp" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors border-blue-200 text-blue-700 hover:bg-blue-50">Contre-propositions</button>
+    </div>
+
+    <!-- Demands List -->
+    <div id="validationAppRoot">
         <div class="flex justify-center items-center py-24 bg-white rounded-xl shadow-sm border border-gray-100">
             <i data-lucide="loader-2" class="w-8 h-8 text-[#17203A] animate-spin"></i>
-            <span class="ml-2 text-gray-500 font-bold">Chargement du panneau...</span>
+            <span class="ml-2 text-gray-500 font-bold">Chargement des demandes...</span>
         </div>
     </div>
 </div>
 
 @section scripts {
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@@babel/standalone/babel.min.js"></script>
+<script>
+    let allDemandes = [];
+    let allRooms = [];
+    let currentFilter = 'all';
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const API_BASE = '/api';
+    async function fetchValidationData() {
+        document.getElementById('validationAppRoot').innerHTML = `
+            <div class="flex justify-center items-center py-24 bg-white rounded-xl shadow-sm border border-gray-100">
+                <i data-lucide="loader-2" class="w-8 h-8 text-[#17203A] animate-spin"></i>
+                <span class="ml-2 text-gray-500 font-bold">Chargement des demandes...</span>
+            </div>`;
+        if (window.lucide) lucide.createIcons();
 
-        function ValidationApp() {
-            const [demandes, setDemandes] = useState([]);
-            const [rooms, setRooms] = useState([]);
-            const [loading, setLoading] = useState(true);
+        try {
+            const [demandesData, roomsData] = await Promise.all([
+                fetch('/api/DemandeEDT').then(r => r.json()),
+                fetch('/api/Salle').then(r => r.json())
+            ]);
 
-            // Fetch
-            const fetchData = () => {
-                setLoading(true);
-                Promise.all([
-                    fetch(API_BASE + '/DemandeEDT').then(r => r.json()),
-                    fetch(API_BASE + '/Salle').then(r => r.json())
-                ]).then(([demandesData, roomsData]) => {
-                    const actives = demandesData.filter(d => ['en_attente_admin', 'proposee_prof', 'modif_acceptee_prof', 'contre_proposition_prof'].includes(d.Statut?.toLowerCase()));
-                    setDemandes(actives);
-                    setRooms(roomsData);
-                    setLoading(false);
-                });
-            };
+            allRooms = roomsData;
+            const activeStatuts = ['en_attente_admin', 'proposee_prof', 'modif_acceptee_prof', 'contre_proposition_prof'];
+            allDemandes = demandesData.filter(d => activeStatuts.includes(d.Statut?.toLowerCase()));
 
-            useEffect(() => { fetchData(); }, []);
+            updateStats();
+            renderDemandes();
 
-            const handleApprove = (id) => {
-                fetch(API_BASE + '/DemandeEDT/' + id + '/Valider', { method: 'POST' })
-                    .then(res => { if(res.ok) { alert('Demande Validée avec succès!'); fetchData(); } else { alert('Erreur de validation'); } });
-            };
+        } catch (e) {
+            document.getElementById('validationAppRoot').innerHTML = `
+                <div class="bg-rose-50 border border-rose-100 rounded-xl p-8 text-center text-rose-700 font-semibold">
+                    Erreur lors du chargement des demandes : ${e.message}
+                </div>`;
+        }
+    }
 
-            const handleReject = (id) => {
-                fetch(API_BASE + '/DemandeEDT/' + id + '/Refuser', { method: 'POST' })
-                    .then(res => { if(res.ok) { alert('Demande Refusée.'); fetchData(); } });
-            };
+    function updateStats() {
+        document.getElementById('statTotal').textContent = allDemandes.length;
+        document.getElementById('statHorsDispo').textContent = allDemandes.filter(d => d.HorsDisponibilite).length;
+        document.getElementById('statContreProp').textContent = allDemandes.filter(d => d.Statut?.toLowerCase().includes('contre_proposition')).length;
+        // Today's validated — not in allDemandes (those are active), so we just show 0 from active set
+        document.getElementById('statValidated').textContent = '—';
+    }
 
-            const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('fr-FR') : '';
-            const formatTime = (ts) => ts ? ts.substring(0, 5) : '';
+    function setValidationFilter(filter) {
+        currentFilter = filter;
 
-            if (loading) return <div className="text-center font-bold text-gray-500 py-12">Chargement des requêtes...</div>;
+        // Update button styles
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('bg-[#17203A]', 'text-white', 'border-[#17203A]', 'bg-amber-500', 'bg-blue-500');
+        });
 
-            return (
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-[#17203A] m-0">Demandes de Planification Actives</h3>
-                        <span className="bg-[#17203A] text-white px-4 py-1 rounded-full font-bold text-sm shadow-sm">{demandes.length} Active(s)</span>
-                    </div>
+        const activeMap = {
+            'all': 'filterAll',
+            'hors_dispo': 'filterHorsDispo',
+            'en_attente_admin': 'filterEnAttente',
+            'contre_proposition': 'filterContreProp'
+        };
 
-                    {demandes.length === 0 ? (
-                        <div className="bg-white p-8 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100 font-medium">Aucune demande en attente pour le moment.</div>
-                    ) : (
-                        demandes.map(req => (
-                            <div key={req.IdDemande} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#5C8ABF] mb-6 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4 border-b border-gray-50 pb-4">
-                                    <h4 className="font-extrabold text-lg text-[#17203A] m-0">REQ-{req.IdDemande} : {req.TypeDemande}</h4>
-                                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">{req.Statut}</span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 m-0">Justification</p>
-                                        <p className="text-sm text-gray-700 m-0 leading-relaxed">{req.Justification || 'Aucune justification fournie.'}</p>
-                                    </div>
-                                    <div className="bg-[#f0f4f8] p-4 rounded-lg border border-[#e1e9f2]">
-                                        <p className="text-xs font-bold text-[#5C8ABF] uppercase tracking-wider mb-2 m-0">Détails de la demande</p>
-                                        <div className="space-y-1 mt-2">
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Classe:</strong> {req.Classe?.NomClasse || 'N/A'}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Matière:</strong> {req.Matiere?.NomMatiere || 'N/A'}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Date:</strong> {formatDate(req.DateSouhaitee)}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Heure:</strong> {formatTime(req.HeureDebutSouhaitee)} - {formatTime(req.HeureFinSouhaitee)}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Salle souhaitée:</strong> {req.Salle?.NomSalle || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end gap-3 mt-4 border-t border-gray-50 pt-4">
-                                    <button onClick={() => handleApprove(req.IdDemande)} className="bg-green-600 hover:bg-green-700 transition-colors text-white font-bold px-6 py-2.5 rounded-lg text-sm border-none cursor-pointer flex items-center gap-2">
-                                        <i data-lucide="check-circle" className="w-4 h-4"></i> Valider (Approuver)
-                                    </button>
-                                    <button onClick={() => handleReject(req.IdDemande)} className="bg-red-50 hover:bg-red-100 transition-colors text-red-600 border border-red-200 font-bold px-6 py-2.5 rounded-lg text-sm cursor-pointer flex items-center gap-2">
-                                        <i data-lucide="x-circle" className="w-4 h-4"></i> Refuser
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            );
+        const btn = document.getElementById(activeMap[filter]);
+        if (btn) {
+            btn.classList.add('bg-[#17203A]', 'text-white', 'border-[#17203A]');
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('app-validation-root'));
-        root.render(<ValidationApp />);
-    </script>
+        renderDemandes();
+    }
+
+    function renderDemandes() {
+        let filtered = [...allDemandes];
+
+        if (currentFilter === 'hors_dispo') {
+            filtered = filtered.filter(d => d.HorsDisponibilite);
+        } else if (currentFilter === 'en_attente_admin') {
+            filtered = filtered.filter(d => d.Statut?.toLowerCase() === 'en_attente_admin');
+        } else if (currentFilter === 'contre_proposition') {
+            filtered = filtered.filter(d => d.Statut?.toLowerCase().includes('contre_proposition'));
+        }
+
+        // Sort: HorsDisponibilite first, then by DateCreation desc
+        filtered.sort((a, b) => {
+            if (a.HorsDisponibilite !== b.HorsDisponibilite) return a.HorsDisponibilite ? -1 : 1;
+            return new Date(b.DateCreation) - new Date(a.DateCreation);
+        });
+
+        const root = document.getElementById('validationAppRoot');
+
+        if (filtered.length === 0) {
+            root.innerHTML = `
+                <div class="bg-white p-12 rounded-xl text-center text-gray-400 shadow-sm border border-gray-100">
+                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 text-gray-200"></i>
+                    <p class="font-bold text-lg text-gray-500">Aucune demande trouvée</p>
+                    <p class="text-sm">Aucune demande ne correspond à ce filtre.</p>
+                </div>`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        root.innerHTML = `<div class="space-y-5">${filtered.map(req => buildDemandeCard(req)).join('')}</div>`;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function buildDemandeCard(req) {
+        const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        const formatTime = (ts) => ts ? ts.substring(0, 5) : '—';
+
+        const statutColors = {
+            'en_attente_admin': 'bg-amber-100 text-amber-700',
+            'proposee_prof': 'bg-blue-100 text-blue-700',
+            'modif_acceptee_prof': 'bg-indigo-100 text-indigo-700',
+            'contre_proposition_prof': 'bg-purple-100 text-purple-700',
+        };
+
+        const statutColor = statutColors[req.Statut?.toLowerCase()] || 'bg-gray-100 text-gray-600';
+        const borderColor = req.HorsDisponibilite ? 'border-l-amber-500' : 'border-l-[#5C8ABF]';
+        const creationDate = req.DateCreation ? new Date(req.DateCreation).toLocaleDateString('fr-FR') : '—';
+
+        const horsDiposBadge = req.HorsDisponibilite ? `
+            <span class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-bold animate-pulse">
+                ⚠️ Hors-disponibilité professeur
+            </span>` : `
+            <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-full text-xs font-bold">
+                ✅ Dans les disponibilités
+            </span>`;
+
+        return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 border-l-4 ${borderColor} hover:shadow-md transition-all duration-200">
+            <!-- Card Header -->
+            <div class="p-5 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h4 class="font-extrabold text-lg text-[#17203A]">REQ-${req.IdDemande}</h4>
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${statutColor}">${req.Statut?.replace(/_/g, ' ')}</span>
+                    ${horsDiposBadge}
+                    <span class="text-xs font-bold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">${req.TypeDemande}</span>
+                </div>
+                <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">Créée le ${creationDate}</span>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- Pedagogy -->
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Contexte Pédagogique</p>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Classe :</span><strong class="text-gray-800">${req.Classe?.NomClasse || '—'}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Matière :</span><strong class="text-gray-800">${req.Matiere?.NomMatiere || '—'}</strong></div>
+                    </div>
+                </div>
+
+                <!-- Logistics -->
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Créneaux Souhaités</p>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Date :</span><strong class="text-gray-800">${formatDate(req.DateSouhaitee)}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Heures :</span><strong class="text-gray-800">${formatTime(req.HeureDebutSouhaitee)} → ${formatTime(req.HeureFinSouhaitee)}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Salle :</span><strong class="text-gray-800">${req.Salle?.NomSalle || 'Non précisée'}</strong></div>
+                    </div>
+                </div>
+
+                <!-- Justification -->
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Justification</p>
+                    <p class="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100 leading-relaxed italic">${req.Justification || 'Aucune justification fournie.'}</p>
+                </div>
+            </div>
+
+            <!-- Hors-dispo warning block -->
+            ${req.HorsDisponibilite ? `
+            <div class="mx-5 mb-3 bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-2">
+                <span class="text-lg leading-none shrink-0">⚠️</span>
+                <div>
+                    <strong class="font-bold">Avertissement — Hors-disponibilité :</strong>
+                    Le créneau demandé (${formatDate(req.DateSouhaitee)} ${formatTime(req.HeureDebutSouhaitee)}-${formatTime(req.HeureFinSouhaitee)}) 
+                    ne correspond pas aux disponibilités déclarées par le professeur concerné.
+                    Veuillez consulter l'agenda du professeur avant de valider.
+                </div>
+            </div>` : ''}
+
+            <!-- Action Buttons -->
+            <div class="px-5 pb-5 flex flex-wrap justify-end gap-3 border-t border-gray-50 pt-4">
+                <button onclick="handleApprove(${req.IdDemande})" 
+                        class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Valider
+                </button>
+                <button onclick="handleReject(${req.IdDemande})"
+                        class="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i> Refuser
+                </button>
+                <button onclick="handleProposeAlternative(${req.IdDemande})"
+                        class="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                    <i data-lucide="calendar-clock" class="w-4 h-4"></i> Proposer une alternative
+                </button>
+            </div>
+        </div>`;
+    }
+
+    function handleApprove(id) {
+        Swal.fire({
+            title: 'Valider cette demande ?',
+            text: 'Cette action notifiera le professeur et créera la séance.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Oui, valider',
+            cancelButtonText: 'Annuler'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch('/api/DemandeEDT/' + id + '/Valider', { method: 'POST' })
+                .then(res => {
+                    if (res.ok) {
+                        Swal.fire({ icon: 'success', title: 'Validée !', text: 'La demande a été approuvée.', timer: 1500, showConfirmButton: false });
+                        fetchValidationData();
+                    } else {
+                        res.json().then(e => Swal.fire({ icon: 'error', title: 'Erreur', text: e.Message || 'Échec de la validation.' }));
+                    }
+                });
+        });
+    }
+
+    function handleReject(id) {
+        Swal.fire({
+            title: 'Refuser cette demande ?',
+            input: 'textarea',
+            inputPlaceholder: 'Motif du refus (optionnel)...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Oui, refuser',
+            cancelButtonText: 'Annuler'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch('/api/DemandeEDT/' + id + '/Refuser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ motif: result.value || '' })
+            }).then(res => {
+                if (res.ok) {
+                    Swal.fire({ icon: 'info', title: 'Refusée', text: 'La demande a été refusée.', timer: 1500, showConfirmButton: false });
+                    fetchValidationData();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de refuser la demande.' });
+                }
+            });
+        });
+    }
+
+    function handleProposeAlternative(id) {
+        Swal.fire({
+            title: 'Proposer une alternative',
+            html: `
+                <div class="text-left space-y-3">
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Nouvelle Date</label>
+                        <input type="date" id="altDate" class="swal2-input w-full mt-1" /></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Heure début</label>
+                            <input type="time" id="altStart" class="swal2-input w-full mt-1" /></div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Heure fin</label>
+                            <input type="time" id="altEnd" class="swal2-input w-full mt-1" /></div>
+                    </div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Note pour le professeur</label>
+                        <textarea id="altNote" class="swal2-textarea w-full mt-1" placeholder="Explication du changement..."></textarea></div>
+                </div>`,
+            showCancelButton: true,
+            confirmButtonText: 'Envoyer la proposition',
+            cancelButtonText: 'Annuler',
+            preConfirm: () => {
+                const date = document.getElementById('altDate').value;
+                const start = document.getElementById('altStart').value;
+                const end = document.getElementById('altEnd').value;
+                if (!date || !start || !end) {
+                    Swal.showValidationMessage('Veuillez renseigner la date et les heures.');
+                    return false;
+                }
+                return { date, start, end, note: document.getElementById('altNote').value };
+            }
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            const { date, start, end, note } = result.value;
+            fetch('/api/DemandeEDT/' + id + '/ProposeAlternative', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    DateProposee: date,
+                    HeureDebutProposee: start + ':00',
+                    HeureFinProposee: end + ':00',
+                    Note: note
+                })
+            }).then(res => {
+                if (res.ok) {
+                    Swal.fire({ icon: 'success', title: 'Alternative proposée', text: 'Le professeur sera notifié.', timer: 1800, showConfirmButton: false });
+                    fetchValidationData();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de créer la proposition.' });
+                }
+            });
+        });
+    }
+
+    // Init on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchValidationData();
+    });
+</script>
 }

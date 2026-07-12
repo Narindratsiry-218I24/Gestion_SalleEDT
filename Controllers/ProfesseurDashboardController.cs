@@ -50,6 +50,8 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(p => p.Cours)
                     .ThenInclude(c => c.Salle)
                 .Include(p => p.Cours)
+                    .ThenInclude(c => c.AffectationMatiere)
+                .Include(p => p.Cours)
                     .ThenInclude(c => c.Creneaux)
                 .Include(p => p.Disponibilites)
                 .FirstOrDefaultAsync(p => p.Email == email);
@@ -111,6 +113,39 @@ namespace Gestion_SalleClasseEDT.Controllers
         }
 
         // ─────────────────────────────────────────────────────────────
+        // PLANIFIER CRÉNEAUX — interface interactive
+        // ─────────────────────────────────────────────────────────────
+        public async Task<IActionResult> PlanifierCreneaux(string email)
+        {
+            var prof = await GetProfesseurFromRequest();
+            if (prof == null) return View("ProfNonTrouve");
+
+            var vm = new ProfesseurDashboardViewModel(prof, _db);
+            await vm.LoadAsync();
+            
+            // Charger les affectations du professeur
+            var mesAffectations = prof.AffectationsMatieres?.ToList() ?? new List<AffectationMatiere>();
+            var mesClassesIds = mesAffectations.Select(a => a.IdClasse).Distinct().ToList();
+            var mesMatieresIds = mesAffectations.Select(a => a.IdMatiere).Distinct().ToList();
+
+            vm.Classes = await _db.Classes
+                .Include(c => c.Filiere).ThenInclude(f => f.Mention)
+                .Include(c => c.Niveau)
+                .Where(c => mesClassesIds.Contains(c.IdClasse))
+                .OrderBy(c => c.NomClasse)
+                .ToListAsync();
+                
+            vm.Matieres = await _db.Matieres
+                .Where(m => mesMatieresIds.Contains(m.IdMatiere))
+                .OrderBy(m => m.NomMatiere)
+                .ToListAsync();
+                
+            vm.Salles = await _db.Salles.OrderBy(s => s.NomSalle).ToListAsync();
+
+            return View(vm);
+        }
+
+        // ─────────────────────────────────────────────────────────────
         // NOUVELLE DEMANDE — formulaire
         // ─────────────────────────────────────────────────────────────
         public async Task<IActionResult> NouvelleDemande(string email)
@@ -120,13 +155,60 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             var vm = new ProfesseurDashboardViewModel(prof, _db);
             await vm.LoadAsync();
-            // Charger données pour le formulaire
+            
+            // Charger données pour le formulaire: UNIQUEMENT Celles enseignées par le prof
+            var mesAffectations = prof.AffectationsMatieres?.ToList() ?? new List<AffectationMatiere>();
+            
+            var mesClassesIds = mesAffectations.Select(a => a.IdClasse).Distinct().ToList();
+            var mesMatieresIds = mesAffectations.Select(a => a.IdMatiere).Distinct().ToList();
+
+            var heuresPlanifieesDict = new System.Collections.Generic.Dictionary<string, int>();
+            if (prof.Cours != null)
+            {
+                foreach (var c in prof.Cours)
+                {
+                    var key = $"{c.IdMatiere}|{c.IdClasse}";
+                    var heures = c.Creneaux?.Sum(cr => (int)(cr.HeureFin - cr.HeureDebut).TotalHours) ?? 0;
+                    
+                    if (heuresPlanifieesDict.ContainsKey(key))
+                        heuresPlanifieesDict[key] += heures;
+                    else
+                        heuresPlanifieesDict[key] = heures;
+                }
+            }
+            ViewBag.HeuresPlanifiees = heuresPlanifieesDict;
+
             vm.Classes = await _db.Classes
+                .Include(c => c.Filiere).ThenInclude(f => f.Mention)
+                .Include(c => c.Niveau)
                 .Include(c => c.AnneeAcademique)
+                .Where(c => mesClassesIds.Contains(c.IdClasse))
                 .OrderBy(c => c.NomClasse)
                 .ToListAsync();
-            vm.Matieres = await _db.Matieres.OrderBy(m => m.NomMatiere).ToListAsync();
+                
+            vm.Matieres = await _db.Matieres
+                .Include(m => m.RefSemestre).ThenInclude(s => s.Niveau)
+                .Include(m => m.Filiere).ThenInclude(f => f.Mention)
+                .Where(m => mesMatieresIds.Contains(m.IdMatiere))
+                .OrderBy(m => m.NomMatiere)
+                .ToListAsync();
+                
             vm.Salles = await _db.Salles.OrderBy(s => s.NomSalle).ToListAsync();
+            
+            if (prof.Utilisateur != null)
+            {
+                vm.MesDemandes = await _db.DemandesEdt
+                    .Where(d => d.IdDemandeur == prof.Utilisateur.IdUtilisateur)
+                    .Include(d => d.Cours).ThenInclude(c => c.Matiere)
+                    .Include(d => d.Matiere)
+                    .Include(d => d.Classe)
+                    .Include(d => d.Salle)
+                    .Include(d => d.Propositions)
+                    .OrderByDescending(d => d.IdDemande)
+                    .Take(5) // only recent 5 for sidebar
+                    .ToListAsync();
+            }
+
             return View(vm);
         }
 
@@ -236,41 +318,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             return View(vm);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SauvegarderDisponibilites(string email, string[] jours, string[] heuresDebut, string[] heuresFin, string[] semainesType)
-        {
-            var prof = await _db.Professeurs
-                .Include(p => p.Disponibilites)
-                .FirstOrDefaultAsync(p => p.Email == email);
 
-            if (prof == null) return View("ProfNonTrouve");
-
-            // Supprimer les anciennes
-            _db.DisponibilitesProf.RemoveRange(prof.Disponibilites);
-
-            // Ajouter les nouvelles
-            for (int i = 0; i < jours.Length; i++)
-            {
-                if (string.IsNullOrEmpty(jours[i])) continue;
-                var hd = ParseTime(heuresDebut.ElementAtOrDefault(i));
-                var hf = ParseTime(heuresFin.ElementAtOrDefault(i));
-                if (!hd.HasValue || !hf.HasValue) continue;
-
-                _db.DisponibilitesProf.Add(new DisponibiliteProf
-                {
-                    IdProfesseur = prof.IdProfesseur,
-                    JourSemaine  = jours[i],
-                    HeureDebut   = hd.Value,
-                    HeureFin     = hf.Value,
-                    SemaineType  = semainesType.ElementAtOrDefault(i) ?? "A"
-                });
-            }
-
-            await _db.SaveChangesAsync();
-            TempData["Success"] = "Disponibilités mises à jour avec succès.";
-            return RedirectToAction(nameof(Disponibilites), new { email });
-        }
 
         // ─────────────────────────────────────────────────────────────
         // Helper: parser HH:mm → TimeSpan?
@@ -323,25 +371,55 @@ namespace Gestion_SalleClasseEDT.Controllers
         {
             NbMatieres = Professeur.AffectationsMatieres?.Count ?? 0;
 
-            // Cours de cette semaine (basé sur les créneaux)
-            var today = DateTime.Now;
-            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1); // Lundi
+            // Cours de cette semaine (basé sur les séances réelles de la table seance)
+            var today = DateTime.UtcNow.Date;
+            var startOfWeek = DateTime.SpecifyKind(today.AddDays(-(int)today.DayOfWeek + 1), DateTimeKind.Utc); // Lundi
             var endOfWeek = startOfWeek.AddDays(7);
 
-            var creneaux = Professeur.Cours?
-                .SelectMany(c => c.Creneaux?.Select(cr => new CreneauAgenda
+            var seances = await _db.Seances
+                .Include(s => s.Cours.Matiere)
+                .Include(s => s.Cours.Classe)
+                .Include(s => s.Salle)
+                .Where(s => s.Cours.IdProfesseur == Professeur.IdProfesseur && s.Statut != "Annulee" && s.Date >= startOfWeek && s.Date < endOfWeek)
+                .ToListAsync();
+
+            var creneaux = seances.Select(s => new CreneauAgenda
+            {
+                Cours         = s.Cours,
+                Creneau       = new Creneau 
+                { 
+                    JourSemaine = s.Date.DayOfWeek switch
+                    {
+                        DayOfWeek.Monday => "MON",
+                        DayOfWeek.Tuesday => "TUE",
+                        DayOfWeek.Wednesday => "WED",
+                        DayOfWeek.Thursday => "THU",
+                        DayOfWeek.Friday => "FRI",
+                        DayOfWeek.Saturday => "SAT",
+                        DayOfWeek.Sunday => "SUN",
+                        _ => ""
+                    },
+                    HeureDebut = s.StartTime, 
+                    HeureFin = s.EndTime 
+                },
+                NomMatiere    = s.Cours?.Matiere?.NomMatiere ?? "—",
+                NomClasse     = s.Cours?.Classe?.NomClasse ?? "—",
+                NomSalle      = s.Salle?.NomSalle ?? "Non assigné",
+                TypeCours     = s.Cours?.TypeCours ?? "cours",
+                JourSemaine   = s.Date.DayOfWeek switch
                 {
-                    Cours         = c,
-                    Creneau       = cr,
-                    NomMatiere    = c.Matiere?.NomMatiere ?? "—",
-                    NomClasse     = c.Classe?.NomClasse ?? "—",
-                    NomSalle      = c.Salle?.NomSalle ?? "Non assigné",
-                    TypeCours     = c.TypeCours ?? "cours",
-                    JourSemaine   = cr.JourSemaine,
-                    HeureDebut    = cr.HeureDebut,
-                    HeureFin      = cr.HeureFin
-                }) ?? System.Linq.Enumerable.Empty<CreneauAgenda>())
-                .ToList() ?? new();
+                    DayOfWeek.Monday => "MON",
+                    DayOfWeek.Tuesday => "TUE",
+                    DayOfWeek.Wednesday => "WED",
+                    DayOfWeek.Thursday => "THU",
+                    DayOfWeek.Friday => "FRI",
+                    DayOfWeek.Saturday => "SAT",
+                    DayOfWeek.Sunday => "SUN",
+                    _ => ""
+                },
+                HeureDebut    = s.StartTime,
+                HeureFin      = s.EndTime
+            }).ToList();
 
             CreneauxSemaine = creneaux;
             NbCoursCetteSemaine = creneaux.Count;

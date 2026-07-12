@@ -3,229 +3,414 @@
     ViewData["Title"] = "Mes Cours";
     var email = Context.Request.Query["email"].ToString();
     var prof = Model.Professeur;
+    var activeAnnee = ViewBag.ActiveAnneeId as int?;
 }
 
-<style>
-    .back-btn { display: inline-flex; align-items: center; gap: .5rem; font-size: .85rem; color: #64748b; text-decoration: none; padding: .5rem 1rem; border: 1px solid #e2e8f0; border-radius: 10px; transition: all .2s; }
-    .back-btn:hover { border-color: #5C8ABF; color: #5C8ABF; text-decoration: none; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
-    .cours-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-    .cours-table th { background: #17203A; color: white; padding: .85rem 1rem; text-align: left; font-size: .8rem; font-weight: 700; letter-spacing: .04em; }
-    .cours-table td { padding: .85rem 1rem; border-bottom: 1px solid #f8fafc; font-size: .85rem; color: #374151; vertical-align: middle; }
-    .cours-table tr:hover td { background: #f8fafc; }
-    .cours-table tr:last-child td { border-bottom: none; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
-    .badge-cm { background: #dbeafe; color: #1e40af; }
-    .badge-td { background: #d1fae5; color: #065f46; }
-    .badge-tp { background: #fef3c7; color: #92400e; }
-    .hours-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; min-width: 100px; }
-    .hours-segment { height: 100%; border-radius: 2px; }
-    .affectation-card { background: white; border-radius: 16px; padding: 1.5rem; border: 2px solid #f1f5f9; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); transition: border-color .2s; }
-    .affectation-card:hover { border-color: #5C8ABF; }
-    .aff-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: .75rem; }
-    .aff-matiere { font-size: 1rem; font-weight: 800; color: #17203A; }
-    .aff-classe { font-size: .82rem; color: #64748b; margin-top: 2px; }
-    .aff-stats { display: flex; gap: .75rem; margin-top: .75rem; flex-wrap: wrap; }
-    .aff-stat { display: flex; flex-direction: column; align-items: center; background: #f8fafc; border-radius: 10px; padding: .4rem .75rem; min-width: 64px; }
-    .aff-stat-val { font-size: 1.1rem; font-weight: 800; color: #17203A; }
-    .aff-stat-lbl { font-size: .65rem; color: #94a3b8; font-weight: 600; }
-    .progress-container { margin-top: .75rem; }
-    .progress-label { display: flex; justify-content: space-between; font-size: .72rem; color: #64748b; margin-bottom: 4px; }
-    .progress-bar { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #5C8ABF, #17203A); transition: width .5s ease; }
-    .cours-hist-item { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid #f8fafc; }
-    .cours-hist-item:last-child { border-bottom: none; }
-    .hist-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
-    .tab-bar { display: flex; border-bottom: 2px solid #f1f5f9; margin-bottom: 1.5rem; }
-    .tab-btn { padding: .6rem 1.2rem; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; background: none; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; }
-    .tab-btn.active { color: #17203A; border-bottom-color: #5C8ABF; }
-    .section-title { font-size: 1.1rem; font-weight: 800; color: #17203A; margin-bottom: 1rem; }
-</style>
+<div class="space-y-6 animate-in fade-in duration-300">
 
-<div>
-    <div class="page-header">
-        <div style="display:flex;align-items:center;gap:1rem;">
-            <a href="@Url.Action("Index", "ProfesseurDashboard", new { email })" class="back-btn">
-                <i data-lucide="arrow-left" class="h-4 w-4"></i> Retour
-            </a>
-            <h1 style="font-size:1.3rem;font-weight:800;color:#17203A;margin:0;">Mes Cours &amp; Matières</h1>
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Mes Cours & Matières</h1>
+            <p class="text-gray-500 mt-1">
+                <span class="font-bold text-[#17203A]">@(prof.AffectationsMatieres?.Count ?? 0)</span> affectation(s) active(s) —
+                <span class="font-bold text-[#17203A]">@prof.HeuresEffectuees</span>h effectuées /
+                <span class="font-bold text-[#17203A]">@prof.CapaciteHoraireMax</span>h max
+            </p>
         </div>
-        <div style="font-size:.85rem;color:#64748b;">
-            <span style="font-weight:700;color:#17203A;">@(prof.AffectationsMatieres?.Count ?? 0)</span> affectation(s) •
-            <span style="font-weight:700;color:#17203A;">@prof.HeuresEffectuees</span> h effectuées /
-            <span style="font-weight:700;color:#17203A;">@prof.CapaciteHoraireMax</span> h max
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-2 items-center">
+            <select id="filterFiliere" class="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5C8ABF]" onchange="applyFilters()">
+                <option value="">Toutes les filières</option>
+            </select>
+            <select id="filterStatut" class="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5C8ABF]" onchange="applyFilters()">
+                <option value="">Tous les statuts</option>
+                <option value="Planifie">Planifié</option>
+                <option value="Cree">Créé</option>
+                <option value="Termine">Terminé</option>
+                <option value="Archive">Archivé</option>
+            </select>
         </div>
     </div>
 
-    <!-- Barre d'onglets -->
-    <div class="tab-bar">
-        <button class="tab-btn active" onclick="showTab('affectations')" id="tabAff">Affectations</button>
-        <button class="tab-btn" onclick="showTab('historique')" id="tabHist">Historique des cours</button>
+    <!-- Tabs -->
+    <div class="flex border-b-2 border-gray-100 gap-1">
+        <button class="tab-btn active" id="tabBtnEnCours" onclick="showTab('en_cours')">
+            <i data-lucide="play-circle" class="w-4 h-4"></i> En cours
+            <span class="tab-count" id="countEnCours">0</span>
+        </button>
+        <button class="tab-btn" id="tabBtnNonPlanifies" onclick="showTab('non_planifies')">
+            <i data-lucide="clock" class="w-4 h-4"></i> Non planifiés
+            <span class="tab-count" id="countNonPlanifies">0</span>
+        </button>
+        <button class="tab-btn" id="tabBtnTermines" onclick="showTab('termines')">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> Terminés / Archivés
+            <span class="tab-count" id="countTermines">0</span>
+        </button>
+        <button class="tab-btn" id="tabBtnHistorique" onclick="showTab('historique')">
+            <i data-lucide="history" class="w-4 h-4"></i> Historique
+            <span class="tab-count" id="countHistorique">0</span>
+        </button>
     </div>
 
-    <!-- TAB: Affectations -->
-    <div id="tabAffectations">
-        @if (prof.AffectationsMatieres?.Any() == true)
-        {
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;">
-                @foreach (var aff in prof.AffectationsMatieres.OrderBy(a => a.Matiere?.NomMatiere))
-                {
-                    var pct = aff.VolumeHoraireTotal > 0
-                        ? Math.Min(100, (int)((double)prof.HeuresEffectuees / aff.VolumeHoraireTotal * 100))
-                        : 0;
-                    <div class="affectation-card">
-                        <div class="aff-header">
-                            <div>
-                                <div class="aff-matiere">@aff.Matiere?.NomMatiere</div>
-                                <div class="aff-classe">
-                                    <i data-lucide="users" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i>
-                                    @aff.Classe?.NomClasse
-                                    &nbsp;·&nbsp;
-                                    <i data-lucide="calendar" class="h-3 w-3" style="display:inline;vertical-align:middle;"></i>
-                                    @aff.Semestre?.RefSemestre?.CodeSemestre
-                                </div>
-                            </div>
-                            <span style="background:@(aff.EstActif ? "#d1fae5" : "#fee2e2");color:@(aff.EstActif ? "#065f46" : "#991b1b");border-radius:8px;padding:3px 10px;font-size:.72rem;font-weight:700;">
-                                @(aff.EstActif ? "Actif" : "Inactif")
-                            </span>
-                        </div>
-
-                        <div class="aff-stats">
-                            <div class="aff-stat">
-                                <div class="aff-stat-val">@aff.VolumeHoraireTotal</div>
-                                <div class="aff-stat-lbl">Total (h)</div>
-                            </div>
-                            @if (aff.HeuresCm > 0)
-                            {
-                                <div class="aff-stat" style="background:#dbeafe20;">
-                                    <div class="aff-stat-val" style="color:#1e40af;">@aff.HeuresCm</div>
-                                    <div class="aff-stat-lbl">CM</div>
-                                </div>
-                            }
-                            @if (aff.HeuresTd > 0)
-                            {
-                                <div class="aff-stat" style="background:#d1fae520;">
-                                    <div class="aff-stat-val" style="color:#065f46;">@aff.HeuresTd</div>
-                                    <div class="aff-stat-lbl">TD</div>
-                                </div>
-                            }
-                            @if (aff.HeuresTp > 0)
-                            {
-                                <div class="aff-stat" style="background:#fef3c720;">
-                                    <div class="aff-stat-val" style="color:#92400e;">@aff.HeuresTp</div>
-                                    <div class="aff-stat-lbl">TP</div>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="progress-container">
-                            <div class="progress-label">
-                                <span>Progression globale</span>
-                                <span style="font-weight:700;">@pct%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width:@pct%;"></div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:.75rem;display:flex;gap:.5rem;">
-                            <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email, idMatiere = aff.IdMatiere, idClasse = aff.IdClasse })"
-                               style="display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;font-weight:600;color:#5C8ABF;text-decoration:none;padding:.3rem .7rem;border:1.5px solid #5C8ABF;border-radius:8px;transition:all .2s;"
-                               onmouseover="this.style.background='#5C8ABF';this.style.color='white'"
-                               onmouseout="this.style.background='';this.style.color='#5C8ABF'">
-                                <i data-lucide="plus" class="h-3 w-3"></i> Demander un créneau
-                            </a>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="empty-state" style="background:white;border-radius:16px;border:1px solid #f1f5f9;">
-                <i data-lucide="book-x" class="h-12 w-12" style="display:block;margin:0 auto 1rem;opacity:.4;"></i>
-                <p style="font-weight:700;color:#475569;">Aucune matière affectée</p>
-                <p style="font-size:.85rem;">L'administration n'a pas encore affecté de matières à votre profil.</p>
-            </div>
-        }
+    <!-- Loading State -->
+    <div id="loadingState" class="flex justify-center items-center py-20">
+        <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-[#5C8ABF]"></i>
+        <span class="ml-3 text-gray-500 font-semibold">Chargement...</span>
     </div>
 
-    <!-- TAB: Historique des cours -->
-    <div id="tabHistorique" style="display:none;">
-        @if (prof.Cours?.Any() == true)
-        {
-            <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-                <table class="cours-table" style="border-radius:0;">
-                    <thead>
-                        <tr>
-                            <th>Matière</th>
-                            <th>Classe</th>
-                            <th>Salle</th>
-                            <th>Type</th>
-                            <th>Créneaux</th>
-                            <th>Statut</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var c in prof.Cours.OrderBy(c => c.Matiere?.NomMatiere))
-                        {
-                            var typeBadge = c.TypeCours == "TD" ? "badge-td" : (c.TypeCours == "TP" ? "badge-tp" : (c.TypeCours == "examen" ? "badge-examen" : "badge-cm"));
-                            <tr>
-                                <td style="font-weight:600;">@c.Matiere?.NomMatiere</td>
-                                <td>@c.Classe?.NomClasse</td>
-                                <td>@(c.Salle?.NomSalle ?? "—")</td>
-                                <td><span class="badge @typeBadge">@c.TypeCours</span></td>
-                                <td>
-                                    @if (c.Creneaux?.Any() == true)
-                                    {
-                                        @foreach (var cr in c.Creneaux)
-                                        {
-                                            <span style="display:inline-block;font-size:.72rem;background:#f1f5f9;border-radius:6px;padding:2px 6px;margin:1px;">
-                                                @cr.JourSemaine @cr.HeureDebut.ToString(@"hh\:mm")-@cr.HeureFin.ToString(@"hh\:mm")
-                                            </span>
-                                        }
-                                    }
-                                    else { <span style="color:#94a3b8;">—</span> }
-                                </td>
-                                <td>
-                                    <span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:.72rem;font-weight:700;background:@(c.Statut=="planifié"?"#d1fae5":"#f1f5f9");color:@(c.Statut=="planifié"?"#065f46":"#64748b");">
-                                        @c.Statut
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="@Url.Action("NouvelleDemande", "ProfesseurDashboard", new { email, idCours = c.IdCours })"
-                                       style="font-size:.75rem;color:#5C8ABF;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:.3rem;"
-                                       onmouseover="this.style.textDecoration='underline'"
-                                       onmouseout="this.style.textDecoration='none'">
-                                        <i data-lucide="edit-2" class="h-3 w-3"></i> Modifier
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <!-- Tab Content Containers -->
+    <div id="tabEnCours" class="tab-panel hidden"></div>
+    <div id="tabNonPlanifies" class="tab-panel hidden"></div>
+    <div id="tabTermines" class="tab-panel hidden"></div>
+    <div id="tabHistorique" class="tab-panel hidden">
+        <!-- Historique: filtres avancés -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Filière</label>
+                <select id="histFilterFiliere" class="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5C8ABF]" onchange="renderHistorique()">
+                    <option value="">Toutes</option>
+                </select>
             </div>
-        }
-        else
-        {
-            <div class="empty-state" style="background:white;border-radius:16px;border:1px solid #f1f5f9;">
-                <i data-lucide="calendar-x" class="h-10 w-10" style="display:block;margin:0 auto 1rem;opacity:.4;"></i>
-                <p style="font-weight:700;color:#475569;">Aucun cours dans l'historique</p>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Type</label>
+                <select id="histFilterType" class="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5C8ABF]" onchange="renderHistorique()">
+                    <option value="">Tous</option>
+                    <option value="CM">CM</option>
+                    <option value="TD">TD</option>
+                    <option value="TP">TP</option>
+                </select>
             </div>
-        }
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase block mb-1">Recherche</label>
+                <input type="text" id="histSearch" placeholder="Matière, classe..." class="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5C8ABF]" oninput="renderHistorique()" />
+            </div>
+        </div>
+        <div id="histList"></div>
     </div>
 </div>
 
+<style>
+    .tab-btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.6rem 1.2rem; font-size: 0.85rem; font-weight: 600;
+        cursor: pointer; border: none; background: none; color: #64748b;
+        border-bottom: 3px solid transparent; margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+    .tab-btn.active { color: #17203A; border-bottom-color: #5C8ABF; }
+    .tab-count {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 1.4rem; height: 1.4rem; border-radius: 9999px;
+        font-size: 0.7rem; font-weight: 800; background: #f1f5f9; color: #64748b;
+        padding: 0 0.3rem;
+    }
+    .tab-btn.active .tab-count { background: #dbeafe; color: #1e40af; }
+    .course-card {
+        background: white; border-radius: 1rem; border: 2px solid #f1f5f9;
+        padding: 1.25rem 1.5rem; transition: border-color 0.2s, box-shadow 0.2s;
+        display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .course-card:hover { border-color: #5C8ABF; box-shadow: 0 4px 20px rgba(92,138,191,0.12); }
+    .progress-bar { height: 6px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .type-badge { display:inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+</style>
+
 @section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", () => { if (window.lucide) lucide.createIcons(); });
-        function showTab(tab) {
-            document.getElementById('tabAffectations').style.display = tab === 'affectations' ? '' : 'none';
-            document.getElementById('tabHistorique').style.display = tab === 'historique' ? '' : 'none';
-            document.getElementById('tabAff').classList.toggle('active', tab === 'affectations');
-            document.getElementById('tabHist').classList.toggle('active', tab === 'historique');
+<script>
+    const profEmail = '@Html.Raw(email)';
+    let allCours = [];
+    let filiereMap = {};
+
+    const statuses = {
+        en_cours: ['Planifie', 'EnCours'],
+        non_planifies: ['Cree', 'Brouillon', 'EnAttente'],
+        termines: ['Termine', 'Archive'],
+        historique: null // all
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.lucide) lucide.createIcons();
+        await loadData();
+    });
+
+    async function loadData() {
+        try {
+            const res = await fetch(`/api/Cours?profEmail=${encodeURIComponent(profEmail)}`);
+            if (res.ok) {
+                allCours = await res.json();
+            } else {
+                // Fall back: fetch by profId via dashboard endpoint if possible
+                const profRes = await fetch(`/api/Professeur/ByEmail?email=${encodeURIComponent(profEmail)}`);
+                
+                let profId = null;
+                if (profRes.ok) {
+                    const profData = await profRes.json();
+                    profId = profData.IdProfesseur;
+                }
+
+                if (profId) {
+                    const coursRes = await fetch(`/api/Cours?profId=${profId}`);
+                    if (coursRes.ok) allCours = await coursRes.json();
+                }
+            }
+
+            // Build filière list
+            const filieres = new Set();
+            allCours.forEach(c => {
+                if (c.FiliereNom) {
+                    filieres.add(c.FiliereNom);
+                    filiereMap[c.FiliereNom] = c.FiliereNom;
+                }
+            });
+
+            // Populate filière selectors
+            populateFiliereSelects([...filieres]);
+            
+            document.getElementById('loadingState').classList.add('hidden');
+            updateCounts();
+            showTab('en_cours');
+        } catch(e) {
+            document.getElementById('loadingState').innerHTML = `
+                <div class="text-center py-12 text-rose-600">
+                    <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                    <p class="font-semibold">Erreur de chargement: ${e.message}</p>
+                </div>`;
+            if (window.lucide) lucide.createIcons();
         }
-    </script>
+    }
+
+    function populateFiliereSelects(filieres) {
+        [document.getElementById('filterFiliere'), document.getElementById('histFilterFiliere')].forEach(sel => {
+            if (!sel) return;
+            const existingVals = [...sel.options].map(o => o.value);
+            filieres.forEach(f => {
+                if (!existingVals.includes(f)) {
+                    sel.innerHTML += `<option value="${f}">${f}</option>`;
+                }
+            });
+        });
+    }
+
+    function updateCounts() {
+        const filterFil = document.getElementById('filterFiliere').value;
+        const filterStat = document.getElementById('filterStatut').value;
+        
+        const filtered = allCours.filter(c => {
+            if (filterFil && c.FiliereNom !== filterFil) return false;
+            if (filterStat && c.Statut !== filterStat) return false;
+            return true;
+        });
+
+        document.getElementById('countEnCours').textContent = filtered.filter(c => statuses.en_cours.includes(c.Statut)).length;
+        document.getElementById('countNonPlanifies').textContent = filtered.filter(c => statuses.non_planifies.includes(c.Statut)).length;
+        document.getElementById('countTermines').textContent = filtered.filter(c => statuses.termines.includes(c.Statut)).length;
+        document.getElementById('countHistorique').textContent = filtered.length;
+    }
+
+    let currentTab = 'en_cours';
+
+    function showTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const tabIds = {
+            'en_cours': 'EnCours',
+            'non_planifies': 'NonPlanifies',
+            'termines': 'Termines',
+            'historique': 'Historique'
+        };
+
+        document.getElementById(`tabBtn${tabIds[tab]}`).classList.add('active');
+        
+        ['en_cours', 'non_planifies', 'termines', 'historique'].forEach(t => {
+            document.getElementById(`tab${tabIds[t]}`).classList.add('hidden');
+        });
+        document.getElementById(`tab${tabIds[tab]}`).classList.remove('hidden');
+        
+        if (tab === 'historique') {
+            renderHistorique();
+        } else {
+            renderTab(tab);
+        }
+    }
+
+    function capitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function applyFilters() {
+        updateCounts();
+        renderTab(currentTab);
+    }
+
+    function getFilteredCours(tabKey) {
+        const filterFil = document.getElementById('filterFiliere').value;
+        const filterStat = document.getElementById('filterStatut').value;
+        const allowedStatuts = statuses[tabKey];
+
+        return allCours.filter(c => {
+            if (allowedStatuts && !allowedStatuts.includes(c.Statut)) return false;
+            if (filterFil && c.FiliereNom !== filterFil) return false;
+            if (filterStat && c.Statut !== filterStat) return false;
+            return true;
+        });
+    }
+
+    function renderTab(tabKey) {
+        const tabIds = {
+            'en_cours': 'EnCours',
+            'non_planifies': 'NonPlanifies',
+            'termines': 'Termines',
+            'historique': 'Historique'
+        };
+        const container = document.getElementById(`tab${tabIds[tabKey]}`);
+        if (tabKey === 'historique') { renderHistorique(); return; }
+
+        const cours = getFilteredCours(tabKey);
+
+        if (cours.length === 0) {
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center text-gray-400">
+                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+                    <p class="font-bold text-gray-500">Aucun cours dans cette catégorie</p>
+                </div>`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        const grid = cours.map(c => buildCourseCard(c)).join('');
+        container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${grid}</div>`;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function buildCourseCard(c) {
+        const remainHours = Math.max(0, (c.VolumeHours || 0) - (c.RealizedHours || 0));
+        const pct = c.VolumeHours > 0 ? Math.min(100, Math.round((c.RealizedHours || 0) / c.VolumeHours * 100)) : 0;
+
+        const typeColors = { CM: 'background:#dbeafe;color:#1e40af', TD: 'background:#d1fae5;color:#065f46', TP: 'background:#fef3c7;color:#92400e' };
+        const typeStyle = typeColors[c.TypeCours] || 'background:#f1f5f9;color:#64748b';
+
+        const statColors = {
+            Planifie: 'background:#d1fae5;color:#065f46',
+            EnCours: 'background:#dbeafe;color:#1e40af',
+            Termine: 'background:#f1f5f9;color:#64748b',
+            Archive: 'background:#fef3c7;color:#92400e',
+            Cree: 'background:#fee2e2;color:#991b1b'
+        };
+        const statStyle = statColors[c.Statut] || 'background:#f1f5f9;color:#64748b';
+
+        const barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#5C8ABF' : '#f59e0b';
+
+        return `
+        <div class="course-card">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                    <div class="font-extrabold text-[#17203A] text-base truncate">${c.MatiereNom || '—'}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">${c.ClasseNom || '—'} • ${c.FiliereNom || ''}</div>
+                </div>
+                <div class="flex gap-1.5 flex-shrink-0">
+                    <span class="type-badge" style="${typeStyle}">${c.TypeCours}</span>
+                    <span class="type-badge" style="${statStyle}">${c.Statut}</span>
+                </div>
+            </div>
+
+            <div class="flex gap-4 text-center">
+                <div class="flex-1 bg-gray-50 rounded-xl p-2">
+                    <div class="text-lg font-black text-[#17203A]">${c.VolumeHours || 0}h</div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">Total</div>
+                </div>
+                <div class="flex-1 bg-emerald-50 rounded-xl p-2">
+                    <div class="text-lg font-black text-emerald-700">${c.RealizedHours || 0}h</div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">Réalisées</div>
+                </div>
+                <div class="flex-1 ${remainHours > 0 ? 'bg-amber-50' : 'bg-gray-50'} rounded-xl p-2">
+                    <div class="text-lg font-black ${remainHours > 0 ? 'text-amber-600' : 'text-gray-400'}">${remainHours}h</div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">Restantes</div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Progression</span><span class="font-bold text-[#17203A]">${pct}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:${pct}%;background:${barColor}"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-1">
+                ${remainHours > 0 ? `
+                <a href="/ProfesseurDashboard/NouvelleDemande?email=${encodeURIComponent(profEmail)}&idCours=${c.IdCours}"
+                   class="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 bg-[#17203A] text-white rounded-xl hover:bg-[#12192B] transition-colors">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Demander un créneau
+                </a>` : `
+                <span class="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 bg-gray-100 text-gray-400 rounded-xl">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Volume complété
+                </span>`}
+            </div>
+        </div>`;
+    }
+
+    function renderHistorique() {
+        const filterFil = document.getElementById('histFilterFiliere').value;
+        const filterType = document.getElementById('histFilterType').value;
+        const search = (document.getElementById('histSearch').value || '').toLowerCase();
+        
+        let cours = [...allCours];
+        if (filterFil) cours = cours.filter(c => c.FiliereNom === filterFil);
+        if (filterType) cours = cours.filter(c => c.TypeCours === filterType);
+        if (search) cours = cours.filter(c =>
+            (c.MatiereNom || '').toLowerCase().includes(search) ||
+            (c.ClasseNom || '').toLowerCase().includes(search) ||
+            (c.FiliereNom || '').toLowerCase().includes(search)
+        );
+
+        cours.sort((a, b) => (a.MatiereNom || '').localeCompare(b.MatiereNom || ''));
+
+        const container = document.getElementById('histList');
+        if (cours.length === 0) {
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
+                    <i data-lucide="search" class="w-10 h-10 mx-auto mb-3 opacity-30"></i>
+                    <p class="font-bold text-gray-500">Aucun cours trouvé</p>
+                </div>`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        container.innerHTML = `
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-[#17203A] text-white text-xs uppercase">
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Matière</th>
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Classe</th>
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Filière</th>
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Type</th>
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Volume</th>
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Réalisé</th>
+                        <th class="px-5 py-3 text-left font-bold tracking-wider">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    ${cours.map(c => {
+                        const typeStyle = {CM:'#dbeafe;color:#1e40af', TD:'#d1fae5;color:#065f46', TP:'#fef3c7;color:#92400e'}[c.TypeCours] || '#f1f5f9;color:#64748b';
+                        return `
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-5 py-3 font-bold text-[#17203A]">${c.MatiereNom || '—'}</td>
+                            <td class="px-5 py-3 text-gray-600">${c.ClasseNom || '—'}</td>
+                            <td class="px-5 py-3 text-gray-500 text-xs">${c.FiliereNom || '—'}</td>
+                            <td class="px-5 py-3"><span class="type-badge" style="background:${typeStyle}">${c.TypeCours}</span></td>
+                            <td class="px-5 py-3 font-semibold">${c.VolumeHours || 0}h</td>
+                            <td class="px-5 py-3 text-emerald-600 font-bold">${c.RealizedHours || 0}h</td>
+                            <td class="px-5 py-3"><span class="type-badge bg-gray-100 text-gray-600">${c.Statut || '—'}</span></td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>`;
+        if (window.lucide) lucide.createIcons();
+    }
+</script>
 }

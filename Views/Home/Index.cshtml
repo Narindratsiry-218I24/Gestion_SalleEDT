@@ -2,141 +2,147 @@
     ViewData["Title"] = "Accueil";
 }
 
-<div class="flex min-h-screen flex-col bg-[#17203A] text-white selection:bg-[#73A5D4]/30">
-    <header class="sticky top-0 z-50 border-b border-white/5 bg-[#17203A]/90 backdrop-blur">
+<div class="relative min-h-screen overflow-hidden bg-[#17203A] text-white selection:bg-[#73A5D4]/30">
+    <header class="sticky top-0 z-50 border-b border-white/10 bg-[#17203A]/95 backdrop-blur-lg">
         <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
             <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3 no-underline">
-                <div class="flex h-12 w-28 items-center justify-center rounded-xl bg-white p-2 shadow-md shadow-[#17203A]/25">
+                <div class="flex h-12 w-28 items-center justify-center rounded-2xl bg-white p-2 shadow-lg shadow-[#0f172a]/20">
                     <img src="~/images/emit-logo.png" asp-append-version="true" alt="EMIT" class="max-h-full max-w-full object-contain" />
                 </div>
-                <p class="m-0 text-[10px] font-semibold uppercase tracking-widest text-[#73A5D4]">Portail Universitaire</p>
+                <div class="space-y-1 text-sm">
+                    <p class="m-0 font-semibold uppercase tracking-[0.45em] text-[#73A5D4]">Portail</p>
+                    <p class="m-0 text-xs text-gray-300">EMIT Gestion EDT</p>
+                </div>
             </a>
-
-            <a asp-controller="Home" asp-action="Connexion" class="group flex items-center gap-2 rounded-xl bg-[#73A5D4] px-6 py-2.5 text-sm font-bold text-white no-underline shadow-md shadow-[#73A5D4]/20 transition hover:bg-[#5C8ABF] hover:shadow-lg">
-                Accéder au Portail <i data-lucide="arrow-right" class="h-4 w-4 transition group-hover:translate-x-1"></i>
-            </a>
+            <div class="flex items-center gap-3">
+                <a asp-controller="Home" asp-action="Planification" class="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-[#73A5D4]/40 hover:bg-white/15">Planification</a>
+                <a asp-controller="Home" asp-action="Connexion" class="group inline-flex items-center gap-2 rounded-full bg-[#73A5D4] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#73A5D4]/25 transition hover:bg-[#5C8ABF] button-hero">Connexion <i data-lucide="arrow-right" class="h-4 w-4 transition group-hover:translate-x-1"></i></a>
+            </div>
         </div>
     </header>
 
-    <section class="relative flex flex-1 flex-col justify-center overflow-hidden py-24 md:py-32">
-        <div class="absolute left-[8%] top-1/4 -z-0 h-96 w-96 rounded-full bg-[#73A5D4]/10 blur-3xl"></div>
-        <div class="absolute bottom-10 right-10 -z-0 h-[450px] w-[450px] rounded-full bg-[#73A5D4]/5 blur-3xl"></div>
+    <main>
+        <section class="relative overflow-hidden py-24 sm:py-32">
+            <div class="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[#73A5D4]/20 blur-3xl" data-parallax-speed="0.16"></div>
+            <div class="pointer-events-none absolute right-0 top-14 h-64 w-64 rounded-full bg-[#5C8ABF]/20 blur-3xl" data-parallax-speed="0.08"></div>
+            <div class="pointer-events-none absolute bottom-0 left-10 h-72 w-72 rounded-full bg-[#73A5D4]/10 blur-3xl" data-parallax-speed="0.12"></div>
 
-        <div class="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 lg:grid-cols-12">
-            <div class="space-y-8 text-center lg:col-span-7 lg:text-left">
-                <h1 class="text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
-                    Planification Intelligente et <span class="text-[#73A5D4]">Gestion des Salles</span>
-                </h1>
-                <p class="mx-auto max-w-2xl text-lg leading-relaxed text-gray-300 md:text-xl lg:mx-0">
-                    Formation d'excellence en management et innovation technologique. Rejoignez notre communauté de leaders et innovateurs.
-                </p>
+            <div class="mx-auto max-w-7xl px-6">
+                <div class="grid gap-10 lg:grid-cols-12 lg:items-center">
+                    <div class="lg:col-span-7">
+                        <div class="space-y-6">
+                            <p class="text-sm font-semibold uppercase tracking-[0.4em] text-[#73A5D4] scroll-appear">Assistant de Planification</p>
+                            <h1 class="scroll-appear text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">Gestion intelligente des emplois du temps, <span class="text-[#73A5D4]">simplifiée</span>.</h1>
+                            <p class="scroll-appear max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">Planifiez vos cours, gérez les salles et suivez les conflits depuis une interface moderne qui met l'expérience admin au cœur de l'établissement.</p>
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                <a asp-controller="Home" asp-action="Planification" class="button-hero inline-flex items-center justify-center rounded-full bg-[#73A5D4] px-8 py-4 text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#5C8ABF]">Commencer la planification</a>
+                                <a href="#features" class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/15">Voir les fonctionnalités</a>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-3 text-sm text-slate-300">
+                                <div class="flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-green-400"></i> Réservations fluides</div>
+                                <div class="flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-[#73A5D4]"></i> Analyse rapide</div>
+                                <div class="flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-blue-300"></i> Interface responsive</div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
-                    <a asp-controller="Home" asp-action="Connexion" class="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#73A5D4] px-8 py-4 text-base font-bold text-white no-underline shadow-lg shadow-[#73A5D4]/25 transition hover:-translate-y-0.5 hover:bg-[#5C8ABF] sm:w-auto">
-                        Se connecter <i data-lucide="arrow-right" class="h-[18px] w-[18px] transition group-hover:translate-x-1"></i>
-                    </a>
-                    <a href="#features" class="w-full rounded-xl border border-white/20 px-8 py-4 text-center text-base font-bold text-white no-underline transition hover:bg-white/5 sm:w-auto">
-                        Nos formations
-                    </a>
-                </div>
-
-                <div class="flex flex-wrap justify-center gap-6 pt-6 text-sm font-medium text-[#73A5D4] lg:justify-start">
-                    <div class="flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-green-400"></i> Sans Conflits</div>
-                    <div class="flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-[#73A5D4]"></i> Approbation Rapide</div>
-                    <div class="flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-blue-400"></i> Sécurisé</div>
-                </div>
-            </div>
-
-            <div class="relative flex justify-center lg:col-span-5">
-                <div class="relative flex aspect-square w-full max-w-[420px] items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-[#1E293B] p-8 shadow-2xl shadow-black/50 transition duration-500 hover:scale-105">
-                    <svg viewBox="0 0 400 400" class="h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <rect x="30" y="30" width="340" height="340" rx="24" fill="#17203A" />
-                        <path d="M30 120H370M30 210H370M30 300H370M110 30V370M210 30V370M310 30V370" stroke="#73A5D4" stroke-width="1" stroke-dasharray="4 4" stroke-opacity="0.12" />
-                        <rect x="50" y="60" width="110" height="110" rx="16" fill="#1E293B" stroke="#73A5D4" stroke-width="2" />
-                        <path d="M95 140V90H115V140" stroke="#73A5D4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                        <circle cx="110" cy="115" r="3" fill="#73A5D4" />
-                        <text x="75" y="80" fill="#ffffff" font-size="10" font-weight="700" font-family="sans-serif">SALLE A101</text>
-                        <rect x="180" y="90" width="170" height="110" rx="16" fill="#1E293B" stroke="#73A5D4" stroke-width="2" />
-                        <rect x="180" y="90" width="170" height="30" rx="16" fill="#73A5D4" />
-                        <rect x="180" y="105" width="170" height="15" fill="#73A5D4" />
-                        <circle cx="210" cy="105" r="3" fill="#ffffff" /><circle cx="230" cy="105" r="3" fill="#ffffff" /><circle cx="250" cy="105" r="3" fill="#ffffff" />
-                        <rect x="200" y="140" width="80" height="10" rx="3" fill="#73A5D4" /><rect x="200" y="160" width="110" height="10" rx="3" fill="#334155" />
-                        <rect x="60" y="240" width="220" height="90" rx="16" fill="#1E293B" stroke="#73A5D4" stroke-width="2" />
-                        <text x="80" y="265" fill="#ffffff" font-size="10" font-weight="700" font-family="sans-serif">DEMANDE DE RÉSERVATION</text>
-                        <text x="80" y="282" fill="#94A3B8" font-size="9" font-family="sans-serif">L3 GL - Algorithmique - 08h-10h</text>
-                        <rect x="80" y="298" width="60" height="18" rx="9" fill="#22c55e" fill-opacity="0.2" />
-                        <text x="92" y="310" fill="#4ADE80" font-size="8" font-weight="700" font-family="sans-serif">APPROUVÉ</text>
-                        <path d="M340 50L348 58L340 66L332 58Z" fill="#73A5D4" /><path d="M40 200L45 205L40 210L35 205Z" fill="#73A5D4" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="features" class="border-t border-white/5 bg-[#12192B] py-24">
-        <div class="mx-auto max-w-7xl px-6">
-            <div class="mx-auto mb-16 max-w-2xl space-y-4 text-center">
-                <h2 class="text-xs font-bold uppercase tracking-widest text-[#73A5D4]">Une Gestion Optimisée</h2>
-                <p class="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Fonctionnalités Clés du Portail</p>
-            </div>
-
-            <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
-                <article class="group rounded-2xl border border-white/5 bg-[#17203A] p-8 transition hover:border-[#73A5D4]/50 hover:shadow-lg hover:shadow-[#73A5D4]/10">
-                    <div class="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[#73A5D4]/10 transition group-hover:scale-110 group-hover:bg-[#73A5D4]/20"><i data-lucide="door-open" class="h-6 w-6 text-[#73A5D4]"></i></div>
-                    <h3 class="mb-3 text-lg font-bold text-white">Disponibilité des Salles</h3>
-                    <p class="text-sm leading-relaxed text-gray-400">Suivez en temps réel le taux d'occupation de toutes les salles de cours, laboratoires d'informatique et amphithéâtres.</p>
-                </article>
-                <article class="group rounded-2xl border border-white/5 bg-[#17203A] p-8 transition hover:border-[#73A5D4]/50 hover:shadow-lg hover:shadow-[#73A5D4]/10">
-                    <div class="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[#73A5D4]/10 transition group-hover:scale-110 group-hover:bg-[#73A5D4]/20"><i data-lucide="calendar" class="h-6 w-6 text-[#73A5D4]"></i></div>
-                    <h3 class="mb-3 text-lg font-bold text-white">Emploi du Temps Interactif</h3>
-                    <p class="text-sm leading-relaxed text-gray-400">Visualisez et modifiez les créneaux horaires de chaque mention et niveau grâce à une grille d'affichage dynamique et claire.</p>
-                </article>
-                <article class="group rounded-2xl border border-white/5 bg-[#17203A] p-8 transition hover:border-[#73A5D4]/50 hover:shadow-lg hover:shadow-[#73A5D4]/10">
-                    <div class="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-[#73A5D4]/10 transition group-hover:scale-110 group-hover:bg-[#73A5D4]/20"><i data-lucide="shield-check" class="h-6 w-6 text-[#73A5D4]"></i></div>
-                    <h3 class="mb-3 text-lg font-bold text-white">Validation des Requêtes</h3>
-                    <p class="text-sm leading-relaxed text-gray-400">Les enseignants soumettent des demandes de modification d'horaire. Le Chef de Mention valide ou rejette en un clic sans conflit.</p>
-                </article>
-            </div>
-        </div>
-    </section>
-
-    <footer class="border-t border-white/10 bg-[#12192B] pb-8 pt-16 text-white">
-        <div class="mx-auto mb-16 grid max-w-7xl grid-cols-1 gap-12 px-6 md:grid-cols-4">
-            <div>
-                <h3 class="mb-6 text-lg font-bold">Navigation</h3>
-                <ul class="space-y-4 text-gray-400">
-                    <li><a href="#features" class="text-gray-400 no-underline transition hover:text-[#73A5D4]">Formations</a></li>
-                    <li><a href="#features" class="text-gray-400 no-underline transition hover:text-[#73A5D4]">Projets</a></li>
-                    <li><a href="#features" class="text-gray-400 no-underline transition hover:text-[#73A5D4]">Recherche</a></li>
-                    <li><a href="#features" class="text-gray-400 no-underline transition hover:text-[#73A5D4]">Partenaires</a></li>
-                </ul>
-            </div>
-            <div>
-                <h3 class="mb-6 text-lg font-bold">Contact</h3>
-                <ul class="space-y-6 text-gray-400">
-                    <li class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white"><i data-lucide="mail" class="h-[18px] w-[18px]"></i></span>renseignement@emit.mg</li>
-                    <li class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white"><i data-lucide="phone" class="h-[18px] w-[18px]"></i></span>+261 33 70 470 00</li>
-                    <li class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white"><i data-lucide="map-pin" class="h-[18px] w-[18px]"></i></span>Fianarantsoa, Madagascar</li>
-                </ul>
-            </div>
-            <div>
-                <h3 class="mb-6 text-lg font-bold">Rejoignez-nous</h3>
-                <p class="mb-6 leading-relaxed text-gray-400">Découvrez nos formations et commencez votre parcours vers l'excellence.</p>
-                <a href="#features" class="inline-flex rounded-xl bg-[#73A5D4] px-6 py-2.5 text-sm font-bold text-white no-underline shadow-md transition hover:bg-[#5C8ABF]">Nos formations</a>
-            </div>
-            <div>
-                <h3 class="mb-6 text-lg font-bold">Réseaux sociaux</h3>
-                <div class="flex items-center gap-3">
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-sm font-bold text-white no-underline transition hover:bg-[#73A5D4]">Fb</a>
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-sm font-bold text-white no-underline transition hover:bg-[#73A5D4]">Ig</a>
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-sm font-bold text-white no-underline transition hover:bg-[#73A5D4]">In</a>
-                    <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-sm font-bold text-white no-underline transition hover:bg-[#73A5D4]">X</a>
+                    <div class="lg:col-span-5">
+                        <div class="relative overflow-hidden rounded-[40px] border border-white/10 bg-[#0f172a]/90 p-8 shadow-2xl shadow-slate-950/40 scroll-appear">
+                            <div class="absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-[#73A5D4]/15 to-transparent blur-3xl"></div>
+                            <div class="absolute right-6 top-10 h-10 w-10 rounded-full bg-[#73A5D4]/30 blur-2xl"></div>
+                            <div class="relative z-10 grid gap-6">
+                                <div class="rounded-[32px] border border-white/5 bg-[#11203b]/90 p-6 shadow-inner shadow-slate-900/20">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Planning</p>
+                                            <p class="mt-3 text-xl font-black text-white">A101 disponible</p>
+                                        </div>
+                                        <span class="rounded-full bg-[#73A5D4]/15 px-3 py-1 text-xs font-semibold text-[#cbe7ff]">75% occupé</span>
+                                    </div>
+                                </div>
+                                <div class="rounded-[32px] border border-white/5 bg-[#0f172a]/90 p-6 shadow-inner shadow-slate-900/20">
+                                    <p class="text-xs uppercase tracking-[0.35em] text-slate-400">Salles</p>
+                                    <p class="mt-3 text-xl font-black text-white">18 salles optimisées</p>
+                                    <p class="mt-2 text-sm text-slate-400">Sélection automatique de la meilleure salle selon la capacité et la localisation.</p>
+                                </div>
+                            </div>
+                            <div class="animate-float absolute -bottom-6 left-1/2 w-[320px] -translate-x-1/2 rounded-3xl bg-[#173358]/95 p-4 shadow-2xl shadow-slate-950/20">
+                                <div class="grid grid-cols-3 gap-4 text-center text-white">
+                                    <div><span class="block text-2xl font-black">24</span><span class="text-xs text-slate-400">Professeurs</span></div>
+                                    <div><span class="block text-2xl font-black">3</span><span class="text-xs text-slate-400">Conflits</span></div>
+                                    <div><span class="block text-2xl font-black">12</span><span class="text-xs text-slate-400">Cours</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="mx-auto mb-8 flex max-w-7xl items-center justify-center px-6">
-            <div class="h-px flex-1 bg-white/10"></div><div class="h-3 w-3 rounded-full bg-[#73A5D4]"></div><div class="h-px flex-1 bg-white/10"></div>
-        </div>
-        <div class="mx-auto max-w-7xl px-6 text-sm text-gray-500">&copy; @DateTime.Now.Year École de Management et d'Innovation Technologique</div>
-    </footer>
+        </section>
+
+        <section id="features" class="border-t border-white/10 bg-[#12192B] py-24">
+            <div class="mx-auto max-w-7xl px-6">
+                <div class="mx-auto mb-16 max-w-2xl space-y-4 text-center">
+                    <h2 class="text-xs font-bold uppercase tracking-[0.4em] text-[#73A5D4]">Une Gestion Optimisée</h2>
+                    <p class="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Fonctionnalités clés du portail</p>
+                </div>
+                <div class="grid gap-8 md:grid-cols-3">
+                    <article class="rounded-[32px] border border-white/10 bg-[#17203A] p-8 shadow-sm transition hover:-translate-y-1 hover:border-[#73A5D4]/40 hover:shadow-lg">
+                        <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#73A5D4]/15 text-[#73A5D4]"><i data-lucide="door-open" class="h-6 w-6"></i></div>
+                        <h3 class="mb-3 text-lg font-bold text-white">Disponibilité des salles</h3>
+                        <p class="text-sm leading-relaxed text-slate-400">Suivez en temps réel l’occupation de chaque salle et sécurisez vos créneaux.</p>
+                    </article>
+                    <article class="rounded-[32px] border border-white/10 bg-[#17203A] p-8 shadow-sm transition hover:-translate-y-1 hover:border-[#73A5D4]/40 hover:shadow-lg">
+                        <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#73A5D4]/15 text-[#73A5D4]"><i data-lucide="calendar" class="h-6 w-6"></i></div>
+                        <h3 class="mb-3 text-lg font-bold text-white">Emploi du temps interactif</h3>
+                        <p class="text-sm leading-relaxed text-slate-400">Visualisation et modification des créneaux en quelques clics.</p>
+                    </article>
+                    <article class="rounded-[32px] border border-white/10 bg-[#17203A] p-8 shadow-sm transition hover:-translate-y-1 hover:border-[#73A5D4]/40 hover:shadow-lg">
+                        <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#73A5D4]/15 text-[#73A5D4]"><i data-lucide="shield-check" class="h-6 w-6"></i></div>
+                        <h3 class="mb-3 text-lg font-bold text-white">Validation centralisée</h3>
+                        <p class="text-sm leading-relaxed text-slate-400">Validez ou rejetez les demandes en tenant compte des conflits horaires.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <footer class="border-t border-white/15 bg-[#12192B] pb-8 pt-16 text-white">
+            <div class="mx-auto mb-16 grid max-w-7xl grid-cols-1 gap-12 px-6 md:grid-cols-4">
+                <div>
+                    <h3 class="mb-6 text-lg font-bold">Navigation</h3>
+                    <ul class="space-y-4 text-gray-400">
+                        <li><a href="#features" class="text-gray-400 hover:text-[#73A5D4]">Formations</a></li>
+                        <li><a href="#features" class="text-gray-400 hover:text-[#73A5D4]">Projets</a></li>
+                        <li><a href="#features" class="text-gray-400 hover:text-[#73A5D4]">Recherche</a></li>
+                        <li><a href="#features" class="text-gray-400 hover:text-[#73A5D4]">Partenaires</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="mb-6 text-lg font-bold">Contact</h3>
+                    <ul class="space-y-6 text-gray-400">
+                        <li class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white"><i data-lucide="mail" class="h-[18px] w-[18px]"></i></span>renseignement@emit.mg</li>
+                        <li class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white"><i data-lucide="phone" class="h-[18px] w-[18px]"></i></span>+261 33 70 470 00</li>
+                        <li class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white"><i data-lucide="map-pin" class="h-[18px] w-[18px]"></i></span>Fianarantsoa, Madagascar</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="mb-6 text-lg font-bold">Rejoignez-nous</h3>
+                    <p class="mb-6 leading-relaxed text-gray-400">Découvrez nos formations et commencez votre parcours vers l'excellence.</p>
+                    <a href="#features" class="inline-flex rounded-full bg-[#73A5D4] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#5C8ABF]">Nos formations</a>
+                </div>
+                <div>
+                    <h3 class="mb-6 text-lg font-bold">Réseaux sociaux</h3>
+                    <div class="flex items-center gap-3">
+                        <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-[#73A5D4]">Fb</a>
+                        <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-[#73A5D4]">Ig</a>
+                        <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-[#73A5D4]">In</a>
+                        <a href="#" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-[#73A5D4]">X</a>
+                    </div>
+                </div>
+            </div>
+            <div class="mx-auto mb-8 flex max-w-7xl items-center justify-center px-6">
+                <div class="h-px flex-1 bg-white/10"></div><div class="h-3 w-3 rounded-full bg-[#73A5D4]"></div><div class="h-px flex-1 bg-white/10"></div>
+            </div>
+            <div class="mx-auto max-w-7xl px-6 text-sm text-gray-500">&copy; @DateTime.Now.Year École de Management et d'Innovation Technologique</div>
+        </footer>
+    </main>
 </div>

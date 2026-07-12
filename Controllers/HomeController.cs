@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Gestion_SalleClasseEDT.Models;
 using Gestion_SalleClasseEDT.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Gestion_SalleClasseEDT.Services;
 
 namespace Gestion_SalleClasseEDT.Controllers;
 
@@ -10,11 +11,13 @@ public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly EMITDbContext _context;
+    private readonly IPlanningService _planningService;
 
-    public HomeController(ILogger<HomeController> logger, EMITDbContext context)
+    public HomeController(ILogger<HomeController> logger, EMITDbContext context, IPlanningService planningService)
     {
         _logger = logger;
         _context = context;
+        _planningService = planningService;
     }
 
     public IActionResult Index()
@@ -32,6 +35,11 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Classes()
+    {
+        return View();
+    }
+
     public IActionResult Connexion()
     {
         return View();
@@ -40,6 +48,17 @@ public class HomeController : Controller
     public IActionResult Inscription()
     {
         return View();
+    }
+
+    public IActionResult Planification([FromQuery] int? courseId)
+    {
+        return RedirectToAction("Index", "Planification", new { courseId });
+    }
+
+    [HttpGet]
+    public IActionResult PlanificationSelection(int? anneeId)
+    {
+        return RedirectToAction("Index", "Planification", new { anneeId });
     }
 
     public IActionResult Parametres()
@@ -157,7 +176,8 @@ public class HomeController : Controller
     public async Task<IActionResult> GetCoursByFilters(
         string? mention = null,
         string? niveau = null,
-        string? parcours = null)
+        string? parcours = null,
+        int? anneeId = null)
     {
         // API endpoint pour récupérer les cours filtrés (utilisé par AJAX)
         var query = _context.Cours
@@ -190,6 +210,11 @@ public class HomeController : Controller
         if (!string.IsNullOrEmpty(parcours))
         {
             query = query.Where(c => c.Matiere.Filiere.CodeFiliere == parcours);
+        }
+
+        if (anneeId.HasValue)
+        {
+            query = query.Where(c => c.Classe != null && c.Classe.IdAnneeAcademique == anneeId.Value);
         }
 
         var result = await query
@@ -290,102 +315,21 @@ public class HomeController : Controller
     {
         try
         {
-            var cours = await _context.Cours
-                .Include(c => c.Seances)
-                .FirstOrDefaultAsync(c => c.IdCours == id);
-
-            if (cours == null)
-                return NotFound(new { Message = "Cours non trouvé" });
-
-            // Vérifier les conflits
-            var conflit = await VerifierConflits(request, cours);
-            if (conflit != null)
-                return BadRequest(new { Message = conflit });
-
-            // Créer la séance
-            var seance = new Seance
-            {
-                IdCours = id,
-                Date = request.Date,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
-                IdSalle = request.SalleId,
-                GroupeId = request.GroupeId,
-                Statut = "Planifiee"
-            };
-
-            _context.Seances.Add(seance);
-            
-            // Mettre à jour le statut du cours si nécessaire
-            if (cours.Statut == "Cree" || cours.Statut == "EnAttente")
-            {
-                cours.Statut = "Planifie";
-            }
-
-            await _context.SaveChangesAsync();
-
+            var utcDate = DateTime.SpecifyKind(request.Date, DateTimeKind.Utc);
+            var seance = await _planningService.PlanifierSeanceAsync(id, utcDate, request.StartTime, request.EndTime, request.SalleId, request.GroupeId);
             return Ok(new { 
                 Message = "Séance planifiée avec succès",
                 SeanceId = seance.IdSeance
             });
         }
+        catch (PlanningException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
         catch (Exception ex)
         {
             return StatusCode(500, new { Message = $"Erreur lors de la planification: {ex.Message}" });
         }
-    }
-
-    private async Task<string?> VerifierConflits(PlanificationRequest request, Cours cours)
-    {
-        // Vérifier conflit professeur
-        if (request.ProfesseurId.HasValue)
-        {
-            var conflitProf = await _context.Seances
-                .Where(s => s.IdCours != cours.IdCours && 
-                       s.Date == request.Date &&
-                       s.StartTime < request.EndTime &&
-                       s.EndTime > request.StartTime &&
-                       s.Cours.IdProfesseur == request.ProfesseurId)
-                .Select(s => s.Cours.Matiere.NomMatiere)
-                .FirstOrDefaultAsync();
-
-            if (conflitProf != null)
-                return $"Le professeur est déjà occupé avec {conflitProf} à ce créneau.";
-        }
-
-        // Vérifier conflit salle
-        if (request.SalleId.HasValue)
-        {
-            var conflitSalle = await _context.Seances
-                .Where(s => s.IdCours != cours.IdCours && 
-                       s.Date == request.Date &&
-                       s.StartTime < request.EndTime &&
-                       s.EndTime > request.StartTime &&
-                       s.IdSalle == request.SalleId)
-                .Select(s => s.Cours.Matiere.NomMatiere)
-                .FirstOrDefaultAsync();
-
-            if (conflitSalle != null)
-                return $"La salle est déjà occupée avec {conflitSalle} à ce créneau.";
-        }
-
-        // Vérifier conflit classe
-        if (cours.IdClasse.HasValue)
-        {
-            var conflitClasse = await _context.Seances
-                .Where(s => s.IdCours != cours.IdCours && 
-                       s.Date == request.Date &&
-                       s.StartTime < request.EndTime &&
-                       s.EndTime > request.StartTime &&
-                       s.Cours.IdClasse == cours.IdClasse)
-                .Select(s => s.Cours.Matiere.NomMatiere)
-                .FirstOrDefaultAsync();
-
-            if (conflitClasse != null)
-                return $"La classe est déjà occupée avec {conflitClasse} à ce créneau.";
-        }
-
-        return null;
     }
 
     private string? GetNiveauCode(string niveauName)

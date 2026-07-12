@@ -1,115 +1,275 @@
 @model Gestion_SalleClasseEDT.Controllers.ProfesseurDashboardViewModel
 @{
-    ViewData["Title"] = "Nouvelle Demande";
+    ViewData["Title"] = "Portail des Requêtes";
     var email = Context.Request.Query["email"].ToString();
     var prof = Model.Professeur;
+    
+    var affectations = prof.AffectationsMatieres?.ToList() ?? new List<Gestion_SalleClasseEDT.Models.AffectationMatiere>();
+    var heuresPlanifiees = ViewBag.HeuresPlanifiees as System.Collections.Generic.Dictionary<string, int> ?? new System.Collections.Generic.Dictionary<string, int>();
 }
 
-<div class="prof-dash">
-    <div class="section-header">
-        <h2 class="section-title-h2">Formuler une nouvelle demande</h2>
-        <a href="@Url.Action("MesDemandes", "ProfesseurDashboard", new { email })" class="btn btn-secondary" style="background:#f1f5f9; color:#475569; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; text-decoration: none;">
-            Retour aux demandes
-        </a>
+<div class="space-y-8 animate-in fade-in duration-500">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail des Requêtes</h1>
+            <p class="text-gray-500 mt-1">Gérez et suivez vos modifications d'emploi du temps ou réservations de salles.</p>
+        </div>
     </div>
 
     @if (TempData["Error"] != null)
     {
-        <div style="background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
+        <div class="bg-red-50 text-red-700 p-4 rounded-xl font-bold border border-red-100">
             @TempData["Error"]
         </div>
     }
 
-    <div class="card-base" style="max-width: 800px; margin: 0 auto;">
-        <form method="post" action="@Url.Action("SoumettreDemande", "ProfesseurDashboard", new { email = email })">
-            @Html.AntiForgeryToken()
-            
-            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div class="lg:col-span-8">
+            <form method="post" action="@Url.Action("SoumettreDemande", "ProfesseurDashboard", new { email = email })" class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="typeDemande" value="proposition_creneau" />
                 
-                <!-- Type de Demande -->
-                <div>
-                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Type de Demande</label>
-                    <select name="typeDemande" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
-                        <option value="modification">Modification de créneau</option>
-                        <option value="annulation">Annulation de cours</option>
-                        <option value="ajout">Ajout de créneau supplémentaire</option>
-                    </select>
-                </div>
-
-                <!-- Matière -->
-                <div>
-                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Matière (Optionnel si général)</label>
-                    <select name="idMatiere" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
-                        <option value="">-- Sélectionnez une matière --</option>
-                        @if (Model.Matieres != null)
+                <h2 class="text-xl font-bold mb-6 text-[#17203A]">Proposer un Créneau</h2>
+                
+                <div class="mb-6">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Cours (Matière & Classe)</label>
+                    <select id="affectationSelect" class="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" required onchange="updateHiddenFields()">
+                        <option value="">Sélectionnez un cours assigné...</option>
+                        @foreach (var aff in affectations)
                         {
-                            foreach (var mat in Model.Matieres)
-                            {
-                                <option value="@mat.IdMatiere">@mat.NomMatiere</option>
-                            }
+                            var key = $"{aff.IdMatiere}|{aff.IdClasse}";
+                            int planifiees = heuresPlanifiees.ContainsKey(key) ? heuresPlanifiees[key] : 0;
+                            <option value="@key" data-total="@aff.VolumeHoraireTotal" data-planifie="@planifiees">
+                                @aff.Matiere?.NomMatiere - @aff.Classe?.NomClasse
+                            </option>
                         }
                     </select>
+                    <div id="heuresInfo" class="mt-2 text-sm text-[#17203A] font-semibold hidden">
+                        Volume total : <span id="lblTotal" class="text-blue-600">0h</span> | 
+                        Déjà planifié : <span id="lblPlanifie" class="text-orange-500">0h</span> | 
+                        Reste à planifier : <span id="lblRestant" class="text-green-600 font-bold">0h</span>
+                    </div>
+                    <input type="hidden" name="idMatiere" id="idMatiereInput" />
+                    <input type="hidden" name="idClasse" id="idClasseInput" />
                 </div>
 
-                <!-- Classe -->
-                <div>
-                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Classe (Optionnel)</label>
-                    <select name="idClasse" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
-                        <option value="">-- Sélectionnez une classe --</option>
-                        @if (Model.Classes != null)
-                        {
-                            foreach (var classe in Model.Classes)
-                            {
-                                <option value="@classe.IdClasse">@classe.NomClasse</option>
-                            }
-                        }
-                    </select>
-                </div>
-
-                <!-- Salle -->
-                <div>
-                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Salle Souhaitée (Optionnel)</label>
-                    <select name="idSalle" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;">
-                        <option value="">-- Indifférent / Laissez l'administration choisir --</option>
-                        @if (Model.Salles != null)
-                        {
-                            foreach (var salle in Model.Salles)
-                            {
-                                <option value="@salle.IdSalle">@salle.NomSalle (Capacité: @salle.Capacite)</option>
-                            }
-                        }
-                    </select>
-                </div>
-
-                <!-- Date Souhaitée -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div>
-                        <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Date Souhaitée</label>
-                        <input type="date" name="dateSouhaitee" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;" />
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Date souhaitée</label>
+                        <!-- Date input min = today -->
+                        <input 
+                            type="date" 
+                            name="dateSouhaitee" 
+                            id="dateSouhaitee"
+                            min="@DateTime.Now.ToString("yyyy-MM-dd")"
+                            class="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                            required 
+                            onchange="validateDate(this)"
+                        />
+                        <p id="dateError" class="text-red-500 text-xs mt-1 hidden">Le dimanche n'est pas autorisé.</p>
                     </div>
                     <div>
-                        <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Heure de début</label>
-                        <input type="time" name="heureDebut" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;" />
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Heure Début</label>
+                        <select name="heureDebut" id="heureDebut" class="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" required onchange="validateHeures()">
+                            @for (int h = 7; h <= 17; h++)
+                            {
+                                <option value="@h.ToString("00"):00">@h.ToString("00"):00</option>
+                            }
+                        </select>
                     </div>
                     <div>
-                        <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Heure de fin</label>
-                        <input type="time" name="heureFin" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;" />
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Heure Fin</label>
+                        <select name="heureFin" id="heureFin" class="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" required onchange="validateHeures()">
+                            @for (int h = 8; h <= 18; h++)
+                            {
+                                <option value="@h.ToString("00"):00">@h.ToString("00"):00</option>
+                            }
+                        </select>
+                        <p id="heureError" class="text-red-500 text-xs mt-1 hidden">L'heure de fin doit être supérieure à l'heure de début.</p>
                     </div>
                 </div>
 
-                <!-- Justification -->
-                <div>
-                    <label style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Justification / Commentaire</label>
-                    <textarea name="justification" rows="4" required placeholder="Expliquez la raison de votre demande..." style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; outline: none;"></textarea>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Type de cours</label>
+                        <select name="typeCours" class="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" required>
+                            <option value="Cours">Cours</option>
+                            <option value="Examen">Examen</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Salle (Optionnel)</label>
+                        <select 
+                            name="idSalle" 
+                            class="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                        >
+                            <option value="">Peu importe / À définir...</option>
+                            @foreach (var s in Model.Salles)
+                            {
+                                <option value="@s.IdSalle">@s.NomSalle (Capacité: @s.Capacite)</option>
+                            }
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Bouton -->
-                <div style="text-align: right; margin-top: 1rem;">
-                    <button type="submit" style="background: #17203A; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 700; border: none; cursor: pointer;">
-                        Soumettre la demande
+                <div class="mb-6">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Remarque / Justification</label>
+                    <textarea 
+                        name="justification" 
+                        class="w-full rounded-xl border border-gray-200 p-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                        rows="3"
+                        placeholder="Informations additionnelles pour la proposition..."
+                    ></textarea>
+                </div>
+
+                <div class="mt-8">
+                    <button type="submit" id="submitBtn" class="w-full bg-[#17203A] hover:bg-[#12192B] text-white font-bold h-14 rounded-xl transition-colors border-none cursor-pointer">
+                        Envoyer la Demande
                     </button>
                 </div>
+            </form>
+        </div>
+        
+        <div class="lg:col-span-4">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-[#17203A] mb-4 m-0">Mes Dernières Demandes</h3>
+                <div class="space-y-4">
+                    @if (Model.MesDemandes != null && Model.MesDemandes.Any())
+                    {
+                        foreach (var demande in Model.MesDemandes)
+                        {
+                            var statusColor = demande.Statut == "en_attente_admin" ? "bg-amber-100 text-amber-700" :
+                                              demande.Statut == "acceptee" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+                            var statusText = demande.Statut.Replace("_", " ");
+                            var subjectName = demande.Matiere?.NomMatiere ?? demande.Cours?.Matiere?.NomMatiere ?? "Général";
+                            
+                            var timeAgo = (DateTime.UtcNow - (demande.DateSouhaitee ?? DateTime.UtcNow)).TotalHours;
+                            var timeStr = timeAgo < 24 ? "Récemment" : "Plus d'un jour";
+
+                            <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 mt-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-xs font-bold px-2 py-1 @statusColor rounded-md capitalize">@statusText</span>
+                                    <span class="text-xs text-gray-400">@timeStr</span>
+                                </div>
+                                <p class="font-bold text-sm text-[#17203A] m-0">@demande.TypeDemande</p>
+                                <p class="text-xs text-gray-500 mt-1 m-0">@subjectName</p>
+                            </div>
+                        }
+                        
+                        <div class="mt-4 text-center">
+                            <a href="@Url.Action("MesDemandes", "ProfesseurDashboard", new { email = email })" class="text-sm text-blue-600 font-bold hover:underline">Voir toutes mes demandes</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-8">
+                            <p class="text-sm text-gray-400">Aucune demande récente.</p>
+                        </div>
+                    }
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function updateHiddenFields() {
+            var select = document.getElementById('affectationSelect');
+            var val = select.value;
+            var heuresInfo = document.getElementById('heuresInfo');
+            var submitBtn = document.getElementById('submitBtn');
+
+            if (val) {
+                var parts = val.split('|');
+                document.getElementById('idMatiereInput').value = parts[0];
+                document.getElementById('idClasseInput').value = parts[1];
+
+                var option = select.options[select.selectedIndex];
+                var total = parseInt(option.getAttribute('data-total')) || 0;
+                var planifie = parseInt(option.getAttribute('data-planifie')) || 0;
+                var restant = total - planifie;
+
+                document.getElementById('lblTotal').textContent = total + 'h';
+                document.getElementById('lblPlanifie').textContent = planifie + 'h';
+                document.getElementById('lblRestant').textContent = restant + 'h';
+
+                heuresInfo.classList.remove('hidden');
+
+                if (restant <= 0) {
+                    document.getElementById('lblRestant').classList.replace('text-green-600', 'text-red-600');
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    submitBtn.textContent = "Volume horaire déjà atteint";
+                } else {
+                    document.getElementById('lblRestant').classList.replace('text-red-600', 'text-green-600');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    submitBtn.textContent = "Envoyer la Demande";
+                    validateHeures(); // Revalidate duration
+                }
+            } else {
+                document.getElementById('idMatiereInput').value = '';
+                document.getElementById('idClasseInput').value = '';
+                heuresInfo.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitBtn.textContent = "Envoyer la Demande";
+            }
+        }
+
+        function validateDate(input) {
+            var dateVal = input.value;
+            var errorEl = document.getElementById('dateError');
+            var submitBtn = document.getElementById('submitBtn');
+            if (dateVal) {
+                var date = new Date(dateVal);
+                if (date.getDay() === 0) { // Sunday
+                    errorEl.classList.remove('hidden');
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    errorEl.classList.add('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        function validateHeures() {
+            var hd = parseInt(document.getElementById('heureDebut').value.split(':')[0]);
+            var hf = parseInt(document.getElementById('heureFin').value.split(':')[0]);
+            var errorEl = document.getElementById('heureError');
+            var submitBtn = document.getElementById('submitBtn');
+            var select = document.getElementById('affectationSelect');
+            var option = select.options[select.selectedIndex];
+
+            if (hf <= hd) {
+                errorEl.textContent = "L'heure de fin doit être supérieure à l'heure de début.";
+                errorEl.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                var duration = hf - hd;
+                var total = parseInt(option?.getAttribute('data-total')) || 0;
+                var planifie = parseInt(option?.getAttribute('data-planifie')) || 0;
+                var restant = total - planifie;
+
+                if (select.value && duration > restant) {
+                    errorEl.textContent = "La durée (" + duration + "h) dépasse le volume horaire restant (" + restant + "h).";
+                    errorEl.classList.remove('hidden');
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    errorEl.classList.add('hidden');
+                    // Check if date is not sunday
+                    var dateVal = document.getElementById('dateSouhaitee').value;
+                    if (!dateVal || new Date(dateVal).getDay() !== 0) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            }
+        }
+    </script>
+}

@@ -13,6 +13,7 @@
     <title>@title - EMIT</title>
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/animations.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Gestion_SalleClasseEDT.styles.css" asp-append-version="true" />
     <script>
         (function () {
@@ -53,6 +54,9 @@
                     </a>
                     <a asp-controller="Home" asp-action="EDT" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "edt" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
                         <i data-lucide="calendar" class="h-5 w-5"></i><span>Emplois du temps</span>
+                    </a>
+                    <a asp-controller="Planification" asp-action="Index" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(controller == "planification" || activeAction == "planification" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
+                        <i data-lucide="layout-dashboard" class="h-5 w-5"></i><span>Planification</span>
                     </a>
                     <a asp-controller="Home" asp-action="Salles" class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all @(activeAction == "salles" ? "bg-[#5C8ABF] font-medium text-white" : "text-white/70 hover:bg-white/5 hover:text-white")">
                         <i data-lucide="door-open" class="h-5 w-5"></i><span>Salles de classe</span>
@@ -174,6 +178,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/scroll-animations.js" asp-append-version="true"></script>
+    <script src="~/js/scroll-animations.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const shell = document.getElementById("dashboardShell");

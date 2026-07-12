@@ -7,6 +7,7 @@ using Gestion_SalleClasseEDT.Models;
 
 namespace Gestion_SalleClasseEDT.Services
 {
+    [Obsolete("Utiliser PlanningService avec le modèle Seance à la place.")]
     public interface IAutoPlanningService
     {
         Task<bool> PlanifierAnneeAsync(int anneeId);
@@ -15,6 +16,7 @@ namespace Gestion_SalleClasseEDT.Services
         Task<bool> OptimiserRepartitionAsync();
     }
 
+    [Obsolete("Utiliser PlanningService avec le modèle Seance à la place.")]
     public class AutoPlanningService : IAutoPlanningService
     {
         private readonly EMITDbContext _db;

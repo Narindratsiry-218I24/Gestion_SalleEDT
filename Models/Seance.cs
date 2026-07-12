@@ -57,6 +57,6 @@ namespace Gestion_SalleClasseEDT.Models
         public int? GroupeId { get; set; }
 
         [NotMapped]
-        public int RealizedHours { get; set; }
+        public int RealizedHours => Statut != "Annulee" ? DurationHours : 0;
     }
 }

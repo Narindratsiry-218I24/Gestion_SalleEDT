@@ -147,6 +147,12 @@ namespace Gestion_SalleClasseEDT.Controllers
             return RedirectToAction(nameof(Affectations));
         }
 
+        [HttpGet]
+        public IActionResult CreerAnnee()
+        {
+            return View(new CreateAnneeVm { DateDebut = DateTime.Today, DateFin = DateTime.Today.AddMonths(9) });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CreerAnnee(CreateAnneeVm dto)

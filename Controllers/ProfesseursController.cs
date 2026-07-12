@@ -107,6 +107,33 @@ namespace Gestion_SalleClasseEDT.Controllers
         }
 
         // ─────────────────────────────────────────────────────────────
+        // VERIFY OTP CODE
+        // ─────────────────────────────────────────────────────────────
+        [HttpPost]
+        public IActionResult VerifyOtpCode(string email, string code)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(code))
+                return Json(new { success = false, message = "Email ou code manquant." });
+
+            var emailKey = email.Trim().ToLowerInvariant();
+            if (_verificationCodes.TryGetValue(emailKey, out var val))
+            {
+                if (val.code == code.Trim() && val.expiry >= DateTime.UtcNow)
+                {
+                    // Optionnel: on peut laisser le code dans le dictionnaire pour la validation finale du formulaire,
+                    // ou on pourrait le retirer. Le formulaire a aussi une validation.
+                    return Json(new { success = true });
+                }
+                if (val.expiry < DateTime.UtcNow)
+                {
+                    return Json(new { success = false, message = "Code expiré." });
+                }
+            }
+            
+            return Json(new { success = false, message = "Code incorrect." });
+        }
+
+        // ─────────────────────────────────────────────────────────────
         // CREATE POST
         // ─────────────────────────────────────────────────────────────
         [HttpPost]

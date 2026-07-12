@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Gestion_SalleClasseEDT.Models;
+using Gestion_SalleClasseEDT.Services;
 
 namespace Gestion_SalleClasseEDT.Controllers
 {
@@ -11,10 +13,12 @@ namespace Gestion_SalleClasseEDT.Controllers
     public class AffectationMatiereController : ControllerBase
     {
         private readonly EMITDbContext db;
+        private readonly IAffectationService _affectationService;
 
-        public AffectationMatiereController(EMITDbContext context)
+        public AffectationMatiereController(EMITDbContext context, IAffectationService affectationService)
         {
             db = context;
+            _affectationService = affectationService;
         }
 
         [HttpGet]
@@ -82,13 +86,22 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (affectation.VolumeHoraireTotal <= 0)
                 return BadRequest("Le volume horaire total doit etre positif.");
 
-            var existe = db.AffectationsMatieres.Any(a =>
+            var existePourCeProf = db.AffectationsMatieres.Any(a =>
                 a.IdClasse == affectation.IdClasse &&
                 a.IdMatiere == affectation.IdMatiere &&
                 a.IdProfesseur == affectation.IdProfesseur &&
-                a.IdSemestre == affectation.IdSemestre);
+                a.IdSemestre == affectation.IdSemestre &&
+                a.EstActif);
 
-            if (existe) return BadRequest("Cette affectation existe deja pour cette classe, matiere, professeur et semestre.");
+            if (existePourCeProf) return BadRequest("Cette affectation existe déjà pour ce professeur.");
+
+            var existePourAutreProf = db.AffectationsMatieres.Any(a =>
+                a.IdClasse == affectation.IdClasse &&
+                a.IdMatiere == affectation.IdMatiere &&
+                a.IdSemestre == affectation.IdSemestre &&
+                a.EstActif);
+
+            if (existePourAutreProf) return BadRequest("Cette matière est déjà affectée à un autre professeur pour cette classe.");
 
             db.AffectationsMatieres.Add(affectation);
             db.SaveChanges();
@@ -129,53 +142,18 @@ namespace Gestion_SalleClasseEDT.Controllers
 
         [HttpPost]
         [Route("{id:int}/GenererCours")]
-        public IActionResult GenererCours(int id)
+        public async Task<IActionResult> GenererCours(int id)
         {
-            var affectation = db.AffectationsMatieres
-                .Include(a => a.Matiere)
-                .FirstOrDefault(a => a.IdAffectation == id);
+            // Délégué à IAffectationService (Phase 1.7) pour éviter la duplication avec MatiereController
+            var result = await _affectationService.GenererCoursDepuisAffectationAsync(id);
 
-            if (affectation == null) return NotFound();
-            if (!affectation.EstActif) return BadRequest("L'affectation est inactive.");
+            if (!result.Success)
+                return BadRequest(new { Message = result.Message });
 
-            var coursExistants = db.Cours.Where(c => c.IdAffectation == id).ToList();
-            if (coursExistants.Any()) return Ok(coursExistants);
+            var cours = await db.Cours
+                .Where(c => result.CoursIds.Contains(c.IdCours))
+                .ToListAsync();
 
-            var cours = new[]
-            {
-                new { Type = "CM", Heures = affectation.HeuresCm },
-                new { Type = "TD", Heures = affectation.HeuresTd },
-                new { Type = "TP", Heures = affectation.HeuresTp }
-            }
-            .Where(x => x.Heures > 0)
-            .Select(x => new Cours
-            {
-                IdMatiere = affectation.IdMatiere,
-                IdProfesseur = affectation.IdProfesseur,
-                IdClasse = affectation.IdClasse,
-                IdSemestre = affectation.IdSemestre,
-                IdAffectation = affectation.IdAffectation,
-                TypeCours = x.Type,
-                Statut = "a_planifier"
-            })
-            .ToList();
-
-            if (!cours.Any())
-            {
-                cours.Add(new Cours
-                {
-                    IdMatiere = affectation.IdMatiere,
-                    IdProfesseur = affectation.IdProfesseur,
-                    IdClasse = affectation.IdClasse,
-                    IdSemestre = affectation.IdSemestre,
-                    IdAffectation = affectation.IdAffectation,
-                    TypeCours = "CM",
-                    Statut = "a_planifier"
-                });
-            }
-
-            db.Cours.AddRange(cours);
-            db.SaveChanges();
             return Ok(cours);
         }
 
