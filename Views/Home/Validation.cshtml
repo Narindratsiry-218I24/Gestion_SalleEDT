@@ -57,6 +57,7 @@
 <script>
     let allDemandes = [];
     let allRooms = [];
+    let totalDemandesData = [];
     let currentFilter = 'all';
 
     async function fetchValidationData() {
@@ -73,6 +74,7 @@
                 fetch('/api/Salle').then(r => r.json())
             ]);
 
+            totalDemandesData = demandesData;
             allRooms = roomsData;
             const activeStatuts = ['en_attente_admin', 'proposee_prof', 'modif_acceptee_prof', 'contre_proposition_prof'];
             allDemandes = demandesData.filter(d => activeStatuts.includes(d.Statut?.toLowerCase()));
@@ -91,9 +93,8 @@
     function updateStats() {
         document.getElementById('statTotal').textContent = allDemandes.length;
         document.getElementById('statHorsDispo').textContent = allDemandes.filter(d => d.HorsDisponibilite).length;
-        document.getElementById('statContreProp').textContent = allDemandes.filter(d => d.Statut?.toLowerCase().includes('contre_proposition')).length;
-        // Today's validated — not in allDemandes (those are active), so we just show 0 from active set
-        document.getElementById('statValidated').textContent = '—';
+        document.getElementById('statContreProp').textContent = allDemandes.filter(d => d.Statut?.toLowerCase().includes('contre_proposition') || d.Statut?.toLowerCase().includes('proposee_prof')).length;
+        document.getElementById('statValidated').textContent = totalDemandesData.filter(d => d.Statut?.toLowerCase() === 'acceptee').length;
     }
 
     function setValidationFilter(filter) {
@@ -195,8 +196,9 @@
                 <div class="space-y-2">
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Contexte Pédagogique</p>
                     <div class="space-y-1 text-sm">
-                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Classe :</span><strong class="text-gray-800">${req.Classe?.NomClasse || '—'}</strong></div>
-                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Matière :</span><strong class="text-gray-800">${req.Matiere?.NomMatiere || '—'}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-24 shrink-0">Enseignant :</span><strong class="text-gray-800">${req.Demandeur ? `${req.Demandeur.Prenom || ''} ${req.Demandeur.Nom || ''}`.trim() : (req.Cours?.Professeur ? `${req.Cours.Professeur.Prenom || ''} ${req.Cours.Professeur.Nom || ''}`.trim() : 'Non spécifié')}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-24 shrink-0">Classe :</span><strong class="text-gray-800">${req.Classe?.NomClasse || req.Cours?.Classe?.NomClasse || '—'}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-24 shrink-0">Matière :</span><strong class="text-gray-800">${req.Matiere?.NomMatiere || req.Cours?.Matiere?.NomMatiere || '—'}</strong></div>
                     </div>
                 </div>
 
@@ -206,7 +208,7 @@
                     <div class="space-y-1 text-sm">
                         <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Date :</span><strong class="text-gray-800">${formatDate(req.DateSouhaitee)}</strong></div>
                         <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Heures :</span><strong class="text-gray-800">${formatTime(req.HeureDebutSouhaitee)} → ${formatTime(req.HeureFinSouhaitee)}</strong></div>
-                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Salle :</span><strong class="text-gray-800">${req.Salle?.NomSalle || 'Non précisée'}</strong></div>
+                        <div class="flex gap-2"><span class="text-gray-400 w-16 shrink-0">Salle :</span><strong class="text-gray-800">${req.Salle?.NomSalle || req.Cours?.Salle?.NomSalle || 'Non précisée'}</strong></div>
                     </div>
                 </div>
 
@@ -300,6 +302,7 @@
     }
 
     function handleProposeAlternative(id) {
+        const roomOptions = allRooms.map(r => `<option value="${r.IdSalle}">${r.NomSalle}</option>`).join('');
         Swal.fire({
             title: 'Proposer une alternative',
             html: `
@@ -311,6 +314,12 @@
                             <input type="time" id="altStart" class="swal2-input w-full mt-1" /></div>
                         <div><label class="text-xs font-bold text-gray-500 uppercase">Heure fin</label>
                             <input type="time" id="altEnd" class="swal2-input w-full mt-1" /></div>
+                    </div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Salle proposée</label>
+                        <select id="altSalle" class="swal2-input w-full mt-1" style="height:auto;padding:8px;">
+                            <option value="">— Laisser inchangée —</option>
+                            ${roomOptions}
+                        </select>
                     </div>
                     <div><label class="text-xs font-bold text-gray-500 uppercase">Note pour le professeur</label>
                         <textarea id="altNote" class="swal2-textarea w-full mt-1" placeholder="Explication du changement..."></textarea></div>
@@ -326,11 +335,12 @@
                     Swal.showValidationMessage('Veuillez renseigner la date et les heures.');
                     return false;
                 }
-                return { date, start, end, note: document.getElementById('altNote').value };
+                const salleVal = document.getElementById('altSalle').value;
+                return { date, start, end, note: document.getElementById('altNote').value, salle: salleVal ? parseInt(salleVal) : null };
             }
         }).then(result => {
             if (!result.isConfirmed) return;
-            const { date, start, end, note } = result.value;
+            const { date, start, end, note, salle } = result.value;
             fetch('/api/DemandeEDT/' + id + '/ProposeAlternative', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -338,6 +348,7 @@
                     DateProposee: date,
                     HeureDebutProposee: start + ':00',
                     HeureFinProposee: end + ':00',
+                    IdSalleProposee: salle,
                     Note: note
                 })
             }).then(res => {
@@ -345,7 +356,7 @@
                     Swal.fire({ icon: 'success', title: 'Alternative proposée', text: 'Le professeur sera notifié.', timer: 1800, showConfirmButton: false });
                     fetchValidationData();
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de créer la proposition.' });
+                    res.json().then(e => Swal.fire({ icon: 'error', title: 'Erreur', text: e.Message || 'Impossible de créer la proposition.' }));
                 }
             });
         });

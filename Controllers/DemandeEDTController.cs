@@ -71,6 +71,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(d => d.Demandeur)
                 .Include(d => d.Cours.Matiere)
                 .Include(d => d.Cours.Classe)
+                .Include(d => d.Cours.Professeur)
                 .Include(d => d.Salle)
                 .Include(d => d.Niveau)
                 .Include(d => d.Classe)
@@ -182,6 +183,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             var demande = db.DemandesEdt
                 .Include(d => d.Demandeur)
                 .Include(d => d.Cours.Matiere)
+                .Include(d => d.Cours.Professeur)
                 .Include(d => d.Salle)
                 .Include(d => d.Niveau)
                 .Include(d => d.Classe)
@@ -542,7 +544,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                         IdProfesseur = profIdToNotify,
                         Titre = "Proposition validée",
                         Message = $"Votre proposition de créneau a été validée pour la date du {finalDate:dd/MM/yyyy}.",
-                        Type = "succes",
+                        Type = "success",
                         DateCreation = DateTime.UtcNow,
                         EstLue = false,
                         Lien = "/ProfesseurDashboard/MesDemandes"
@@ -599,7 +601,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                     IdProfesseur = profIdToNotify,
                     Titre = "Proposition refusée",
                     Message = $"Votre proposition de créneau du {demande.DateSouhaitee:dd/MM/yyyy} a été refusée.",
-                    Type = "erreur",
+                    Type = "danger",
                     DateCreation = DateTime.UtcNow,
                     EstLue = false,
                     Lien = "/ProfesseurDashboard/MesDemandes"
@@ -608,6 +610,80 @@ namespace Gestion_SalleClasseEDT.Controllers
             }
             // -----------------------------------------------------------
             
+            return Ok(demande);
+        }
+
+        public class ProposeAlternativeDto
+        {
+            public DateTime DateProposee { get; set; }
+            public TimeSpan HeureDebutProposee { get; set; }
+            public TimeSpan HeureFinProposee { get; set; }
+            public int? IdSalleProposee { get; set; }
+            public string? Note { get; set; }
+        }
+
+        [HttpPost]
+        [Route("{id:int}/ProposeAlternative")]
+        public IActionResult ProposeAlternative(int id, [FromBody] ProposeAlternativeDto dto)
+        {
+            var demande = db.DemandesEdt.Include(d => d.Cours).FirstOrDefault(d => d.IdDemande == id);
+            if (demande == null) return NotFound();
+
+            // Clear old propositions for this request
+            var oldProps = db.PropositionsAdmin.Where(p => p.IdDemande == id).ToList();
+            db.PropositionsAdmin.RemoveRange(oldProps);
+
+            // Create new proposition
+            var prop = new PropositionAdmin
+            {
+                IdDemande = id,
+                IdSalleProposee = dto.IdSalleProposee ?? demande.IdSalle ?? 1,
+                DateProposee = DateTime.SpecifyKind(dto.DateProposee.Date, DateTimeKind.Utc),
+                HeureDebutProposee = dto.HeureDebutProposee,
+                HeureFinProposee = dto.HeureFinProposee,
+                EstAcceptee = null
+            };
+            db.PropositionsAdmin.Add(prop);
+
+            demande.Statut = "proposee_prof";
+            if (!string.IsNullOrEmpty(dto.Note))
+            {
+                demande.Justification = (demande.Justification ?? "") + "\n[Alternative Admin] " + dto.Note;
+            }
+
+            db.SaveChanges();
+            
+            // Send notification to professor
+            int profIdToNotify = 0;
+            if (demande.IdCours.HasValue && demande.Cours != null && demande.Cours.IdProfesseur.HasValue)
+            {
+                profIdToNotify = demande.Cours.IdProfesseur.Value;
+            }
+            else
+            {
+                var demandeurObj = db.Utilisateurs.Find(demande.IdDemandeur);
+                if (demandeurObj != null)
+                {
+                    var profMatch = db.Professeurs.FirstOrDefault(p => p.Email == demandeurObj.Email);
+                    if (profMatch != null) profIdToNotify = profMatch.IdProfesseur;
+                }
+            }
+
+            if (profIdToNotify > 0)
+            {
+                db.Notifications.Add(new Notification
+                {
+                    IdProfesseur = profIdToNotify,
+                    Titre = "Alternative proposée par l'administrateur",
+                    Message = $"L'administrateur a proposé un créneau alternatif pour votre demande du {demande.DateSouhaitee:dd/MM/yyyy}.",
+                    Type = "info",
+                    DateCreation = DateTime.UtcNow,
+                    EstLue = false,
+                    Lien = "/ProfesseurDashboard/MesDemandes"
+                });
+                db.SaveChanges();
+            }
+
             return Ok(demande);
         }
     }

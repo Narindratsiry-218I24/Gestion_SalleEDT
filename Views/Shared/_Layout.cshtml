@@ -324,9 +324,10 @@
                             notifs.forEach(n => {
                                 let icon = 'info';
                                 let colorClass = 'text-blue-500 bg-blue-50';
-                                if (n.type === 'success') { icon = 'check-circle'; colorClass = 'text-green-500 bg-green-50'; }
-                                else if (n.type === 'warning') { icon = 'alert-triangle'; colorClass = 'text-orange-500 bg-orange-50'; }
-                                else if (n.type === 'danger') { icon = 'alert-circle'; colorClass = 'text-red-500 bg-red-50'; }
+                                const t = (n.type || '').toLowerCase();
+                                if (t === 'success' || t === 'succes') { icon = 'check-circle'; colorClass = 'text-green-500 bg-green-50'; }
+                                else if (t === 'warning') { icon = 'alert-triangle'; colorClass = 'text-orange-500 bg-orange-50'; }
+                                else if (t === 'danger' || t === 'erreur') { icon = 'alert-circle'; colorClass = 'text-red-500 bg-red-50'; }
 
                                 const dateStr = new Date(n.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 

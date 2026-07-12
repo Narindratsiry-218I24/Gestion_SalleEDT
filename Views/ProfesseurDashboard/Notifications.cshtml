@@ -27,9 +27,10 @@
                     string icon = "info";
                     string colorClass = "text-blue-500 bg-blue-50";
 
-                    if (n.Type == "success") { icon = "check-circle"; colorClass = "text-green-500 bg-green-50"; }
-                    else if (n.Type == "warning") { icon = "alert-triangle"; colorClass = "text-orange-500 bg-orange-50"; }
-                    else if (n.Type == "danger") { icon = "alert-circle"; colorClass = "text-red-500 bg-red-50"; }
+                    var typeStr = (n.Type ?? "").ToLower();
+                    if (typeStr == "success" || typeStr == "succes") { icon = "check-circle"; colorClass = "text-green-500 bg-green-50"; }
+                    else if (typeStr == "warning") { icon = "alert-triangle"; colorClass = "text-orange-500 bg-orange-50"; }
+                    else if (typeStr == "danger" || typeStr == "erreur") { icon = "alert-circle"; colorClass = "text-red-500 bg-red-50"; }
 
                     <div class="p-5 flex gap-4 transition-colors hover:bg-gray-50 @bgClass group">
                         <div class="flex-shrink-0 mt-1 w-10 h-10 rounded-full @colorClass flex items-center justify-center">
