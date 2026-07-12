@@ -2,23 +2,23 @@
     ViewBag.Title = "Requetes";
 }
 
-<div class="space-y-8 animate-in fade-in duration-500">
+<div class="space-y-8 animate-in fade-in duration-500 min-h-screen">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail des Requ&ecirc;tes</h1>
-            <p class="text-gray-500 mt-1">Gerez et suivez vos modifications d'emploi du temps ou reservations de salles.</p>
+            <p class="text-gray-500 mt-1">Gérez et suivez vos modifications d'emploi du temps ou réservations de salles.</p>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div class="lg:col-span-8" id="app-root">
+        <div class="lg:col-span-12" id="app-root">
             <div class="flex justify-center items-center py-24 bg-white rounded-xl shadow-sm border border-gray-100">
                 <i data-lucide="loader-2" class="w-8 h-8 text-[#17203A] animate-spin"></i>
                 <span class="ml-2 text-gray-500 font-bold">Chargement de l'application...</span>
             </div>
         </div>
 
-        <div class="lg:col-span-4" id="notifications-root">
+        <div class="lg:col-span-3" id="notifications-root">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-bold text-[#17203A] m-0">Notifications</h3>
@@ -68,27 +68,27 @@
             const labels = {
                 en_attente_admin: 'En attente',
                 en_attente_info: 'Suspendue',
-                proposee_prof: 'Proposee',
+                proposee_prof: 'Proposée',
                 contre_proposition_prof: 'Contre-proposition',
-                modif_acceptee_prof: 'Acceptee prof',
-                acceptee: 'Validee',
-                refusee: 'Refusee'
+                modif_acceptee_prof: 'Acceptée prof',
+                acceptee: 'Validée',
+                refusee: 'Refusée'
             };
             return labels[value] || statut || 'Inconnu';
         }
 
         function statusClasses(statut) {
             const value = (statut || '').toLowerCase();
-            if (value === 'acceptee' || value === 'modif_acceptee_prof') return 'bg-green-100 text-green-700';
-            if (value === 'refusee') return 'bg-red-100 text-red-700';
-            if (value === 'en_attente_info') return 'bg-slate-100 text-slate-700';
-            if (value === 'proposee_prof' || value === 'contre_proposition_prof') return 'bg-blue-100 text-blue-700';
-            return 'bg-amber-100 text-amber-700';
+            if (value === 'acceptee' || value === 'modif_acceptee_prof') return 'bg-green-100 text-green-700 border border-green-200';
+            if (value === 'refusee') return 'bg-red-100 text-red-700 border border-red-200';
+            if (value === 'en_attente_info') return 'bg-slate-100 text-slate-700 border border-slate-200';
+            if (value === 'proposee_prof' || value === 'contre_proposition_prof') return 'bg-blue-100 text-blue-700 border border-blue-200';
+            return 'bg-amber-100 text-amber-700 border border-amber-200';
         }
 
         function typeLabel(type) {
             const value = (type || '').toLowerCase();
-            if (value === 'reservation_salle') return 'Reservation de salle';
+            if (value === 'reservation_salle') return 'Réservation de salle';
             if (value === 'modification_cours') return 'Modification de cours';
             if (value === 'examen') return 'Examen';
             return type || 'Demande';
@@ -107,63 +107,184 @@
             const [notifications, setNotifications] = useState([]);
             const [now, setNow] = useState(new Date());
             const [isLoading, setIsLoading] = useState(true);
+            const [isModalOpen, setIsModalOpen] = useState(false);
 
             const loadNotifications = async () => {
-                const response = await fetch(`${API_BASE}/DemandeEDT/Notifications?take=6`);
-                const data = await response.json();
-                const seenMap = getSeenMap();
-                const currentIso = new Date().toISOString();
+                try {
+                    const response = await fetch(`${API_BASE}/DemandeEDT/Notifications?take=100`);
+                    const data = await response.json();
+                    const seenMap = getSeenMap();
+                    const currentIso = new Date().toISOString();
 
-                data.forEach(item => {
-                    const key = String(item.IdDemande);
-                    if (!seenMap[key]) seenMap[key] = currentIso;
-                });
+                    data.forEach(item => {
+                        const key = String(item.IdDemande);
+                        if (!seenMap[key]) seenMap[key] = currentIso;
+                    });
 
-                saveSeenMap(seenMap);
-                setNotifications(data.map(item => ({
-                    ...item,
-                    SeenAt: seenMap[String(item.IdDemande)]
-                })));
-                setIsLoading(false);
+                    saveSeenMap(seenMap);
+                    setNotifications(data.map(item => ({
+                        ...item,
+                        SeenAt: seenMap[String(item.IdDemande)]
+                    })));
+                } catch (e) {
+                    console.error("Failed to load notifications", e);
+                } finally {
+                    setIsLoading(false);
+                }
             };
 
             useEffect(() => {
                 loadNotifications();
+                window.addEventListener('reload-notifications', loadNotifications);
                 const poll = setInterval(loadNotifications, 10000);
                 const clock = setInterval(() => setNow(new Date()), 60000);
                 return () => {
+                    window.removeEventListener('reload-notifications', loadNotifications);
                     clearInterval(poll);
                     clearInterval(clock);
                 };
             }, []);
 
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [notifications, isModalOpen]);
+
+            const handleAction = async (id, actionName) => {
+                if (!confirm(`Voulez-vous vraiment ${actionName.toLowerCase()} cette demande ?`)) return;
+                try {
+                    const response = await fetch(`${API_BASE}/DemandeEDT/${id}/${actionName}`, {
+                        method: 'POST'
+                    });
+                    if (!response.ok) {
+                        const error = await response.text();
+                        alert(`Impossible de traiter la demande : ${error}`);
+                        return;
+                    }
+                    loadNotifications();
+                    window.dispatchEvent(new Event('reload-demandes'));
+                } catch (e) {
+                    alert("Erreur réseau lors du traitement.");
+                }
+            };
+
             return (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-bold text-[#17203A] m-0">Notifications</h3>
-                        <span className="flex h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_0_4px_rgba(34,197,94,0.12)]"></span>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <i data-lucide="bell" className="w-5 h-5 text-[#17203A]"></i>
+                            <h3 className="font-bold text-[#17203A] text-sm m-0">Notifications</h3>
+                        </div>
+                        <span className="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_0_4px_rgba(34,197,94,0.12)]"></span>
                     </div>
 
                     {isLoading ? (
-                        <p className="text-sm text-gray-500 m-0">Chargement...</p>
+                        <div className="flex justify-center py-8">
+                            <i data-lucide="loader-2" className="w-6 h-6 text-[#17203A] animate-spin"></i>
+                        </div>
                     ) : notifications.length === 0 ? (
-                        <p className="text-sm text-gray-500 m-0">Aucune notification pour le moment.</p>
+                        <p className="text-xs text-gray-500 text-center py-6 m-0">Aucune notification pour le moment.</p>
                     ) : (
-                        <div className="space-y-4">
-                            {notifications.map(item => (
-                                <div key={item.IdDemande} className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                                    <div className="flex justify-between items-start gap-3 mb-2">
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-md ${statusClasses(item.Statut)}`}>
-                                            {statusLabel(item.Statut)}
-                                        </span>
-                                        <span className="text-xs text-gray-400 whitespace-nowrap">{relativeTimeFrom(item.SeenAt, now)}</span>
+                        <div className="space-y-3">
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
+                                {notifications.slice(0, 5).map(item => (
+                                    <div key={item.IdDemande} className="p-3 rounded-xl bg-gray-50/50 border border-gray-100 hover:bg-gray-50 transition-all text-xs">
+                                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${statusClasses(item.Statut)}`}>
+                                                {statusLabel(item.Statut)}
+                                            </span>
+                                            <span className="text-[9px] text-gray-400 whitespace-nowrap">{relativeTimeFrom(item.SeenAt, now)}</span>
+                                        </div>
+                                        <p className="font-bold text-xs text-[#17203A] m-0">{typeLabel(item.TypeDemande)}</p>
+                                        <p className="text-[11px] text-gray-500 mt-1 m-0">
+                                            {[item.Classe, item.Matiere, item.Salle].filter(Boolean).join(' - ') || item.Justification || `Demande #${item.IdDemande}`}
+                                        </p>
                                     </div>
-                                    <p className="font-bold text-sm text-[#17203A] m-0">{typeLabel(item.TypeDemande)}</p>
-                                    <p className="text-xs text-gray-500 mt-1 m-0">
-                                        {[item.Classe, item.Matiere, item.Salle].filter(Boolean).join(' - ') || item.Justification || `Demande #${item.IdDemande}`}
-                                    </p>
+                                ))}
+                            </div>
+                            
+                            <button 
+                                onClick={() => setIsModalOpen(true)}
+                                className="w-full mt-2 py-2 text-center text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 rounded-lg border-none cursor-pointer transition-colors"
+                            >
+                                Afficher tout ({notifications.length})
+                            </button>
+                        </div>
+                    )}
+
+                    {/* ALL NOTIFICATIONS MODAL */}
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                                <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                                    <div className="flex items-center gap-2">
+                                        <i data-lucide="bell" className="text-[#17203A] w-5 h-5"></i>
+                                        <h3 className="text-lg font-bold text-[#17203A] m-0">Toutes les Notifications</h3>
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="text-gray-400 hover:text-gray-600 bg-transparent hover:bg-gray-100 p-1.5 rounded-lg border-none cursor-pointer"
+                                    >
+                                        <i data-lucide="x" className="w-5 h-5"></i>
+                                    </button>
                                 </div>
-                            ))}
+                                <div className="p-6 overflow-y-auto flex-1">
+                                    <div className="overflow-hidden border border-gray-100 rounded-xl">
+                                        <table className="w-full border-collapse text-left text-sm">
+                                            <thead>
+                                                <tr className="bg-gray-50 border-b border-gray-100">
+                                                    <th className="p-3 text-xs font-bold text-gray-500 uppercase">Demande</th>
+                                                    <th className="p-3 text-xs font-bold text-gray-500 uppercase">Détails</th>
+                                                    <th className="p-3 text-xs font-bold text-gray-500 uppercase">Statut</th>
+                                                    <th className="p-3 text-xs font-bold text-gray-500 uppercase">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {notifications.map(item => {
+                                                    const isPending = ['en_attente', 'en_attente_admin', 'en_attente_info', 'proposee_prof', 'contre_proposition_prof', 'modif_acceptee_prof'].includes((item.Statut || '').toLowerCase());
+                                                    return (
+                                                        <tr key={item.IdDemande} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                                                            <td className="p-3">
+                                                                <span className="font-bold text-xs text-[#17203A] block">{typeLabel(item.TypeDemande)}</span>
+                                                                <span className="text-[10px] text-gray-400">#{item.IdDemande}</span>
+                                                            </td>
+                                                            <td className="p-3 text-xs text-gray-600">
+                                                                {[item.Classe, item.Matiere, item.Salle].filter(Boolean).join(' - ') || item.Justification}
+                                                            </td>
+                                                            <td className="p-3">
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${statusClasses(item.Statut)}`}>
+                                                                    {statusLabel(item.Statut)}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-3">
+                                                                {isPending ? (
+                                                                    <div className="flex gap-2">
+                                                                        <button 
+                                                                            onClick={() => handleAction(item.IdDemande, 'Valider')}
+                                                                            className="px-2 py-1 bg-green-50 hover:bg-green-100 text-green-600 rounded text-xs border-none cursor-pointer font-bold"
+                                                                        >
+                                                                            Valider
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleAction(item.IdDemande, 'Refuser')}
+                                                                            className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs border-none cursor-pointer font-bold"
+                                                                        >
+                                                                            Refuser
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-400 italic">Terminé</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -171,81 +292,105 @@
         }
 
         function RequestApp() {
+            // Dropdowns loaded from API
             const [mentions, setMentions] = useState([]);
             const [niveaux, setNiveaux] = useState([]);
             const [filieres, setFilieres] = useState([]);
             const [classes, setClasses] = useState([]);
             const [matieres, setMatieres] = useState([]);
+            const [allSalles, setAllSalles] = useState([]);
+            const [allCourses, setAllCourses] = useState([]);
+
+            // List of requests
             const [demandes, setDemandes] = useState([]);
             const [isLoadingDemandes, setIsLoadingDemandes] = useState(false);
+
+            // Filters for demands list (Status & Type Pills)
             const [search, setSearch] = useState("");
             const [statusFilter, setStatusFilter] = useState("");
             const [typeFilter, setTypeFilter] = useState("");
 
-            const [selectedMention, setSelectedMention] = useState("");
-            const [selectedNiveau, setSelectedNiveau] = useState("");
-            const [selectedFiliere, setSelectedFiliere] = useState("");
-            const [selectedClasse, setSelectedClasse] = useState("");
-            const [selectedMatiere, setSelectedMatiere] = useState("");
+            // Form Fields for new demand (Cascaded from Mentions -> Niveau -> Filiere -> Classe -> Matiere)
+            const [formType, setFormType] = useState("modification_cours");
+            const [formMention, setFormMention] = useState("");
+            const [formNiveau, setFormNiveau] = useState("");
+            const [formFiliere, setFormFiliere] = useState("");
+            const [formClasse, setFormClasse] = useState("");
+            const [formMatiere, setFormMatiere] = useState("");
+            
+            // Sub fields for modification
+            const [formCoursId, setFormCoursId] = useState("");
+            
+            // Date, time, salle
+            const [formSalleId, setFormSalleId] = useState("");
+            const [formDate, setFormDate] = useState("");
+            const [formHeureDebut, setFormHeureDebut] = useState("");
+            const [formHeureFin, setFormHeureFin] = useState("");
+            const [formJustification, setFormJustification] = useState("");
 
-            useEffect(() => {
+            const loadFormDependencies = () => {
                 Promise.all([
+                    fetch(API_BASE + '/Mention').then(r => r.json()),
                     fetch(API_BASE + '/Niveau').then(r => r.json()),
+                    fetch(API_BASE + '/Filiere').then(r => r.json()),
                     fetch(API_BASE + '/Classe').then(r => r.json()),
-                    fetch(API_BASE + '/Matiere').then(r => r.json())
-                ]).then(([levelsData, classesData, subjectsData]) => {
+                    fetch(API_BASE + '/Matiere').then(r => r.json()),
+                    fetch(API_BASE + '/Salle').then(r => r.json()),
+                    fetch(API_BASE + '/Cours').then(r => r.json())
+                ]).then(([mentionsData, levelsData, filieresData, classesData, subjectsData, sallesData, coursesData]) => {
+                    setMentions(mentionsData);
                     setNiveaux(levelsData);
+                    setFilieres(filieresData);
                     setClasses(classesData);
                     setMatieres(subjectsData);
+                    setAllSalles(sallesData);
+                    setAllCourses(coursesData);
+                }).catch(err => console.error("Error loading form dependencies", err));
+            };
 
-                    const uniqueMentionsMap = new Map();
-                    levelsData.forEach(n => {
-                        if (n.Mention) uniqueMentionsMap.set(n.IdMention, n.Mention);
-                    });
-                    setMentions(Array.from(uniqueMentionsMap.values()));
-
-                    const filiereMap = new Map();
-                    classesData.forEach(c => { if (c.Filiere) filiereMap.set(c.IdFiliere, c.Filiere); });
-                    subjectsData.forEach(m => { if (m.Filiere) filiereMap.set(m.IdFiliere, m.Filiere); });
-                    setFilieres(Array.from(filiereMap.values()));
-                });
+            useEffect(() => {
+                loadFormDependencies();
             }, []);
 
-<<<<<<< HEAD
-            const filteredNiveaux = useMemo(
-                () => niveaux.filter(n => selectedMention && n.IdMention == selectedMention),
-                [niveaux, selectedMention]
+            // Filtering cascading selectors in the form
+            const formFilteredNiveaux = useMemo(
+                () => niveaux.filter(n => formMention && n.IdMention == formMention),
+                [niveaux, formMention]
             );
-            const filteredFilieres = useMemo(
-                () => filieres.filter(f => selectedMention && selectedNiveau && f.IdMention == selectedMention && classes.some(c => c.IdFiliere == f.IdFiliere && c.Semestre?.RefSemestre?.IdNiveau == selectedNiveau)),
-                [filieres, classes, selectedMention, selectedNiveau]
+            const formFilteredFilieres = useMemo(
+                () => filieres.filter(f => formMention && f.IdMention == formMention),
+                [filieres, formMention]
             );
-            const filteredClasses = useMemo(
-                () => classes.filter(c => selectedFiliere && selectedNiveau && c.IdFiliere == selectedFiliere && c.Semestre?.RefSemestre?.IdNiveau == selectedNiveau),
-                [classes, selectedFiliere, selectedNiveau]
+            const formFilteredClasses = useMemo(
+                () => classes.filter(c => formFiliere && c.IdFiliere == formFiliere && (formNiveau ? c.Semestre?.RefSemestre?.IdNiveau == formNiveau : true)),
+                [classes, formFiliere, formNiveau]
             );
-            const filteredMatieres = useMemo(
-                () => matieres.filter(m => selectedFiliere && selectedNiveau && m.IdFiliere == selectedFiliere && m.RefSemestre?.IdNiveau == selectedNiveau),
-                [matieres, selectedFiliere, selectedNiveau]
+            const formFilteredMatieres = useMemo(
+                () => matieres.filter(m => formFiliere && m.IdFiliere == formFiliere && (formNiveau ? m.RefSemestre?.IdNiveau == formNiveau : true)),
+                [matieres, formFiliere, formNiveau]
             );
 
+            // Filter active courses depending on selected class and matiere (used in modification)
+            const formFilteredCourses = useMemo(() => {
+                if (!formClasse || !formMatiere) return [];
+                return allCourses.filter(c => c.IdClasse == formClasse && c.IdMatiere == formMatiere);
+            }, [allCourses, formClasse, formMatiere]);
+
+            // Filters list on: search, status, type. Display all by default!
             const requestFilters = useMemo(() => ({
                 statut: statusFilter,
                 typeDemande: typeFilter,
-                idMention: selectedMention,
-                idNiveau: selectedNiveau,
-                idFiliere: selectedFiliere,
-                idClasse: selectedClasse,
-                idMatiere: selectedMatiere,
                 search,
-                take: 50
-            }), [statusFilter, typeFilter, selectedMention, selectedNiveau, selectedFiliere, selectedClasse, selectedMatiere, search]);
+                take: 100
+            }), [statusFilter, typeFilter, search]);
 
             const loadDemandes = async () => {
                 setIsLoadingDemandes(true);
                 try {
                     const response = await fetch(`${API_BASE}/DemandeEDT${buildQuery(requestFilters)}`);
                     setDemandes(await response.json());
+                } catch(e) {
+                    console.error("Failed to load requests", e);
                 } finally {
                     setIsLoadingDemandes(false);
                 }
@@ -255,34 +400,68 @@
                 loadDemandes();
             }, [requestFilters]);
 
-            const handleAction = async (id, action) => {
-  let route = '';
-  if (action === 'Valider') route = `${API_BASE}/DemandeEDT/${id}/Valider`;
-  else if (action === 'Refuser') route = `${API_BASE}/DemandeEDT/${id}/Refuser`;
-  else if (action === 'Annuler') route = `${API_BASE}/DemandeEDT/${id}/Suspendre`;
-  const response = await fetch(route, { method: 'POST' });
-  if (!response.ok) {
-    const err = await response.text();
-    alert(`Erreur ${action}: ${err}`);
-    return;
-  }
-  await loadDemandes();
-};
+            useEffect(() => {
+                window.addEventListener('reload-demandes', loadDemandes);
+                return () => window.removeEventListener('reload-demandes', loadDemandes);
+            }, [requestFilters]);
 
-const submitDemande = async () => {
-                if (!selectedClasse || !selectedMatiere) {
-                    alert('Choisissez une classe et une matiere avant d envoyer la demande.');
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [demandes, isLoadingDemandes, mentions, formType, formMention, formNiveau, formFiliere]);
+
+            const handleAction = async (id, actionName) => {
+                if (!confirm(`Voulez-vous vraiment ${actionName.toLowerCase()} cette demande ?`)) return;
+                try {
+                    const response = await fetch(`${API_BASE}/DemandeEDT/${id}/${actionName}`, {
+                        method: 'POST'
+                    });
+                    if (!response.ok) {
+                        const error = await response.text();
+                        alert(`Impossible de traiter la demande : ${error}`);
+                        return;
+                    }
+                    await loadDemandes();
+                    window.dispatchEvent(new Event('reload-notifications'));
+                } catch (e) {
+                    alert("Erreur réseau lors du traitement.");
+                }
+            };
+
+            const submitDemande = async () => {
+                if (!formClasse || !formMatiere) {
+                    alert('Sélectionnez une classe et une matière.');
+                    return;
+                }
+                if (formType === 'modification_cours' && !formCoursId) {
+                    alert('Choisissez le cours existant à modifier.');
+                    return;
+                }
+                if (!formDate || !formHeureDebut || !formHeureFin) {
+                    alert('Veuillez renseigner la date, l\'heure de début et l\'heure de fin.');
                     return;
                 }
 
+                let userId = 1;
+                try {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    if (user.IdUtilisateur) userId = Number(user.IdUtilisateur);
+                } catch(e) {}
+
                 const payload = {
-                    IdDemandeur: 1,
-                    IdClasse: Number(selectedClasse),
-                    IdMatiere: Number(selectedMatiere),
-                    IdNiveau: Number(selectedNiveau),
-                    TypeDemande: typeFilter || 'modification_cours',
+                    IdDemandeur: userId,
+                    TypeDemande: formType,
                     Statut: 'en_attente_admin',
-                    Justification: 'Demande creee depuis le portail'
+                    Justification: formJustification || 'Demande créée depuis le portail',
+                    DateSouhaitee: formDate,
+                    HeureDebutSouhaitee: formHeureDebut,
+                    HeureFinSouhaitee: formHeureFin,
+                    IdSalle: formSalleId ? Number(formSalleId) : null,
+                    IdCours: formType === 'modification_cours' ? Number(formCoursId) : null,
+                    IdClasse: Number(formClasse),
+                    IdMatiere: Number(formMatiere),
+                    IdNiveau: formNiveau ? Number(formNiveau) : null
                 };
 
                 const response = await fetch(`${API_BASE}/DemandeEDT/Creer`, {
@@ -293,123 +472,397 @@ const submitDemande = async () => {
 
                 if (!response.ok) {
                     const error = await response.text();
-                    alert(`Impossible d envoyer la demande: ${error}`);
+                    alert(`Impossible d'envoyer la demande : ${error}`);
                     return;
                 }
 
+                // Reset fields
+                setFormCoursId("");
+                setFormClasse("");
+                setFormMatiere("");
+                setFormMention("");
+                setFormNiveau("");
+                setFormFiliere("");
+                setFormSalleId("");
+                setFormDate("");
+                setFormHeureDebut("");
+                setFormHeureFin("");
+                setFormJustification("");
+
                 await loadDemandes();
-                alert('Demande envoyee.');
+                // Reload course list to keep fresh
+                fetch(API_BASE + '/Cours').then(r => r.json()).then(setAllCourses);
+                window.dispatchEvent(new Event('reload-notifications'));
+                alert('Demande envoyée avec succès.');
             };
 
 
             return (
                 <div className="space-y-6">
+                    {/* NEW DEMAND FORM */}
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-bold mb-6 text-[#17203A]">Nouvelle Demande</h2>
+                        <h2 className="text-xl font-bold mb-6 text-[#17203A] flex items-center gap-2">
+                            <i data-lucide="plus-circle" className="w-5 h-5"></i>
+                            Nouvelle Requête
+                        </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Mention</label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {mentions.map(m => (
-                                        <button key={m.IdMention} onClick={() => { setSelectedMention(m.IdMention); setSelectedNiveau(""); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedMention == m.IdMention ? 'bg-[#17203A] border-[#17203A] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}>
-                                            {m.CodeMention || m.NomMention}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Niveau</label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {!selectedMention ? <span className="text-sm text-gray-400 italic">Choisissez une mention</span> : filteredNiveaux.map(n => (
-                                        <button key={n.IdNiveau} onClick={() => { setSelectedNiveau(n.IdNiveau); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedNiveau == n.IdNiveau ? 'bg-[#5C8ABF] border-[#5C8ABF] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}>
-                                            {n.CodeNiveau}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
+                        {/* Request Type Selection */}
                         <div className="mb-6">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">3. Filiere</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {!selectedNiveau ? <span className="text-sm text-gray-400 italic">Choisissez un niveau</span> : filteredFilieres.map(f => (
-                                    <button key={f.IdFiliere} onClick={() => { setSelectedFiliere(f.IdFiliere); setSelectedClasse(""); setSelectedMatiere(""); }} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedFiliere == f.IdFiliere ? 'bg-[#6F7A2D] border-[#6F7A2D] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}>
-                                        {f.CodeFiliere || f.NomFiliere}
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Type de Demande</label>
+                            <div className="flex flex-wrap gap-3">
+                                {[
+                                    { id: 'modification_cours', label: 'Modification de cours', icon: 'edit-3' },
+                                    { id: 'reservation_salle', label: 'Réservation de salle', icon: 'door-open' },
+                                    { id: 'examen', label: 'Examen', icon: 'file-text' }
+                                ].map(type => (
+                                    <button
+                                        key={type.id}
+                                        onClick={() => {
+                                            setFormType(type.id);
+                                            setFormCoursId("");
+                                            setFormClasse("");
+                                            setFormMatiere("");
+                                            setFormMention("");
+                                            setFormNiveau("");
+                                            setFormFiliere("");
+                                        }}
+                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${formType === type.id ? 'bg-[#17203A] border-[#17203A] text-white shadow-sm' : 'border-gray-100 text-gray-500 hover:border-gray-300 bg-white'}`}
+                                    >
+                                        <i data-lucide={type.icon} className="w-4 h-4"></i>
+                                        {type.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. Classe</label>
-                                <select value={selectedClasse} onChange={e => { setSelectedClasse(e.target.value); setSelectedMatiere(""); }} disabled={!selectedFiliere} className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                                    <option value="">Choisir Classe...</option>
-                                    {filteredClasses.map(c => <option key={c.IdClasse} value={c.IdClasse}>{c.NomClasse}</option>)}
-                                </select>
+                        {/* Cascading selectors for ALL requests */}
+                        <div className="space-y-6 mb-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">1. Mention</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {mentions.map(m => (
+                                            <button
+                                                key={m.IdMention}
+                                                onClick={() => {
+                                                    setFormMention(m.IdMention);
+                                                    setFormNiveau("");
+                                                    setFormFiliere("");
+                                                    setFormClasse("");
+                                                    setFormMatiere("");
+                                                    setFormCoursId("");
+                                                }}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all cursor-pointer ${formMention == m.IdMention ? 'bg-[#17203A] border-[#17203A] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300 bg-white'}`}
+                                            >
+                                                {m.CodeMention || m.NomMention}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">2. Niveau</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {!formMention ? (
+                                            <span className="text-xs text-gray-400 italic">Choisissez une mention</span>
+                                        ) : formFilteredNiveaux.map(n => (
+                                            <button
+                                                key={n.IdNiveau}
+                                                onClick={() => {
+                                                    setFormNiveau(n.IdNiveau);
+                                                    setFormFiliere("");
+                                                    setFormClasse("");
+                                                    setFormMatiere("");
+                                                    setFormCoursId("");
+                                                }}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all cursor-pointer ${formNiveau == n.IdNiveau ? 'bg-[#5C8ABF] border-[#5C8ABF] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300 bg-white'}`}
+                                            >
+                                                {n.CodeNiveau}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">3. Filière</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {!formMention ? (
+                                            <span className="text-xs text-gray-400 italic">Choisissez une mention</span>
+                                        ) : formFilteredFilieres.map(f => (
+                                            <button
+                                                key={f.IdFiliere}
+                                                onClick={() => {
+                                                    setFormFiliere(f.IdFiliere);
+                                                    setFormClasse("");
+                                                    setFormMatiere("");
+                                                    setFormCoursId("");
+                                                }}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all cursor-pointer ${formFiliere == f.IdFiliere ? 'bg-[#6F7A2D] border-[#6F7A2D] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300 bg-white'}`}
+                                            >
+                                                {f.CodeFiliere || f.NomFiliere}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">5. Matiere</label>
-                                <select value={selectedMatiere} onChange={e => setSelectedMatiere(e.target.value)} disabled={!selectedClasse} className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                                    <option value="">Choisir Matiere...</option>
-                                    {filteredMatieres.map(m => <option key={m.IdMatiere} value={m.IdMatiere}>{m.NomMatiere}</option>)}
-                                </select>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. Classe</label>
+                                    <select
+                                        value={formClasse}
+                                        onChange={e => {
+                                            setFormClasse(e.target.value);
+                                            setFormMatiere("");
+                                            setFormCoursId("");
+                                        }}
+                                        disabled={!formFiliere}
+                                        className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                    >
+                                        <option value="">Choisir Classe...</option>
+                                        {formFilteredClasses.map(c => <option key={c.IdClasse} value={c.IdClasse}>{c.NomClasse}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">5. Matière</label>
+                                    <select
+                                        value={formMatiere}
+                                        onChange={e => {
+                                            setFormMatiere(e.target.value);
+                                            setFormCoursId("");
+                                        }}
+                                        disabled={!formClasse}
+                                        className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                    >
+                                        <option value="">Choisir Matière...</option>
+                                        {formFilteredMatieres.map(m => <option key={m.IdMatiere} value={m.IdMatiere}>{m.NomMatiere}</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        <button className="w-full bg-[#17203A] hover:bg-[#12192B] text-white font-bold h-14 rounded-xl transition-colors border-none cursor-pointer" onClick={submitDemande}>
+                        {/* If it's a modification, select the matching course */}
+                        {formType === 'modification_cours' && formClasse && formMatiere && (
+                            <div className="mb-6 animate-in slide-in-from-top-2 duration-200">
+                                <label className="text-xs font-bold text-[#17203A] uppercase tracking-wider block mb-2">Cours planifié à modifier</label>
+                                {formFilteredCourses.length === 0 ? (
+                                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 p-3 rounded-xl m-0 font-medium">
+                                        Aucun cours programmé trouvé pour cette classe et matière.
+                                    </p>
+                                ) : (
+                                    <select
+                                        value={formCoursId}
+                                        onChange={e => setFormCoursId(e.target.value)}
+                                        className="w-full h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                    >
+                                        <option value="">-- Choisir le cours --</option>
+                                        {formFilteredCourses.map(c => (
+                                            <option key={c.IdCours} value={c.IdCours}>
+                                                Cours #{c.IdCours} - {c.TypeCours} (Statut: {c.Statut})
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Date, Time and Room selections */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Date Souhaitée</label>
+                                <input
+                                    type="date"
+                                    value={formDate}
+                                    onChange={e => setFormDate(e.target.value)}
+                                    className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Heure Début</label>
+                                <input
+                                    type="time"
+                                    value={formHeureDebut}
+                                    onChange={e => setFormHeureDebut(e.target.value)}
+                                    className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Heure Fin</label>
+                                <input
+                                    type="time"
+                                    value={formHeureFin}
+                                    onChange={e => setFormHeureFin(e.target.value)}
+                                    className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Salle Souhaitée</label>
+                                <select
+                                    value={formSalleId}
+                                    onChange={e => setFormSalleId(e.target.value)}
+                                    className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                >
+                                    <option value="">-- Choisir Salle --</option>
+                                    {allSalles.map(s => (
+                                        <option key={s.IdSalle} value={s.IdSalle}>
+                                            {s.NomSalle} ({s.CodeBatiment})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Justification</label>
+                                <input
+                                    type="text"
+                                    value={formJustification}
+                                    onChange={e => setFormJustification(e.target.value)}
+                                    placeholder="Raison du changement, rattrapage, ou réservation..."
+                                    className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            className="w-full bg-[#17203A] hover:bg-[#12192B] text-white font-bold h-14 rounded-xl transition-all border-none cursor-pointer flex items-center justify-center gap-2 hover:shadow-md"
+                            onClick={submitDemande}
+                        >
+                            <i data-lucide="send" className="w-5 h-5"></i>
                             Envoyer la Demande
                         </button>
                     </div>
 
+                    {/* FILTERED REQUESTS LIST */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-5">
                             <div>
-                                <h2 className="text-lg font-bold text-[#17203A] m-0">Demandes filtrees</h2>
-                                <p className="text-sm text-gray-500 mt-1 m-0">Les filtres de mention, niveau, filiere, classe et matiere s'appliquent aussi ici.</p>
+                                <h2 className="text-lg font-bold text-[#17203A] m-0 flex items-center gap-2">
+                                    <i data-lucide="list" className="w-5 h-5"></i>
+                                    Liste des Requêtes
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-1 m-0">Consultez, filtrez et gérez les requêtes d'emploi du temps.</p>
                             </div>
-                            <button onClick={() => { setSearch(""); setStatusFilter(""); setTypeFilter(""); setSelectedMention(""); setSelectedNiveau(""); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }} className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-sm font-bold text-gray-600 hover:bg-gray-50">
-                                Reinitialiser
+                            <button onClick={() => { setSearch(""); setStatusFilter(""); setTypeFilter(""); }} className="h-10 px-4 rounded-lg border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-1.5 transition-colors cursor-pointer">
+                                <i data-lucide="refresh-cw" className="w-3.5 h-3.5"></i>
+                                Réinitialiser
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche..." className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
-                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                                <option value="">Tous les statuts</option>
-                                <option value="en_attente_admin">En attente</option>
-                                <option value="proposee_prof">Proposee</option>
-                                <option value="acceptee">Validee</option>
-                                <option value="refusee">Refusee</option>
-                            </select>
-                            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                                <option value="">Tous les types</option>
-                                <option value="modification_cours">Modification de cours</option>
-                                <option value="reservation_salle">Reservation de salle</option>
-                                <option value="examen">Examen</option>
-                            </select>
+                        {/* Modern pills filter for Status */}
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Filtrer par Statut</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: '', label: 'Tous' },
+                                    { id: 'en_attente_admin', label: 'En attente' },
+                                    { id: 'proposee_prof', label: 'Proposée' },
+                                    { id: 'acceptee', label: 'Validée' },
+                                    { id: 'refusee', label: 'Refusée' }
+                                ].map(statusItem => (
+                                    <button
+                                        key={statusItem.id}
+                                        onClick={() => setStatusFilter(statusItem.id)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${statusFilter === statusItem.id ? 'bg-[#5C8ABF] border-[#5C8ABF] text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        {statusItem.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Modern pills filter for Type */}
+                        <div className="mb-5">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Filtrer par Type</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: '', label: 'Tous' },
+                                    { id: 'modification_cours', label: 'Modification de cours' },
+                                    { id: 'reservation_salle', label: 'Réservation de salle' },
+                                    { id: 'examen', label: 'Examen' }
+                                ].map(typeItem => (
+                                    <button
+                                        key={typeItem.id}
+                                        onClick={() => setTypeFilter(typeItem.id)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${typeFilter === typeItem.id ? 'bg-[#6F7A2D] border-[#6F7A2D] text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        {typeItem.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative mb-5">
+                            <i data-lucide="search" className="absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 text-gray-400"></i>
+                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher classe, matière, salle..." className="w-full pl-9 h-11 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
                         </div>
 
                         {isLoadingDemandes ? (
-                            <p className="text-sm text-gray-500 m-0">Chargement des demandes...</p>
+                            <div className="flex justify-center py-12">
+                                <i data-lucide="loader-2" className="w-8 h-8 text-[#17203A] animate-spin"></i>
+                            </div>
                         ) : demandes.length === 0 ? (
-                            <p className="text-sm text-gray-500 m-0">Aucune demande ne correspond aux filtres.</p>
+                            <p className="text-sm text-gray-500 py-6 text-center m-0">Aucune demande trouvée.</p>
                         ) : (
-                            <div className="overflow-hidden rounded-lg border border-gray-100">
-                                {demandes.map(item => (
-                                    <div key={item.IdDemande} className="flex flex-col gap-3 border-b border-gray-100 p-4 last:border-b-0 md:flex-row md:items-center md:justify-between">
-                                        <div>
-                                            <p className="font-bold text-sm text-[#17203A] m-0">{typeLabel(item.TypeDemande)}</p>
-                                            <p className="text-xs text-gray-500 mt-1 m-0">
-                                                {[item.Classe?.NomClasse, item.Matiere?.NomMatiere, item.Salle?.NomSalle].filter(Boolean).join(' - ') || item.Justification || `Demande #${item.IdDemande}`}
-                                            </p>
+                            <div className="overflow-hidden rounded-xl border border-gray-100">
+                                {demandes.map(item => {
+                                    const isPending = ['en_attente', 'en_attente_admin', 'en_attente_info', 'proposee_prof', 'contre_proposition_prof', 'modif_acceptee_prof'].includes((item.Statut || '').toLowerCase());
+                                    return (
+                                        <div key={item.IdDemande} className="flex flex-col gap-3 border-b border-gray-100 p-4 last:border-b-0 md:flex-row md:items-center md:justify-between hover:bg-gray-50/30 transition-all">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-sm text-[#17203A]">{typeLabel(item.TypeDemande)}</span>
+                                                    <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">#{item.IdDemande}</span>
+                                                </div>
+                                                <p className="text-xs text-gray-600 mt-1 m-0">
+                                                    {[
+                                                        item.Classe?.NomClasse || item.Cours?.Classe?.NomClasse,
+                                                        item.Matiere?.NomMatiere || item.Cours?.Matiere?.NomMatiere,
+                                                        item.Salle?.NomSalle || item.Cours?.Salle?.NomSalle
+                                                    ].filter(Boolean).join(' - ') || item.Justification}
+                                                </p>
+                                                {item.DateSouhaitee && (
+                                                    <p className="text-[11px] text-gray-400 mt-1 m-0 flex items-center gap-1">
+                                                        <i data-lucide="calendar" className="w-3.5 h-3.5"></i>
+                                                        Planifié pour le : {new Date(item.DateSouhaitee).toLocaleDateString()} de {item.HeureDebutSouhaitee?.substring(0, 5) || 'N/A'} à {item.HeureFinSouhaitee?.substring(0, 5) || 'N/A'}
+                                                    </p>
+                                                )}
+                                                {item.Justification && item.Justification !== 'Demande creee depuis le portail' && item.Justification !== 'Demande créée depuis le portail' && (
+                                                    <p className="text-[11px] text-gray-500 italic mt-1.5 bg-gray-50 p-2 rounded border border-gray-100/50">
+                                                        "{item.Justification}"
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-3 self-start md:self-auto">
+                                                <span className={`text-xs font-bold px-2 py-1 rounded-md ${statusClasses(item.Statut)}`}>
+                                                    {statusLabel(item.Statut)}
+                                                </span>
+
+                                                {isPending && (
+                                                    <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+                                                        <button
+                                                            onClick={() => handleAction(item.IdDemande, 'Valider')}
+                                                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors border-none cursor-pointer"
+                                                            title="Valider la demande"
+                                                        >
+                                                            <i data-lucide="check" className="w-4 h-4"></i>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleAction(item.IdDemande, 'Refuser')}
+                                                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors border-none cursor-pointer"
+                                                            title="Refuser la demande"
+                                                        >
+                                                            <i data-lucide="x" className="w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-md self-start md:self-auto ${statusClasses(item.Statut)}`}>
-                                            {statusLabel(item.Statut)}
-                                        </span>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

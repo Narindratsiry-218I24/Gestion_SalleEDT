@@ -66,6 +66,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             var query = db.DemandesEdt
                 .Include(d => d.Demandeur)
                 .Include(d => d.Cours.Matiere)
+                .Include(d => d.Cours.Classe)
                 .Include(d => d.Salle)
                 .Include(d => d.Niveau)
                 .Include(d => d.Classe)
@@ -93,7 +94,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                 query = query.Where(d =>
                     (d.Niveau != null && d.Niveau.IdMention == idMention.Value) ||
                     (d.Classe != null && d.Classe.Filiere.IdMention == idMention.Value) ||
-                    (d.Matiere != null && d.Matiere.Filiere.IdMention == idMention.Value));
+                    (d.Matiere != null && d.Matiere.Filiere.IdMention == idMention.Value) ||
+                    (d.Cours != null && d.Cours.Classe != null && d.Cours.Classe.Filiere.IdMention == idMention.Value) ||
+                    (d.Cours != null && d.Cours.Matiere != null && d.Cours.Matiere.Filiere.IdMention == idMention.Value));
             }
 
             if (idNiveau.HasValue)
@@ -101,21 +104,25 @@ namespace Gestion_SalleClasseEDT.Controllers
                 query = query.Where(d =>
                     d.IdNiveau == idNiveau.Value ||
                     (d.Classe != null && d.Classe.Semestre.RefSemestre.IdNiveau == idNiveau.Value) ||
-                    (d.Matiere != null && d.Matiere.RefSemestre.IdNiveau == idNiveau.Value));
+                    (d.Matiere != null && d.Matiere.RefSemestre.IdNiveau == idNiveau.Value) ||
+                    (d.Cours != null && d.Cours.Classe != null && d.Cours.Classe.Semestre.RefSemestre.IdNiveau == idNiveau.Value) ||
+                    (d.Cours != null && d.Cours.Matiere != null && d.Cours.Matiere.RefSemestre.IdNiveau == idNiveau.Value));
             }
 
             if (idFiliere.HasValue)
             {
                 query = query.Where(d =>
                     (d.Classe != null && d.Classe.IdFiliere == idFiliere.Value) ||
-                    (d.Matiere != null && d.Matiere.IdFiliere == idFiliere.Value));
+                    (d.Matiere != null && d.Matiere.IdFiliere == idFiliere.Value) ||
+                    (d.Cours != null && d.Cours.Classe != null && d.Cours.Classe.IdFiliere == idFiliere.Value) ||
+                    (d.Cours != null && d.Cours.Matiere != null && d.Cours.Matiere.IdFiliere == idFiliere.Value));
             }
 
             if (idClasse.HasValue)
-                query = query.Where(d => d.IdClasse == idClasse.Value);
+                query = query.Where(d => d.IdClasse == idClasse.Value || (d.Cours != null && d.Cours.IdClasse == idClasse.Value));
 
             if (idMatiere.HasValue)
-                query = query.Where(d => d.IdMatiere == idMatiere.Value);
+                query = query.Where(d => d.IdMatiere == idMatiere.Value || (d.Cours != null && d.Cours.IdMatiere == idMatiere.Value));
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -126,7 +133,9 @@ namespace Gestion_SalleClasseEDT.Controllers
                     (d.Justification != null && d.Justification.ToLower().Contains(term)) ||
                     (d.Classe != null && d.Classe.NomClasse.ToLower().Contains(term)) ||
                     (d.Matiere != null && d.Matiere.NomMatiere.ToLower().Contains(term)) ||
-                    (d.Salle != null && d.Salle.NomSalle.ToLower().Contains(term)));
+                    (d.Salle != null && d.Salle.NomSalle.ToLower().Contains(term)) ||
+                    (d.Cours != null && d.Cours.Classe != null && d.Cours.Classe.NomClasse.ToLower().Contains(term)) ||
+                    (d.Cours != null && d.Cours.Matiere != null && d.Cours.Matiere.NomMatiere.ToLower().Contains(term)));
             }
 
             query = query.OrderByDescending(d => d.IdDemande);
@@ -146,7 +155,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(d => d.Matiere)
                 .Include(d => d.Salle)
                 .OrderByDescending(d => d.IdDemande)
-                .Take(Math.Clamp(take, 1, 20))
+                .Take(Math.Clamp(take, 1, 100))
                 .Select(d => new
                 {
                     d.IdDemande,
