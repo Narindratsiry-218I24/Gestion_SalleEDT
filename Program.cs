@@ -28,7 +28,8 @@ builder.Services.AddControllersWithViews()
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.PropertyNamingPolicy = null; // Prevent camelCase conversion to match PascalCase used in JS views
-    });
+    })
+    .AddRazorRuntimeCompilation(); // Permet le rechargement à chaud des vues .cshtml
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
