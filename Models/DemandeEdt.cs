@@ -57,6 +57,16 @@ namespace Gestion_SalleClasseEDT.Models
         [Column("justification")]
         public string? Justification { get; set; }
 
+        /// <summary>
+        /// Vrai si le créneau demandé ne correspond à aucune disponibilité déclarée par le professeur.
+        /// Décision 1.5 : on n'bloque pas la demande, mais on la tague pour que l'admin soit alerté.
+        /// </summary>
+        [Column("hors_disponibilite")]
+        public bool HorsDisponibilite { get; set; } = false;
+
+        [Column("date_creation")]
+        public DateTime DateCreation { get; set; } = DateTime.UtcNow;
+
         // Navigation properties
         [ForeignKey("IdDemandeur")]
         public virtual Utilisateur? Demandeur { get; set; }

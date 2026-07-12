@@ -3,6 +3,7 @@ using System;
 using Gestion_SalleClasseEDT.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gestion_SalleClasseEDT.Migrations
 {
     [DbContext(typeof(EMITDbContext))]
-    partial class EMITDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711194540_RestructureDisponibiliteProf")]
+    partial class RestructureDisponibiliteProf
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -945,46 +948,6 @@ namespace Gestion_SalleClasseEDT.Migrations
                     b.ToTable("ref_semestre", "public");
                 });
 
-            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.ReglageDisponibilite", b =>
-                {
-                    b.Property<int>("IdReglage")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id_reglage");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdReglage"));
-
-                    b.Property<bool>("DimancheAutorise")
-                        .HasColumnType("boolean")
-                        .HasColumnName("dimanche_autorise");
-
-                    b.Property<int>("DureeMinCreneauMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("duree_min_creneau_minutes");
-
-                    b.Property<TimeSpan>("HeureFermeture")
-                        .HasColumnType("interval")
-                        .HasColumnName("heure_fermeture");
-
-                    b.Property<TimeSpan>("HeureOuverture")
-                        .HasColumnType("interval")
-                        .HasColumnName("heure_ouverture");
-
-                    b.Property<int>("IdAnnee")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_annee");
-
-                    b.Property<bool>("SamediAutorise")
-                        .HasColumnType("boolean")
-                        .HasColumnName("samedi_autorise");
-
-                    b.HasKey("IdReglage");
-
-                    b.HasIndex("IdAnnee");
-
-                    b.ToTable("reglage_disponibilite", "public");
-                });
-
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Salle", b =>
                 {
                     b.Property<int>("IdSalle")
@@ -1623,17 +1586,6 @@ namespace Gestion_SalleClasseEDT.Migrations
                         .IsRequired();
 
                     b.Navigation("Niveau");
-                });
-
-            modelBuilder.Entity("Gestion_SalleClasseEDT.Models.ReglageDisponibilite", b =>
-                {
-                    b.HasOne("Gestion_SalleClasseEDT.Models.AnneeAcademique", "AnneeAcademique")
-                        .WithMany()
-                        .HasForeignKey("IdAnnee")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AnneeAcademique");
                 });
 
             modelBuilder.Entity("Gestion_SalleClasseEDT.Models.Schedule", b =>

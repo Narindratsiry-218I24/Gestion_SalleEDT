@@ -131,6 +131,68 @@ namespace Gestion_SalleClasseEDT.Controllers
             return Ok(new { Annee = annee, Statistiques = stats });
         }
 
+        [HttpGet]
+        [Route("{id:int}/StatistiquesGlobales")]
+        public async Task<IActionResult> GetStatistiquesGlobales(int id)
+        {
+            var annee = await _db.AnneesAcademiques.FindAsync(id);
+            if (annee == null) return NotFound();
+
+            var classeIds = await _db.Classes
+                .Where(c => c.IdAnneeAcademique == id)
+                .Select(c => c.IdClasse)
+                .ToListAsync();
+
+            var affectations = await _db.AffectationsMatieres
+                .Include(a => a.Classe).ThenInclude(c => c.Filiere)
+                .Where(a => classeIds.Contains(a.IdClasse) && a.EstActif)
+                .ToListAsync();
+
+            var totalHeuresAPlanifier = affectations.Sum(a => a.VolumeHoraireTotal);
+
+            var cours = await _db.Cours
+                .Include(c => c.Seances)
+                .Include(c => c.Classe)
+                .Where(c => c.IdClasse.HasValue && classeIds.Contains(c.IdClasse.Value))
+                .ToListAsync();
+
+            var totalHeuresPlanifiees = cours
+                .SelectMany(c => c.Seances ?? new List<Seance>())
+                .Where(s => s.Statut != "Annulee")
+                .Sum(s => (int)(s.EndTime - s.StartTime).TotalHours);
+
+            var totalHeuresRestantes = Math.Max(0, totalHeuresAPlanifier - totalHeuresPlanifiees);
+
+            var countPlanned = cours.Count(c => c.Statut != null && (c.Statut.Contains("Plan") || c.Statut.Contains("Realisee") || c.Statut.Contains("Termine")));
+            var countAPlanifier = cours.Count(c => c.Statut != null && (c.Statut.Contains("Cree") || c.Statut.Contains("a_planifier") || c.Statut.Contains("EnAttente")));
+            var countConflict = cours.Count(c => c.Statut != null && c.Statut.Contains("Conflit"));
+
+            var repartition = affectations
+                .GroupBy(a => a.Classe?.Filiere?.NomFiliere ?? a.Classe?.Filiere?.CodeFiliere ?? "Autre")
+                .Select(g => new 
+                {
+                    Label = g.Key,
+                    Hours = g.Sum(a => a.VolumeHoraireTotal),
+                    CourseCount = g.Count()
+                })
+                .OrderByDescending(g => g.Hours)
+                .ToList();
+
+            var topFiliere = repartition.FirstOrDefault();
+
+            return Ok(new
+            {
+                totalHeuresAPlanifier,
+                totalHeuresPlanifiees,
+                totalHeuresRestantes,
+                countAPlanifier,
+                countPlanned,
+                countConflict,
+                topFiliere = topFiliere == null ? null : new { label = topFiliere.Label, hours = topFiliere.Hours },
+                repartition
+            });
+        }
+
         [HttpPost]
         [Route("")]
         public IActionResult CreateAnnee([FromBody] AnneeAcademique annee)

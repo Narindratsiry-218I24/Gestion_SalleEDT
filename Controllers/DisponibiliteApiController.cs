@@ -1,9 +1,11 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Gestion_SalleClasseEDT.Models;
+using Gestion_SalleClasseEDT.Services;
 using System.Collections.Generic;
 
 namespace Gestion_SalleClasseEDT.Controllers
@@ -13,10 +15,12 @@ namespace Gestion_SalleClasseEDT.Controllers
     public class DisponibiliteController : ControllerBase
     {
         private readonly EMITDbContext _db;
+        private readonly IReglageDisponibiliteService _reglageService;
 
-        public DisponibiliteController(EMITDbContext db)
+        public DisponibiliteController(EMITDbContext db, IReglageDisponibiliteService reglageService)
         {
             _db = db;
+            _reglageService = reglageService;
         }
         [HttpGet("Mois")]
         public async Task<IActionResult> GetMois(string email, int mois, int annee)
@@ -50,7 +54,7 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             for (int i = 1; i <= endDate.Day; i++)
             {
-                var currentDate = new DateTime(annee, mois, i);
+                var currentDate = new DateTime(annee, mois, i, 0, 0, 0, DateTimeKind.Utc);
                 var dateStr = currentDate.ToString("yyyy-MM-dd");
                 var jourSemaineEnum = currentDate.DayOfWeek;
                 string jourStr = jourSemaineEnum switch
@@ -65,8 +69,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                     _ => ""
                 };
 
-                // Check specific date availability (YYYY-MM-DD)
-                var dayDispos = dispos.Where(d => d.JourSemaine == dateStr).ToList();
+                var dayDispos = dispos.Where(d => DisponibiliteHelper.IsActiveForDate(d, currentDate)).ToList();
 
                 bool hasMatin = dayDispos.Any(d => d.HeureDebut <= new TimeSpan(8, 0, 0) && d.HeureFin >= new TimeSpan(12, 0, 0));
                 bool hasAprem = dayDispos.Any(d => d.HeureDebut <= new TimeSpan(14, 0, 0) && d.HeureFin >= new TimeSpan(18, 0, 0));
@@ -117,22 +120,48 @@ namespace Gestion_SalleClasseEDT.Controllers
             public bool Matin { get; set; }
             public bool ApresMidi { get; set; }
             public bool IsDefined { get; set; } // Si le jour a été cliqué/défini
+            public int? SelectedMatiereId { get; set; }
+            public string SelectedMatiereNom { get; set; }
         }
 
         [HttpPost("MettreAJour")]
         public async Task<IActionResult> MettreAJour([FromBody] UpdateDispoDto dto)
         {
-            var prof = await _db.Professeurs.Include(p => p.Disponibilites).FirstOrDefaultAsync(p => p.Email == dto.Email);
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Email))
+            {
+                return BadRequest("Email is required.");
+            }
+
+            var prof = await _db.Professeurs.Include(p => p.Disponibilites).FirstOrDefaultAsync(p => p.Email == dto.Email.Trim());
             if (prof == null) return NotFound("Professeur non trouvé.");
 
-            var datesAUpdate = dto.Dispos.Select(d => d.DateStr).ToList();
+            var targetDateStrings = dto.Dispos?
+                .Where(d => !string.IsNullOrWhiteSpace(d.DateStr))
+                .Select(d => d.DateStr)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
 
-            // Supprimer uniquement les disponibilités des dates reçues
-            var disposToRemove = prof.Disponibilites.Where(d => datesAUpdate.Contains(d.JourSemaine)).ToList();
-            _db.DisponibilitesProf.RemoveRange(disposToRemove);
+            var disposToRemove = prof.Disponibilites
+                .Where(d =>
+                    d.TypeDisponibilite == TypeDisponibilite.Ponctuelle &&
+                    (
+                        (d.DateSpecifique.HasValue && targetDateStrings.Contains(d.DateSpecifique.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))) ||
+                        (!string.IsNullOrWhiteSpace(d.JourSemaine) && targetDateStrings.Contains(d.JourSemaine))
+                    ))
+                .ToList();
+
+            if (disposToRemove.Any())
+            {
+                _db.DisponibilitesProf.RemoveRange(disposToRemove);
+            }
+
+            var activeAnnee = await _db.AnneesAcademiques.FirstOrDefaultAsync(a => a.EstActive);
+            int? activeAnneeId = activeAnnee?.IdAnnee;
 
             foreach (var d in dto.Dispos.Where(x => x.IsDefined))
             {
+                DateTime? parsedDate = DateTime.TryParse(d.DateStr, out var pDate) ? DateTime.SpecifyKind(pDate.Date, DateTimeKind.Utc) : null;
+
                 if (d.Matin)
                 {
                     _db.DisponibilitesProf.Add(new DisponibiliteProf
@@ -141,7 +170,10 @@ namespace Gestion_SalleClasseEDT.Controllers
                         JourSemaine = d.DateStr,
                         HeureDebut = new TimeSpan(8, 0, 0),
                         HeureFin = new TimeSpan(12, 0, 0),
-                        SemaineType = "A"
+                        SemaineType = "A",
+                        TypeDisponibilite = TypeDisponibilite.Ponctuelle,
+                        DateSpecifique = parsedDate,
+                        IdAnnee = activeAnneeId
                     });
                 }
                 if (d.ApresMidi)
@@ -152,11 +184,13 @@ namespace Gestion_SalleClasseEDT.Controllers
                         JourSemaine = d.DateStr,
                         HeureDebut = new TimeSpan(14, 0, 0),
                         HeureFin = new TimeSpan(18, 0, 0),
-                        SemaineType = "A"
+                        SemaineType = "A",
+                        TypeDisponibilite = TypeDisponibilite.Ponctuelle,
+                        DateSpecifique = parsedDate,
+                        IdAnnee = activeAnneeId
                     });
                 }
-                
-                // Si IsDefined est true mais Matin=false et ApresMidi=false, on crée un enregistrement "rouge" (0h - 0h) pour marquer l'indisponibilité
+
                 if (!d.Matin && !d.ApresMidi)
                 {
                     _db.DisponibilitesProf.Add(new DisponibiliteProf
@@ -165,13 +199,42 @@ namespace Gestion_SalleClasseEDT.Controllers
                         JourSemaine = d.DateStr,
                         HeureDebut = TimeSpan.Zero,
                         HeureFin = TimeSpan.Zero,
-                        SemaineType = "A"
+                        SemaineType = "A",
+                        TypeDisponibilite = TypeDisponibilite.Ponctuelle,
+                        DateSpecifique = parsedDate,
+                        IdAnnee = activeAnneeId
                     });
                 }
             }
 
             await _db.SaveChangesAsync();
             return Ok(new { message = "Disponibilités mises à jour avec succès." });
+        }
+
+        [HttpGet("Reglage/{idAnnee:int}")]
+        public async Task<IActionResult> GetReglage(int idAnnee)
+        {
+            var reglage = await _reglageService.GetReglagePourAnneeAsync(idAnnee);
+            return Ok(new
+            {
+                reglage.IdAnnee,
+                reglage.DimancheAutorise,
+                reglage.SamediAutorise,
+                reglage.HeureOuverture,
+                reglage.HeureFermeture,
+                reglage.DureeMinCreneauMinutes
+            });
+        }
+
+        [HttpPost("Reglage")]
+        public async Task<IActionResult> SaveReglage([FromBody] ReglageDisponibilite reglage)
+        {
+            if (reglage == null) return BadRequest("Reglage is required.");
+            if (reglage.HeureOuverture >= reglage.HeureFermeture) return BadRequest("Heure d'ouverture doit être antérieure à l'heure de fermeture.");
+            if (reglage.DureeMinCreneauMinutes <= 0) return BadRequest("La durée minimale du créneau doit être supérieure à zéro.");
+
+            var saved = await _reglageService.SaveReglageAsync(reglage);
+            return Ok(saved);
         }
     }
 }

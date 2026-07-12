@@ -33,6 +33,9 @@ public class Classe
     [Column("est_archivee")]
     public bool EstArchivee { get; set; } = false;
 
+    [Column("effectif")]
+    public int Effectif { get; set; } = 40;
+
     // Navigation properties
     [ForeignKey("IdFiliere")]
     public virtual Filiere Filiere { get; set; }

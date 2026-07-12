@@ -36,11 +36,80 @@ namespace Gestion_SalleClasseEDT.Controllers
         }
 
         [HttpGet]
+        [Route("Niveaux")]
+        public IActionResult GetNiveaux()
+        {
+            var niveaux = db.Niveaux.OrderBy(n => n.Ordre).ToList();
+            return Ok(niveaux);
+        }
+
+        [HttpGet]
+        [Route("Filieres")]
+        public IActionResult GetFilieres([FromQuery] int niveauId)
+        {
+            var niveau = db.Niveaux.Find(niveauId);
+            if (niveau == null) return NotFound();
+
+            var filieres = db.Filieres
+                .Where(f => f.IdMention == niveau.IdMention)
+                .OrderBy(f => f.NomFiliere)
+                .ToList();
+            return Ok(filieres);
+        }
+
+        [HttpGet]
         [Route("RefSemestres")]
         public IActionResult GetRefSemestres()
         {
             var semestres = db.RefSemestres.Include(r => r.Niveau).ToList();
             return Ok(semestres);
+        }
+
+        [HttpGet]
+        [Route("NonPlanifiees")]
+        public IActionResult GetMatieresNonPlanifiees([FromQuery] int filiereId, [FromQuery] int niveauId)
+        {
+            // Trouver les classes associées à la filière et niveau
+            var classes = db.Classes
+                .Where(c => c.IdFiliere == filiereId && c.IdNiveau == niveauId)
+                .Select(c => c.IdClasse)
+                .ToList();
+
+            if (!classes.Any()) return Ok(new List<object>());
+
+            // Trouver les affectations de matières pour ces classes
+            var affectations = db.AffectationsMatieres
+                .Include(a => a.Matiere)
+                .Include(a => a.Professeur)
+                .Where(a => classes.Contains(a.IdClasse) && a.EstActif)
+                .ToList();
+
+            // Trouver les cours existants
+            var existingCoursAffectations = db.Cours
+                .Where(c => c.IdAffectation != null)
+                .Select(c => c.IdAffectation)
+                .Distinct()
+                .ToList();
+
+            var results = affectations
+                .Where(a => !existingCoursAffectations.Contains(a.IdAffectation))
+                .Select(a => new
+                {
+                    a.IdAffectation,
+                    a.Matiere.IdMatiere,
+                    a.Matiere.NomMatiere,
+                    a.Matiere.CodeMatiere,
+                    ProfesseurNom = a.Professeur != null ? $"{a.Professeur.Prenom} {a.Professeur.Nom}" : "Non assigné",
+                    a.IdProfesseur,
+                    a.IdClasse,
+                    a.IdSemestre,
+                    a.HeuresCm,
+                    a.HeuresTd,
+                    a.HeuresTp
+                })
+                .ToList();
+
+            return Ok(results);
         }
 
         [HttpPost]

@@ -1,0 +1,392 @@
+@{
+    ViewBag.Title = "Planification";
+}
+
+<div id="step1" class="space-y-10">
+    <div class="rounded-3xl bg-white p-6 shadow-2xl shadow-slate-900/8 scroll-appear">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="space-y-3">
+                <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#5C8ABF]">Assistant de planification</p>
+                <h1 class="text-4xl font-black tracking-tight text-[#17203A] sm:text-5xl">Planifiez vos cours en 3 étapes claires</h1>
+                <p class="max-w-2xl text-gray-600">Analysez les heures à planifier, choisissez les cours prioritaires, puis validez une séance optimisée avec suggestion automatique de professeur et salle.</p>
+            </div>
+            <a asp-controller="Home" asp-action="Index" class="button-hero inline-flex h-14 items-center justify-center rounded-full bg-[#73A5D4] px-8 text-base font-bold text-white shadow-lg shadow-[#73A5D4]/25 transition hover:bg-[#5C8ABF]">Retour à l'accueil</a>
+        </div>
+    </div>
+
+    <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div class="space-y-6">
+            <div class="rounded-3xl bg-[#17203A] p-6 text-white shadow-2xl shadow-slate-900/10 relative overflow-hidden scroll-appear">
+                <div class="pointer-events-none absolute inset-x-0 top-0 h-60 opacity-30" data-parallax-speed="0.12">
+                    <div class="absolute left-0 top-8 h-24 w-24 rounded-full bg-[#73A5D4]/20 blur-3xl"></div>
+                    <div class="absolute right-10 top-16 h-32 w-32 rounded-full bg-[#5C8ABF]/20 blur-3xl"></div>
+                </div>
+                <div class="relative z-10 grid gap-6 md:grid-cols-2">
+                    <div class="rounded-3xl bg-[#13203b]/80 p-6 shadow-lg shadow-[#17203A]/20 card-float">
+                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#94a3b8]">Année sélectionnée</p>
+                        <h2 id="planYearLabel" class="mt-3 text-3xl font-black tracking-tight text-white">Chargement...</h2>
+                    </div>
+                    <div class="rounded-3xl bg-[#17203A]/90 p-6 shadow-lg shadow-[#17203A]/20">
+                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#94a3b8]">Étape</p>
+                        <div class="mt-4 flex items-center gap-2">
+                            <span class="rounded-full bg-[#5C8ABF]/15 px-4 py-2 text-sm font-semibold text-[#cfe8ff]">1. Aperçu</span>
+                            <span class="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300">2. Cours</span>
+                            <span class="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300">3. Validation</span>
+                        </div>
+                        <p class="mt-4 text-sm leading-6 text-slate-300">Suivez l’assistant pour générer des séances sans conflit et maîtriser votre planning.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <article class="feature-card rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:border-[#73A5D4]/40 scroll-appear">
+                    <p class="text-xs font-bold uppercase tracking-[0.35em] text-[#5C8ABF]">Total heures</p>
+                    <p id="totalHours" class="mt-4 text-3xl font-black text-[#17203A]">--</p>
+                    <p class="mt-2 text-sm text-slate-500">Volume horaire total à planifier pour l’année.</p>
+                </article>
+                <article class="feature-card rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:border-[#73A5D4]/40 scroll-appear">
+                    <p class="text-xs font-bold uppercase tracking-[0.35em] text-[#5C8ABF]">Planifié</p>
+                    <p id="plannedHours" class="mt-4 text-3xl font-black text-[#17203A]">--</p>
+                    <p class="mt-2 text-sm text-slate-500">Heures de séances déjà planifiées.</p>
+                </article>
+                <article class="feature-card rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:border-[#73A5D4]/40 scroll-appear">
+                    <p class="text-xs font-bold uppercase tracking-[0.35em] text-[#5C8ABF]">Restant</p>
+                    <p id="remainingHours" class="mt-4 text-3xl font-black text-[#17203A]">--</p>
+                    <p class="mt-2 text-sm text-slate-500">Heures encore à distribuer.</p>
+                </article>
+                <article class="feature-card rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:border-[#73A5D4]/40 scroll-appear">
+                    <p class="text-xs font-bold uppercase tracking-[0.35em] text-[#5C8ABF]">Statut cours</p>
+                    <div class="mt-4 space-y-3">
+                        <div class="flex items-center justify-between text-sm text-slate-600"><span>À planifier</span><strong id="coursesToPlan">--</strong></div>
+                        <div class="flex items-center justify-between text-sm text-slate-600"><span>Planifiés</span><strong id="coursesPlanned">--</strong></div>
+                        <div class="flex items-center justify-between text-sm text-slate-600"><span>En conflit</span><strong id="coursesConflict">--</strong></div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="scroll-appear rounded-3xl bg-white p-6 shadow-sm">
+                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-[#17203A]">Répartition par parcours</h2>
+                        <p class="text-sm text-slate-500">Visualisation des heures par filière.</p>
+                    </div>
+                    <span class="rounded-full bg-[#eff6ff] px-4 py-2 text-sm font-semibold text-[#2563eb]">Top 3 parcours</span>
+                </div>
+                <div class="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                    <div class="rounded-3xl bg-slate-50 p-4">
+                        <svg id="filiereChart" viewBox="0 0 420 260" class="h-full w-full"></svg>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-3xl bg-[#17203A] p-4 text-white">
+                            <p class="text-sm uppercase tracking-[0.35em] text-[#94a3b8]">Meilleur parcours</p>
+                            <h3 id="topFiliere" class="mt-3 text-2xl font-black">Chargement...</h3>
+                            <p class="mt-2 text-sm text-slate-300">Critères : volume horaire et classes à couvrir.</p>
+                        </div>
+                        <div class="rounded-3xl bg-slate-50 p-4">
+                            <h3 class="text-sm font-bold uppercase tracking-[0.35em] text-[#17203A]">Équilibre</h3>
+                            <div class="mt-4 space-y-3" id="filiereBreakdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="space-y-6">
+            <div class="rounded-3xl bg-[#fff] p-6 shadow-sm scroll-appear">
+                <h2 class="text-xl font-bold text-[#17203A]">Guide de planification</h2>
+                <ol class="mt-4 space-y-3 list-decimal pl-5 text-sm leading-7 text-slate-600">
+                    <li>Sélectionnez l'année académique et vérifiez les statistiques.</li>
+                    <li>Choisissez le cours prioritaire et validez le professeur proposé.</li>
+                    <li>Planifiez la séance et confirmez la réservation.</li>
+                </ol>
+                <button id="startPlanButton" type="button" class="mt-6 w-full rounded-3xl bg-[#73A5D4] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#5C8ABF]">Commencer la planification</button>
+            </div>
+
+            <div class="rounded-3xl bg-[#17203A] p-6 text-white shadow-sm scroll-appear">
+                <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#94a3b8]">Conseil</p>
+                <p class="mt-4 text-sm leading-7">Les meilleures planifications utilisent des salles proches du département et des enseignants déjà affectés à la filière. L’assistant suggère une rencontre dès que possible.</p>
+            </div>
+        </aside>
+    </section>
+
+    <section id="step2" class="hidden space-y-6 scroll-appear">
+        <div class="flex items-center justify-between gap-4 rounded-3xl bg-white p-6 shadow-sm">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#5C8ABF]">Étape 2</p>
+                <h2 class="text-2xl font-black text-[#17203A]">Choisissez le cours à planifier</h2>
+            </div>
+            <button id="backToStep1" type="button" class="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Retour</button>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div class="space-y-4">
+                <div class="rounded-3xl bg-white p-4 shadow-sm">
+                    <label class="text-sm font-semibold text-slate-600">Recherche</label>
+                    <input id="courseSearch" type="search" placeholder="Rechercher par matière, professeur, classe..." class="mt-3 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-[#73A5D4] focus:ring-2 focus:ring-[#73A5D4]/20" />
+                </div>
+                <div id="courseCards" class="grid gap-4"></div>
+            </div>
+            <div class="rounded-3xl bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-bold text-[#17203A]">Sélection actuelle</h3>
+                <div id="selectedCourseCard" class="mt-5 rounded-3xl border border-slate-200 p-5 text-slate-700">Aucun cours sélectionné.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="step3" class="hidden space-y-6 scroll-appear">
+        <div class="flex items-center justify-between gap-4 rounded-3xl bg-white p-6 shadow-sm">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#5C8ABF]">Étape 3</p>
+                <h2 class="text-2xl font-black text-[#17203A]">Validez la séance proposée</h2>
+            </div>
+            <button id="backToStep2" type="button" class="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Retour</button>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div class="rounded-3xl bg-white p-6 shadow-sm">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="block text-sm font-semibold text-slate-600">Date</label>
+                    <input id="planDate" type="date" class="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-[#73A5D4] focus:ring-2 focus:ring-[#73A5D4]/20" />
+                    <label class="block text-sm font-semibold text-slate-600">Heure de début</label>
+                    <input id="planStartTime" type="time" class="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-[#73A5D4] focus:ring-2 focus:ring-[#73A5D4]/20" />
+                    <label class="block text-sm font-semibold text-slate-600">Heure de fin</label>
+                    <input id="planEndTime" type="time" class="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-[#73A5D4] focus:ring-2 focus:ring-[#73A5D4]/20" />
+                    <label class="block text-sm font-semibold text-slate-600">Salle suggérée</label>
+                    <select id="planSalle" class="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-[#73A5D4] focus:ring-2 focus:ring-[#73A5D4]/20"></select>
+                </div>
+                <div class="mt-6 rounded-3xl bg-[#eff6ff] p-5 text-slate-700">
+                    <p class="font-bold">Suggestion automatique</p>
+                    <p class="mt-2 text-sm leading-6" id="autoSuggestionText">Sélectionnez un cours pour générer les suggestions.</p>
+                </div>
+                <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <button id="confirmPlanButton" type="button" class="button-hero inline-flex justify-center rounded-3xl bg-[#73A5D4] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#5C8ABF]">Confirmer la séance</button>
+                    <button id="discardPlanButton" type="button" class="inline-flex justify-center rounded-3xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Annuler</button>
+                </div>
+                <div id="planMessage" class="mt-4 min-h-[48px] text-sm font-medium"></div>
+            </div>
+            <div class="rounded-3xl bg-[#17203A] p-6 text-white shadow-sm">
+                <h3 class="text-lg font-bold">Résumé</h3>
+                <div class="mt-5 space-y-4 text-sm" id="planSummary">
+                    <p>Sélectionnez un cours pour voir les détails et la salle recommandée.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        const planState = {
+            yearId: null,
+            courses: [],
+            professors: [],
+            salles: [],
+            selectedCourse: null,
+            statistics: null
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const startButton = document.getElementById('startPlanButton');
+            startButton.addEventListener('click', () => showStep(2));
+            document.getElementById('backToStep1').addEventListener('click', () => showStep(1));
+            document.getElementById('backToStep2').addEventListener('click', () => showStep(2));
+            document.getElementById('confirmPlanButton').addEventListener('click', confirmPlan);
+            document.getElementById('discardPlanButton').addEventListener('click', () => showStep(1));
+            document.getElementById('courseSearch').addEventListener('input', renderCourseList);
+
+            loadPlanification();
+        });
+
+        async function loadPlanification() {
+            const yearResponse = await window.app.apiGet('/api/AnneeAcademique?statut=active&pageSize=5');
+            const year = (yearResponse?.Items || [])[0];
+            if (!year) return;
+            planState.yearId = year.IdAnnee;
+            document.getElementById('planYearLabel').textContent = year.Libelle;
+            await loadStatistics(year.IdAnnee);
+            await loadCourses(year.IdAnnee);
+            await loadSalles();
+            await loadProfesseurs();
+        }
+
+        async function loadStatistics(yearId) {
+            const stats = await window.app.apiGet(`/api/AnneeAcademique/${yearId}/StatistiquesGlobales`);
+            planState.statistics = stats;
+            document.getElementById('totalHours').textContent = `${stats.totalHeuresAPlanifier ?? 0} h`;
+            document.getElementById('plannedHours').textContent = `${stats.totalHeuresPlanifiees ?? 0} h`;
+            document.getElementById('remainingHours').textContent = `${stats.totalHeuresRestantes ?? 0} h`;
+            document.getElementById('coursesToPlan').textContent = stats.countAPlanifier ?? 0;
+            document.getElementById('coursesPlanned').textContent = stats.countPlanned ?? 0;
+            document.getElementById('coursesConflict').textContent = stats.countConflict ?? 0;
+            document.getElementById('topFiliere').textContent = stats.topFiliere?.label || 'Aucune donnée';
+            renderFiliereChart(stats.repartition || []);
+            renderFiliereBreakdown(stats.repartition || []);
+        }
+
+        function renderFiliereChart(items) {
+            const svg = document.getElementById('filiereChart');
+            const maxValue = Math.max(...items.map(item => item.hours), 1);
+            const barWidth = 60;
+            const gap = 24;
+            const width = Math.max(420, items.length * (barWidth + gap));
+            const height = 260;
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.innerHTML = items.map((item, index) => {
+                const barHeight = Math.round((item.hours / maxValue) * 160);
+                const x = index * (barWidth + gap) + 40;
+                const y = height - barHeight - 40;
+                const color = ['#5C8ABF', '#73A5D4', '#FBBF24', '#34D399'][index % 4];
+                return `
+                    <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="16" fill="${color}" />
+                    <text x="${x + barWidth / 2}" y="${height - 18}" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700">${item.label}</text>
+                    <text x="${x + barWidth / 2}" y="${y - 10}" text-anchor="middle" fill="#334155" font-size="12" font-weight="700">${item.hours}h</text>`;
+            }).join('');
+        }
+
+        function renderFiliereBreakdown(items) {
+            const container = document.getElementById('filiereBreakdown');
+            container.innerHTML = items.slice(0, 3).map(item => `
+                <div class="rounded-3xl border border-slate-200 p-4">
+                    <p class="text-sm font-semibold text-[#17203A]">${window.app.escapeHtml(item.label)}</p>
+                    <p class="mt-1 text-sm text-slate-500">${item.hours} heures • ${item.courseCount} cours</p>
+                </div>
+            `).join('') || '<p class="text-sm text-slate-500">Aucune répartition disponible.</p>';
+        }
+
+        async function loadCourses(yearId) {
+            const results = await window.app.apiGet(`/Home/GetCoursByFilters?anneeId=${yearId}`);
+            planState.courses = results || [];
+            renderCourseList();
+        }
+
+        async function loadSalles() {
+            planState.salles = await window.app.apiGet('/api/Salle');
+            const select = document.getElementById('planSalle');
+            select.innerHTML = planState.salles.map(s => `<option value="${s.IdSalle}">${window.app.escapeHtml(s.NomSalle || s.Nom)} (${s.Capacite || 'N/A'})</option>`).join('');
+        }
+
+        async function loadProfesseurs() {
+            planState.professors = await window.app.apiGet('/api/Professeur');
+        }
+
+        function renderCourseList() {
+            const search = document.getElementById('courseSearch').value.toLowerCase();
+            const container = document.getElementById('courseCards');
+            const items = (planState.courses || []).filter(course => {
+                const title = `${course.MatiereNom || ''} ${course.ClasseNom || ''} ${course.ProfesseurNom || ''}`.toLowerCase();
+                return !search || title.includes(search);
+            });
+            if (!items.length) {
+                container.innerHTML = '<div class="rounded-3xl bg-slate-50 p-6 text-slate-500">Aucun cours trouvé.</div>';
+                return;
+            }
+            container.innerHTML = items.map(course => {
+                const selected = planState.selectedCourse?.IdCours === course.IdCours;
+                return `
+                    <button type="button" onclick="selectCourse(${course.IdCours})" class="group block w-full rounded-3xl border ${selected ? 'border-[#73A5D4] bg-[#eff6ff]' : 'border-slate-200 bg-white'} p-5 text-left shadow-sm transition hover:border-[#73A5D4]/60">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-base font-bold text-[#17203A]">${window.app.escapeHtml(course.MatiereNom || 'Cours')}</p>
+                                <p class="mt-2 text-sm text-slate-500">Classe : ${window.app.escapeHtml(course.ClasseNom || '—')}</p>
+                            </div>
+                            <span class="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold text-[#4338ca]">${window.app.escapeHtml(course.Statut || 'N/A')}</span>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-2 text-sm text-slate-500">
+                            <div>Volume : ${course.VolumeHours || 0}h</div>
+                            <div>Planifié : ${course.RealizedHours || 0}h</div>
+                        </div>
+                    </button>`;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function selectCourse(id) {
+            planState.selectedCourse = planState.courses.find(c => c.IdCours === id) || null;
+            updateSelectedCourse();
+            updatePlanSummary();
+            showStep(3);
+        }
+
+        function updateSelectedCourse() {
+            const target = document.getElementById('selectedCourseCard');
+            const course = planState.selectedCourse;
+            if (!course) {
+                target.innerHTML = '<p class="text-sm text-slate-500">Aucun cours sélectionné.</p>';
+                return;
+            }
+            const prof = course.ProfesseurNom || 'Non assigné';
+            target.innerHTML = `
+                <div class="space-y-4">
+                    <div><p class="text-xs uppercase tracking-[0.35em] text-[#5C8ABF]">Cours</p><p class="mt-2 text-xl font-bold text-[#17203A]">${window.app.escapeHtml(course.MatiereNom || 'Cours')}</p></div>
+                    <div class="grid gap-2 text-sm text-slate-600">
+                        <div>Classe : ${window.app.escapeHtml(course.ClasseNom || '—')}</div>
+                        <div>Professeur proposé : ${window.app.escapeHtml(prof)}</div>
+                        <div>Statut : ${window.app.escapeHtml(course.Statut || '—')}</div>
+                        <div>Volume restant : ${Math.max(0, (course.VolumeHours || 0) - (course.RealizedHours || 0))}h</div>
+                    </div>
+                </div>`;
+            const suggestText = `Nous recommandons ${window.app.escapeHtml(prof)} si le cours est déjà assigné, sinon choisissez un enseignant de la filière et une salle disponible.`;
+            document.getElementById('autoSuggestionText').textContent = suggestText;
+            updatePlanSummary();
+        }
+
+        function updatePlanSummary() {
+            const summary = document.getElementById('planSummary');
+            const course = planState.selectedCourse;
+            if (!course) {
+                summary.innerHTML = '<p class="text-sm text-slate-300">Sélectionnez un cours pour voir le résumé.</p>';
+                return;
+            }
+            const prof = course.ProfesseurNom || 'Non assigné';
+            summary.innerHTML = `
+                <div class="space-y-3">
+                    <p class="text-sm text-slate-300">Cours</p>
+                    <p class="font-bold text-white">${window.app.escapeHtml(course.MatiereNom || '—')}</p>
+                    <p class="text-sm text-slate-300">Classe</p>
+                    <p class="font-bold text-white">${window.app.escapeHtml(course.ClasseNom || '—')}</p>
+                    <p class="text-sm text-slate-300">Professeur proposé</p>
+                    <p class="font-bold text-white">${window.app.escapeHtml(prof)}</p>
+                    <p class="text-sm text-slate-300">Durée restante</p>
+                    <p class="font-bold text-white">${Math.max(0, (course.VolumeHours || 0) - (course.RealizedHours || 0))} heures</p>
+                </div>`;
+        }
+
+        function showStep(step) {
+            document.getElementById('step2').classList.toggle('hidden', step !== 2);
+            document.getElementById('step3').classList.toggle('hidden', step !== 3);
+            document.querySelectorAll('#step1, #step2, #step3').forEach(section => {
+                if (section.id === `step${step}`) section.classList.remove('hidden');
+            });
+            if (step === 2) {
+                document.getElementById('courseSearch').focus();
+            }
+        }
+
+        async function confirmPlan() {
+            const course = planState.selectedCourse;
+            if (!course) return;
+            const date = document.getElementById('planDate').value;
+            const startTime = document.getElementById('planStartTime').value;
+            const endTime = document.getElementById('planEndTime').value;
+            const salleId = parseInt(document.getElementById('planSalle').value, 10);
+            if (!date || !startTime || !endTime || !salleId) {
+                document.getElementById('planMessage').textContent = 'Veuillez remplir la date, l’heure et choisir une salle.';
+                document.getElementById('planMessage').className = 'mt-4 min-h-[48px] text-sm font-medium text-amber-600';
+                return;
+            }
+            try {
+                const response = await window.app.apiPost(`/Home/PlanifierSeance?id=${course.IdCours}`, {
+                    Date: date,
+                    StartTime: startTime,
+                    EndTime: endTime,
+                    SalleId: salleId,
+                    GroupeId: null,
+                    ProfesseurId: course.IdProfesseur || null
+                });
+                document.getElementById('planMessage').textContent = `Séance planifiée (#${response.SeanceId}).`;
+                document.getElementById('planMessage').className = 'mt-4 min-h-[48px] text-sm font-medium text-emerald-600';
+            } catch (error) {
+                document.getElementById('planMessage').textContent = error.message || 'Échec de la planification.';
+                document.getElementById('planMessage').className = 'mt-4 min-h-[48px] text-sm font-medium text-red-600';
+            }
+        }
+    </script>
+}

@@ -18,21 +18,102 @@ namespace Gestion_SalleClasseEDT.Controllers
     {
         private readonly EMITDbContext db;
         private readonly IPlanningService _planningService;
+        private readonly IConflitService _conflitService;
 
-        public CoursController(EMITDbContext context, IPlanningService planningService)
+        public CoursController(EMITDbContext context, IPlanningService planningService, IConflitService conflitService)
         {
             db = context;
             _planningService = planningService;
+            _conflitService = conflitService;
         }
 
         [HttpGet]
         [Route("")]
-        public IActionResult GetCours()
+        public IActionResult GetCours(
+            [FromQuery] int? anneeId = null,
+            [FromQuery] int? filiereId = null,
+            [FromQuery] int? parcoursId = null,
+            [FromQuery] int? classeId = null,
+            [FromQuery] int? matiereId = null,
+            [FromQuery] string? statut = null,
+            [FromQuery] int? profId = null,
+            [FromQuery] string? profEmail = null)
         {
             try
             {
-                var courses = db.Cours.Include(c => c.Matiere).Include(c => c.Seances).ToList();
-                return Ok(courses);
+                var courses = db.Cours
+                    .Include(c => c.Matiere)
+                        .ThenInclude(m => m.Filiere)
+                    .Include(c => c.Matiere)
+                        .ThenInclude(m => m.RefSemestre)
+                            .ThenInclude(r => r.Niveau)
+                    .Include(c => c.Professeur)
+                    .Include(c => c.Classe)
+                    .Include(c => c.Seances)
+                    .AsQueryable();
+
+                if (anneeId.HasValue)
+                {
+                    courses = courses.Where(c => c.Classe != null && c.Classe.IdAnneeAcademique == anneeId.Value);
+                }
+
+                if (filiereId.HasValue)
+                {
+                    courses = courses.Where(c => c.Matiere != null && c.Matiere.IdFiliere == filiereId.Value);
+                }
+
+                if (parcoursId.HasValue)
+                {
+                    courses = courses.Where(c => c.Matiere != null && c.Matiere.RefSemestre != null && c.Matiere.RefSemestre.IdNiveau == parcoursId.Value);
+                }
+
+                if (classeId.HasValue)
+                {
+                    courses = courses.Where(c => c.IdClasse == classeId.Value);
+                }
+
+                if (matiereId.HasValue)
+                {
+                    courses = courses.Where(c => c.IdMatiere == matiereId.Value);
+                }
+
+                if (!string.IsNullOrEmpty(statut))
+                {
+                    courses = courses.Where(c => c.Statut == statut);
+                }
+
+                if (profId.HasValue)
+                {
+                    courses = courses.Where(c => c.IdProfesseur == profId.Value);
+                }
+
+                if (!string.IsNullOrEmpty(profEmail))
+                {
+                    courses = courses.Where(c => c.Professeur != null && c.Professeur.Email == profEmail);
+                }
+
+                var result = courses
+                    .OrderByDescending(c => c.IdCours)
+                    .Select(c => new
+                    {
+                        c.IdCours,
+                        MatiereNom = c.Matiere != null ? c.Matiere.NomMatiere : "Non défini",
+                        MatiereCode = c.Matiere != null ? c.Matiere.CodeMatiere : "",
+                        FiliereNom = c.Matiere != null && c.Matiere.Filiere != null ? c.Matiere.Filiere.NomFiliere : "",
+                        ClasseNom = c.Classe != null ? c.Classe.NomClasse : "Non assignée",
+                        c.TypeCours,
+                        c.VolumeHours,
+                        RealizedHours = c.Seances != null ? c.Seances.Where(s => s.Statut != "Annulee").Sum(s => (int)(s.EndTime - s.StartTime).TotalHours) : 0,
+                        RemainingHours = c.VolumeHours - (c.Seances != null ? c.Seances.Where(s => s.Statut != "Annulee").Sum(s => (int)(s.EndTime - s.StartTime).TotalHours) : 0),
+                        ProfesseurNom = c.Professeur != null ? c.Professeur.Prenom + " " + c.Professeur.Nom : "Auto",
+                        c.IdProfesseur,
+                        c.Statut,
+                        c.IdMatiere,
+                        c.IdClasse
+                    })
+                    .ToList();
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -51,7 +132,23 @@ namespace Gestion_SalleClasseEDT.Controllers
                 .Include(c => c.Seances)
                 .FirstOrDefault(c => c.IdCours == id);
             if (course == null) return NotFound();
-            return Ok(course);
+
+            var realizedHours = course.Seances?.Where(s => s.Statut != "Annulee").Sum(s => (int)(s.EndTime - s.StartTime).TotalHours) ?? 0;
+
+            return Ok(new
+            {
+                course.IdCours,
+                MatiereNom = course.Matiere?.NomMatiere ?? "Non assigné",
+                ClasseNom = course.Classe?.NomClasse ?? "Non assigné",
+                TypeCours = course.TypeCours,
+                VolumeHours = course.VolumeHours,
+                ProfesseurNom = course.Professeur != null ? $"{course.Professeur.Prenom} {course.Professeur.Nom}" : "Non assigné",
+                RealizedHours = realizedHours,
+                ClasseEffectif = course.Classe?.Effectif ?? 0,
+                course.IdProfesseur,
+                course.IdClasse,
+                course.IdGroupe
+            });
         }
 
         [HttpPost]
@@ -59,6 +156,33 @@ namespace Gestion_SalleClasseEDT.Controllers
         public async Task<IActionResult> CreateCourse([FromBody] Cours course)
         {
             if (course == null) return BadRequest("Course is null");
+
+            // Si le cours pointe vers une affectation, récupérer les données
+            if (course.IdAffectation.HasValue && course.IdAffectation > 0)
+            {
+                var affectation = await db.AffectationsMatieres
+                    .Include(a => a.Classe)
+                    .Include(a => a.Matiere)
+                    .FirstOrDefaultAsync(a => a.IdAffectation == course.IdAffectation);
+
+                if (affectation != null)
+                {
+                    course.IdMatiere = affectation.IdMatiere;
+                    course.IdProfesseur = affectation.IdProfesseur;
+                    course.IdClasse = affectation.IdClasse;
+                    course.IdSemestre = affectation.IdSemestre;
+                    course.Capacity = affectation.Classe?.Effectif ?? 30;
+
+                    // Le volume est défini en fonction du type de cours choisi
+                    if (course.TypeCours == "CM") course.VolumeHours = affectation.HeuresCm;
+                    else if (course.TypeCours == "TD") course.VolumeHours = affectation.HeuresTd;
+                    else if (course.TypeCours == "TP") course.VolumeHours = affectation.HeuresTp;
+                    else course.VolumeHours = affectation.VolumeHoraireTotal;
+
+                    // Au cas où les heures spécifiques sont 0, fallback sur le total
+                    if (course.VolumeHours == 0) course.VolumeHours = affectation.VolumeHoraireTotal;
+                }
+            }
             
             ModelState.Remove("Matiere");
             ModelState.Remove("Professeur");
@@ -95,12 +219,80 @@ namespace Gestion_SalleClasseEDT.Controllers
         }
 
         [HttpPost]
+        [Route("{id:int}/PlanifierSerie")]
+        public async Task<IActionResult> PlanifierSerie(int id, [FromBody] PlanifierSerieRequest request)
+        {
+            if (request == null) return BadRequest(new { Message = "Requête invalide." });
+
+            var cours = await db.Cours.FindAsync(id);
+            if (cours == null) return NotFound(new { Message = "Cours introuvable." });
+
+            var occurrences = new List<object>();
+
+            // Just a basic 4 weeks repetition for the sake of the DryRun
+            var currentDate = DateTime.SpecifyKind(request.DateDebut, DateTimeKind.Utc);
+            for (int i = 0; i < 4; i++)
+            {
+                var verif = await _planningService.VerifierPlanificationAsync(id, currentDate, request.StartTime, request.EndTime, request.SalleId);
+                occurrences.Add(new
+                {
+                    Date = currentDate,
+                    HasConflict = verif.HasConflict,
+                    IsWarningOnly = verif.IsWarningOnly,
+                    Message = verif.Message
+                });
+
+                if (!request.DryRun && !verif.HasConflict)
+                {
+                    await _planningService.PlanifierSeanceAsync(id, currentDate, request.StartTime, request.EndTime, request.SalleId, request.GroupeId);
+                }
+
+                currentDate = currentDate.AddDays(7);
+            }
+
+            return Ok(new { Occurrences = occurrences });
+        }
+
+        public class PlanifierSerieRequest
+        {
+            public DateTime DateDebut { get; set; }
+            public TimeSpan StartTime { get; set; }
+            public TimeSpan EndTime { get; set; }
+            public int? SalleId { get; set; }
+            public int? GroupeId { get; set; }
+            public bool DryRun { get; set; }
+        }
+
+        [HttpPost]
+        [Route("{id:int}/VerifierCreneau")]
+        public async Task<IActionResult> VerifierCreneau(int id, [FromBody] VerifierCreneauRequest request)
+        {
+            if (request == null) return BadRequest("Requête invalide.");
+
+            var cours = await db.Cours.FindAsync(id);
+            if (cours == null) return NotFound("Cours introuvable.");
+
+            var utcDate = DateTime.SpecifyKind(request.Date, DateTimeKind.Utc);
+            var result = await _planningService.VerifierPlanificationAsync(id, utcDate, request.StartTime, request.EndTime, request.SalleId);
+            return Ok(result);
+        }
+
+        public class VerifierCreneauRequest
+        {
+            public DateTime Date { get; set; }
+            public TimeSpan StartTime { get; set; }
+            public TimeSpan EndTime { get; set; }
+            public int? SalleId { get; set; }
+        }
+
+        [HttpPost]
         [Route("{id:int}/Seance")]
         public async Task<IActionResult> ScheduleSeance(int id, [FromBody] SeanceRequest request)
         {
             try
             {
-                var seance = await _planningService.PlanifierSeanceAsync(id, request.Date, request.StartTime, request.EndTime, request.SalleId, request.GroupeId);
+                var utcDate = DateTime.SpecifyKind(request.Date, DateTimeKind.Utc);
+                var seance = await _planningService.PlanifierSeanceAsync(id, utcDate, request.StartTime, request.EndTime, request.SalleId, request.GroupeId);
                 return Ok(seance);
             }
             catch (PlanningException ex)
@@ -120,6 +312,62 @@ namespace Gestion_SalleClasseEDT.Controllers
             public TimeSpan EndTime { get; set; }
             public int? SalleId { get; set; }
             public int? GroupeId { get; set; }
+        }
+
+        [HttpGet]
+        [Route("Professeur/{idProfesseur:int}/Agenda")]
+        public async Task<IActionResult> GetProfesseurAgenda(int idProfesseur, [FromQuery] string? date)
+        {
+            try
+            {
+                var prof = await db.Professeurs
+                    .Include(p => p.Disponibilites)
+                    .FirstOrDefaultAsync(p => p.IdProfesseur == idProfesseur);
+
+                if (prof == null) return NotFound(new { Message = "Professeur non trouvé." });
+
+                var targetDate = DateTime.TryParse(date, out var parsedDate) ? DateTime.SpecifyKind(parsedDate.Date, DateTimeKind.Utc) : DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+                var dayCode = DisponibiliteHelper.GetDayCode(targetDate);
+
+                var disponibilites = (prof.Disponibilites ?? Enumerable.Empty<DisponibiliteProf>())
+                    .Where(d => DisponibiliteHelper.IsActiveForDate(d, targetDate))
+                    .OrderBy(d => d.HeureDebut)
+                    .Select(d => new
+                    {
+                        d.HeureDebut,
+                        d.HeureFin,
+                        Type = d.TypeDisponibilite.ToString(),
+                        Jour = d.TypeDisponibilite == TypeDisponibilite.Ponctuelle ? targetDate.ToString("yyyy-MM-dd") : dayCode
+                    })
+                    .ToList();
+
+                var seances = await db.Seances
+                    .Include(s => s.Cours)
+                        .ThenInclude(c => c.Matiere)
+                    .Include(s => s.Salle)
+                    .Where(s => s.Cours.IdProfesseur == idProfesseur && s.Statut != "Annulee" && s.Date.Date == targetDate.Date)
+                    .OrderBy(s => s.StartTime)
+                    .Select(s => new
+                    {
+                        s.StartTime,
+                        s.EndTime,
+                        MatiereNom = s.Cours.Matiere != null ? s.Cours.Matiere.NomMatiere : "—",
+                        Statut = s.Statut,
+                        SalleNom = s.Salle != null ? s.Salle.NomSalle : "À définir"
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    Date = targetDate.ToString("yyyy-MM-dd"),
+                    Disponibilites = disponibilites,
+                    Seances = seances
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = ex.Message });
+            }
         }
 
         [HttpGet]
@@ -167,6 +415,101 @@ namespace Gestion_SalleClasseEDT.Controllers
             {
                 return StatusCode(500, new { Message = ex.Message });
             }
+        }
+
+        [HttpPost]
+        [Route("SallesDisponiblesPourCreneau")]
+        public IActionResult GetSallesDisponiblesPourCreneau([FromBody] SallesDisponiblesRequest request)
+        {
+            try
+            {
+                if (request == null)
+                    return BadRequest("Requête invalide.");
+
+                var day = ParseDayOfWeek(request.JourSemaine);
+                if (day == null)
+                    return BadRequest("Jour de semaine non reconnu.");
+
+                var sallesOccupeesIds = db.Creneaux
+                    .Include(c => c.Cours)
+                    .Where(c => c.JourSemaine == day &&
+                               ((request.HeureDebut >= c.HeureDebut && request.HeureDebut < c.HeureFin) ||
+                                (request.HeureFin > c.HeureDebut && request.HeureFin <= c.HeureFin) ||
+                                (request.HeureDebut <= c.HeureDebut && request.HeureFin >= c.HeureFin)))
+                    .Where(c => c.Cours.IdSalle != null)
+                    .Select(c => c.Cours.IdSalle)
+                    .ToList();
+
+                var candidates = db.Salles
+                    .Where(s => !sallesOccupeesIds.Contains(s.IdSalle))
+                    .Select(s => new
+                    {
+                        s.IdSalle,
+                        s.NomSalle,
+                        s.Capacite,
+                        s.TypeSalle,
+                        Relevance = Math.Abs(s.Capacite - request.EffectifRequis) + (IsTypeCompatible(s.TypeSalle, request.TypeCoursRequis) ? 0 : 1000)
+                    })
+                    .OrderBy(s => s.Relevance)
+                    .ThenBy(s => s.Capacite)
+                    .ToList();
+
+                return Ok(candidates.Select(s => new
+                {
+                    s.IdSalle,
+                    s.NomSalle,
+                    s.Capacite,
+                    s.TypeSalle
+                }));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = ex.Message });
+            }
+        }
+
+        private static string? ParseDayOfWeek(string jour)
+        {
+            if (string.IsNullOrWhiteSpace(jour)) return null;
+
+            jour = jour.Trim().ToLowerInvariant();
+            return jour switch
+            {
+                "lundi" or "mon" or "monday" => "lundi",
+                "mardi" or "tue" or "tuesday" => "mardi",
+                "mercredi" or "wed" or "wednesday" => "mercredi",
+                "jeudi" or "thu" or "thursday" => "jeudi",
+                "vendredi" or "fri" or "friday" => "vendredi",
+                "samedi" or "sat" or "saturday" => "samedi",
+                "dimanche" or "sun" or "sunday" => "dimanche",
+                _ => jour
+            };
+        }
+
+        private static bool IsTypeCompatible(string typeSalle, string typeCours)
+        {
+            if (string.IsNullOrWhiteSpace(typeSalle) || string.IsNullOrWhiteSpace(typeCours))
+                return true;
+
+            typeSalle = typeSalle.ToLowerInvariant();
+            typeCours = typeCours.ToUpperInvariant();
+
+            return typeCours switch
+            {
+                "TP" => typeSalle.Contains("tp"),
+                "CM" => typeSalle.Contains("amphi") || typeSalle.Contains("cours") || typeSalle.Contains("cm"),
+                "TD" => typeSalle.Contains("td") || typeSalle.Contains("cours") || typeSalle.Contains("tp"),
+                _ => true,
+            };
+        }
+
+        public class SallesDisponiblesRequest
+        {
+            public string? JourSemaine { get; set; }
+            public TimeSpan HeureDebut { get; set; }
+            public TimeSpan HeureFin { get; set; }
+            public int EffectifRequis { get; set; }
+            public string? TypeCoursRequis { get; set; }
         }
 
         [HttpPost]
@@ -252,51 +595,34 @@ namespace Gestion_SalleClasseEDT.Controllers
 
         [HttpPost]
         [Route("VerifierConflit")]
-        public IActionResult VerifierConflit([FromBody] Cours cours)
+        public async Task<IActionResult> VerifierConflit([FromBody] Cours cours)
         {
-            if (cours.Creneaux == null || !cours.Creneaux.Any())
+            if (cours == null)
+                return BadRequest("Cours is required.");
+
+            if (cours.Seances == null || !cours.Seances.Any())
                 return Ok(new { HasConflict = false });
 
-            foreach (var creneau in cours.Creneaux)
+            foreach (var seance in cours.Seances)
             {
-                // Conflit de salle
-                if (cours.IdSalle != null && cours.IdSalle > 0)
-                {
-                    var cSalle = db.Creneaux.Include(c => c.Cours.Matiere).FirstOrDefault(c =>
-                        c.Cours.IdSalle == cours.IdSalle &&
-                        c.JourSemaine == creneau.JourSemaine &&
-                        c.IdCours != cours.IdCours &&
-                        ((creneau.HeureDebut >= c.HeureDebut && creneau.HeureDebut < c.HeureFin) ||
-                         (creneau.HeureFin > c.HeureDebut && creneau.HeureFin <= c.HeureFin) ||
-                         (creneau.HeureDebut <= c.HeureDebut && creneau.HeureFin >= c.HeureFin))
-                    );
-                    if (cSalle != null)
-                        return Ok(new { HasConflict = true, Message = $"La salle est occupée par {cSalle.Cours.Matiere.NomMatiere}." });
-                }
+                var resultat = await _conflitService.VerifierAsync(
+                    date: seance.Date,
+                    heureDebut: seance.StartTime,
+                    heureFin: seance.EndTime,
+                    salleId: cours.IdSalle,
+                    classeId: cours.IdClasse,
+                    profId: cours.IdProfesseur,
+                    excludeCoursId: cours.IdCours);
 
-                // Conflit de professeur
-                var cProf = db.Creneaux.Include(c => c.Cours.Matiere).FirstOrDefault(c =>
-                    c.Cours.IdProfesseur == cours.IdProfesseur &&
-                    c.JourSemaine == creneau.JourSemaine &&
-                    c.IdCours != cours.IdCours &&
-                    ((creneau.HeureDebut >= c.HeureDebut && creneau.HeureDebut < c.HeureFin) ||
-                     (creneau.HeureFin > c.HeureDebut && creneau.HeureFin <= c.HeureFin) ||
-                     (creneau.HeureDebut <= c.HeureDebut && creneau.HeureFin >= c.HeureFin))
-                );
-                if (cProf != null)
-                    return Ok(new { HasConflict = true, Message = $"Le professeur enseigne déjà {cProf.Cours.Matiere.NomMatiere}." });
-                    
-                // Conflit de classe
-                var cClasse = db.Creneaux.Include(c => c.Cours.Matiere).FirstOrDefault(c =>
-                    c.Cours.IdClasse == cours.IdClasse &&
-                    c.JourSemaine == creneau.JourSemaine &&
-                    c.IdCours != cours.IdCours &&
-                    ((creneau.HeureDebut >= c.HeureDebut && creneau.HeureDebut < c.HeureFin) ||
-                     (creneau.HeureFin > c.HeureDebut && creneau.HeureFin <= c.HeureFin) ||
-                     (creneau.HeureDebut <= c.HeureDebut && creneau.HeureFin >= c.HeureFin))
-                );
-                if (cClasse != null)
-                    return Ok(new { HasConflict = true, Message = $"La classe a déjà le cours {cClasse.Cours.Matiere.NomMatiere}." });
+                if (resultat.HasConflict)
+                {
+                    return Ok(new
+                    {
+                        HasConflict = true,
+                        Message = resultat.Message,
+                        ConflictType = resultat.ConflictType?.ToString()
+                    });
+                }
             }
 
             return Ok(new { HasConflict = false });

@@ -10,5 +10,15 @@ namespace Gestion_SalleClasseEDT.Services
         Task<Cours> PlanifierCoursAsync(Cours course);
         Task<Seance> PlanifierSeanceAsync(int courseId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? salleId, int? groupeId);
         Task<IEnumerable<Seance>> ObtenirEmploisDuTempsAsync();
+        Task RecalculerStatutCoursAsync(int coursId);
+        Task<ConflitPlanificationResult> VerifierPlanificationAsync(int coursId, DateTime date, TimeSpan debut, TimeSpan fin, int? salleId);
+    }
+
+    public class ConflitPlanificationResult
+    {
+        public bool HasConflict { get; set; }
+        public string? ConflictType { get; set; } // "Professeur" | "Salle" | "Classe" | "CapaciteSalle" | "DisponibiliteProf" | "VolumeDepasse"
+        public string Message { get; set; } = "";
+        public bool IsWarningOnly { get; set; }
     }
 }

@@ -1,127 +1,256 @@
 @{
-    ViewBag.Title = "Structures";
+    ViewBag.Title = "Configuration Académique";
 }
 
-<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+<div class="space-y-6 scroll-appear relative h-full flex flex-col">
+    <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Configuration Académique</h1>
-            <p class="text-gray-500 mt-1">Gérez les mentions, niveaux, et filières de l'établissement.</p>
+            <p class="text-gray-500 mt-1">Gérez le cycle de vie des années scolaires, les mentions, les filières et les niveaux d'enseignement.</p>
         </div>
-        <button onclick="openAddFiliereModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center gap-2">
-            <i data-lucide="plus" class="w-5 h-5"></i>
-            Ajouter un Parcours/Filière
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-gray-200">
+        <button onclick="switchTab('anneesTab')" id="btn-anneesTab" class="tab-btn px-6 py-3 font-bold text-sm border-b-2 border-blue-600 text-blue-600 transition-all focus:outline-none">
+            <span class="flex items-center gap-2">
+                <i data-lucide="calendar" class="w-4 h-4"></i> Années Académiques
+            </span>
+        </button>
+        <button onclick="switchTab('structuresTab')" id="btn-structuresTab" class="tab-btn px-6 py-3 font-bold text-sm border-b-2 border-transparent text-gray-500 hover:text-[#17203A] transition-all focus:outline-none">
+            <span class="flex items-center gap-2">
+                <i data-lucide="award" class="w-4 h-4"></i> Mentions & Filières
+            </span>
+        </button>
+        <button onclick="switchTab('niveauxTab')" id="btn-niveauxTab" class="tab-btn px-6 py-3 font-bold text-sm border-b-2 border-transparent text-gray-500 hover:text-[#17203A] transition-all focus:outline-none">
+            <span class="flex items-center gap-2">
+                <i data-lucide="layers" class="w-4 h-4"></i> Niveaux d'Étude
+            </span>
         </button>
     </div>
 
-    <!-- Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <i data-lucide="award" class="w-6 h-6"></i>
-            </div>
+    <!-- TAB 1: Années Académiques -->
+    <div id="pane-anneesTab" class="tab-pane space-y-6">
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Mentions</p>
-                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statMentions">--</h4>
+                <h3 class="font-bold text-gray-700 m-0">Cycle des Années Scolaires</h3>
+                <p class="text-xs text-gray-400 m-0">Créez une année avec duplication de structure ou génération automatisée de classes.</p>
             </div>
+            <button onclick="openAnneeModal()" class="h-10 px-4 bg-[#17203A] text-white hover:bg-[#12192B] rounded-md font-bold text-xs flex items-center gap-2 border-none">
+                <i data-lucide="calendar-plus" class="w-4 h-4"></i> Nouvelle Année
+            </button>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <i data-lucide="layers" class="w-6 h-6"></i>
-            </div>
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Filières</p>
-                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statFilieres">--</h4>
-            </div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
-                <i data-lucide="users" class="w-6 h-6"></i>
-            </div>
-            <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Classes</p>
-                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statClasses">--</h4>
-            </div>
+
+        <div class="grid grid-cols-1 gap-6" id="anneesGrid">
+            <!-- Loaded dynamically -->
+            <div class="text-center py-8 text-gray-500">Chargement des années...</div>
         </div>
     </div>
 
-    <!-- Data Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
-        <div class="p-6 border-b border-gray-50 flex justify-between items-center">
-            <h3 class="font-bold text-lg text-[#17203A] m-0">Hiérarchie Académique</h3>
-            <div class="relative w-[300px]">
-                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                <input type="text" id="searchStructures" oninput="filterStructures()" placeholder="Rechercher une mention, filière..." class="w-full pl-9 pr-3 h-10 bg-gray-50 border border-gray-200 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+    <!-- TAB 2: Mentions & Filières -->
+    <div id="pane-structuresTab" class="tab-pane hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Mentions List (Left) -->
+            <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                    <h3 class="font-bold text-sm text-[#17203A] uppercase tracking-wider m-0">Mentions</h3>
+                    <button onclick="openMentionModal()" class="h-8 px-3 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded font-bold text-xs flex items-center gap-1 border-none">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter
+                    </button>
+                </div>
+                <div class="p-0 overflow-y-auto max-h-[500px] divide-y divide-gray-100" id="mentionsList">
+                    <!-- Loaded dynamically -->
+                </div>
             </div>
+
+            <!-- Filières List (Right) -->
+            <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                    <h3 class="font-bold text-sm text-[#17203A] uppercase tracking-wider m-0">Filières (Parcours)</h3>
+                    <button onclick="openFiliereModal()" class="h-8 px-3 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded font-bold text-xs flex items-center gap-1 border-none">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter
+                    </button>
+                </div>
+                <div class="p-0 overflow-y-auto max-h-[500px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/50 border-b border-gray-100 text-xs font-bold uppercase text-gray-400">
+                                <th class="py-3 px-4">Code</th>
+                                <th class="py-3 px-4">Nom de la Filière</th>
+                                <th class="py-3 px-4">Mention</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm" id="filieresTableBody">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
-        <div class="p-0">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 border-b border-gray-100">
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Mention</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Niveaux</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Filières associées</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100" id="structuresTableBody">
-                    <tr><td colspan="4" class="text-center py-4 text-gray-500">Chargement...</td></tr>
-                </tbody>
-            </table>
+    </div>
+
+    <!-- TAB 3: Niveaux d'Étude -->
+    <div id="pane-niveauxTab" class="tab-pane hidden space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-4xl">
+            <div class="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                <h3 class="font-bold text-sm text-[#17203A] uppercase tracking-wider m-0">Niveaux d'Enseignement</h3>
+                <button onclick="openNiveauModal()" class="h-8 px-3 bg-green-50 text-green-600 hover:bg-green-100 rounded font-bold text-xs flex items-center gap-1 border-none">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter Niveau
+                </button>
+            </div>
+            <div class="p-0">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/50 border-b border-gray-100 text-xs font-bold uppercase text-gray-400">
+                            <th class="py-3 px-4">Niveau</th>
+                            <th class="py-3 px-4">Mention Associée</th>
+                            <th class="py-3 px-4">Ordre d'affichage</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm" id="niveauxTableBody">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Add Parcours/Filière -->
-<div id="addFiliereModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden transform scale-95 opacity-0 transition-all duration-200" id="addFiliereModalContent">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h3 class="font-bold text-[#17203A] text-lg">Ajouter un Parcours/Filière</h3>
-            <button onclick="closeAddFiliereModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+<!-- ================= MODALS ================= -->
+
+<!-- Modal Année Académique -->
+<div id="anneeModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeAnneeModal()"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h2 class="text-lg font-bold text-[#17203A] mb-4">Créer une Année Académique</h2>
+            <form id="formAnnee" onsubmit="saveAnnee(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Libellé de l'année</label>
+                    <input type="text" id="anneeLibelle" required class="w-full h-10 px-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" placeholder="ex: 2026-2027" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date Début</label>
+                        <input type="date" id="anneeDateDebut" required class="w-full h-10 px-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date Fin</label>
+                        <input type="date" id="anneeDateFin" required class="w-full h-10 px-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#17203A]/20" />
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="anneeEstActive" checked class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                    <label for="anneeEstActive" class="text-sm font-semibold text-gray-700">Définir comme année active</label>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mode de Création & Structure</label>
+                    <select id="anneeModeCreation" onchange="toggleCopySelection()" class="w-full h-10 px-3 border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                        <option value="auto">Génération automatique des classes (Filière + Niveau)</option>
+                        <option value="copy">Copier la structure d'une année existante</option>
+                    </select>
+                </div>
+                <div id="copyYearContainer" class="hidden">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Année Source à Copier</label>
+                    <select id="anneeSourceId" class="w-full h-10 px-3 border border-gray-200 rounded-md bg-white focus:outline-none">
+                        <!-- Loaded dynamically -->
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" class="px-4 py-2 border border-gray-200 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-semibold text-sm" onclick="closeAnneeModal()">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b] font-semibold text-sm">Enregistrer</button>
+                </div>
+            </form>
         </div>
-        <div class="p-6">
-            <form id="addFiliereForm" class="space-y-4" onsubmit="submitFiliereForm(event)">
-                <!-- Mention -->
+    </div>
+</div>
+
+<!-- Modal Mention -->
+<div id="mentionModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeMentionModal()"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h2 class="text-lg font-bold text-[#17203A] mb-4" id="mentionModalTitle">Ajouter une Mention</h2>
+            <form id="formMention" onsubmit="saveMention(event)" class="space-y-4">
+                <input type="hidden" id="mentionId" value="0" />
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Mention <span class="text-red-500">*</span></label>
-                    <select id="modalMentionName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border bg-white">
-                        <option value="">Sélectionnez une mention</option>
-                        <option value="Informatique">Informatique</option>
-                        <option value="Management">Management</option>
-                        <option value="Multimédia">Multimédia</option>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Code Mention</label>
+                    <input type="text" id="mentionCode" required class="w-full h-10 px-3 border border-gray-200 rounded-md uppercase" placeholder="ex: INF" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nom Mention</label>
+                    <input type="text" id="mentionNom" required class="w-full h-10 px-3 border border-gray-200 rounded-md" placeholder="ex: Informatique" />
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" class="px-4 py-2 border border-gray-200 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-semibold text-sm" onclick="closeMentionModal()">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b] font-semibold text-sm">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Filière -->
+<div id="filiereModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeFiliereModal()"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h2 class="text-lg font-bold text-[#17203A] mb-4" id="filiereModalTitle">Ajouter une Filière</h2>
+            <form id="formFiliere" onsubmit="saveFiliere(event)" class="space-y-4">
+                <input type="hidden" id="filiereId" value="0" />
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mention Parentee</label>
+                    <select id="filiereMentionId" required class="w-full h-10 px-3 border border-gray-200 rounded-md bg-white">
+                        <!-- Loaded dynamically -->
                     </select>
                 </div>
-                <!-- Niveau -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Niveau <span class="text-red-500">*</span></label>
-                    <select id="modalNiveau" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border bg-white">
-                        <option value="">Sélectionnez un niveau</option>
-                        <option value="Licence 1">Licence 1</option>
-                        <option value="Licence 2">Licence 2</option>
-                        <option value="Licence 3">Licence 3</option>
-                        <option value="Master 1">Master 1</option>
-                        <option value="Master 2">Master 2</option>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Code Filière</label>
+                    <input type="text" id="filiereCode" required class="w-full h-10 px-3 border border-gray-200 rounded-md uppercase" placeholder="ex: DA2I" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nom Filière</label>
+                    <input type="text" id="filiereNom" required class="w-full h-10 px-3 border border-gray-200 rounded-md" placeholder="ex: Dével. d'Applications Internet et Mobiles" />
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" class="px-4 py-2 border border-gray-200 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-semibold text-sm" onclick="closeFiliereModal()">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b] font-semibold text-sm">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Niveau -->
+<div id="niveauModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeNiveauModal()"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h2 class="text-lg font-bold text-[#17203A] mb-4" id="niveauModalTitle">Ajouter un Niveau</h2>
+            <form id="formNiveau" onsubmit="saveNiveau(event)" class="space-y-4">
+                <input type="hidden" id="niveauId" value="0" />
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Mention Parentee</label>
+                    <select id="niveauMentionId" required class="w-full h-10 px-3 border border-gray-200 rounded-md bg-white">
+                        <!-- Loaded dynamically -->
                     </select>
                 </div>
-                <!-- Parcours suggéré -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Parcours (Filière) <span class="text-red-500">*</span></label>
-                    <input type="text" id="modalParcoursCode" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border" placeholder="Ex: DA2I" />
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Code Niveau</label>
+                    <input type="text" id="niveauCode" required class="w-full h-10 px-3 border border-gray-200 rounded-md uppercase" placeholder="ex: L1, M2" />
                 </div>
-                <!-- Nom Complet (Optionnel) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Nom Complet de la Filière</label>
-                    <input type="text" id="modalParcoursNom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 border" placeholder="Ex: Développement d'Applications..." />
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Ordre d'affichage</label>
+                    <input type="number" id="niveauOrdre" required class="w-full h-10 px-3 border border-gray-200 rounded-md" placeholder="ex: 1 (pour L1), 4 (pour M1)" />
                 </div>
-                <div class="flex justify-end pt-4 mt-4 border-t border-gray-100">
-                    <button type="button" class="mr-3 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none" onclick="closeAddFiliereModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        Enregistrer
-                    </button>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" class="px-4 py-2 border border-gray-200 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-semibold text-sm" onclick="closeNiveauModal()">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b] font-semibold text-sm">Enregistrer</button>
                 </div>
             </form>
         </div>
@@ -133,184 +262,498 @@
         let allMentions = [];
         let allFilieres = [];
         let allNiveaux = [];
-        let allClasses = [];
+        let allAnnees = [];
 
-        function openAddFiliereModal() {
-            const modal = document.getElementById('addFiliereModal');
-            const content = document.getElementById('addFiliereModalContent');
-            
-            document.getElementById('addFiliereForm').reset();
+        const prop = (o, n) => app.readProp(o, n);
+        const esc = v => app.escapeHtml(v ?? "");
 
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeAddFiliereModal() {
-            const modal = document.getElementById('addFiliereModal');
-            const content = document.getElementById('addFiliereModalContent');
-            
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
-        }
-
-        async function submitFiliereForm(e) {
-            e.preventDefault();
-            
-            const mentionName = document.getElementById('modalMentionName').value;
-            const parcoursCode = document.getElementById('modalParcoursCode').value;
-            let parcoursNom = document.getElementById('modalParcoursNom').value;
-            
-            if(!parcoursNom) {
-                parcoursNom = parcoursCode;
-            }
-            
-            let mentionId = 0;
-            const normalize = str => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
-            const search = normalize(mentionName);
-
-            let mentionObj = allMentions.find(m => {
-                const n = normalize(app.readProp(m, "NomMention"));
-                const c = normalize(app.readProp(m, "CodeMention"));
-                return (n && (n.includes(search) || search.includes(n))) || 
-                       (c && (c.includes(search) || search.includes(c)));
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.add('hidden');
             });
 
-            if(mentionObj) {
-                mentionId = app.readProp(mentionObj, "IdMention");
-            } else {
-                // Auto-create mention if not found
-                try {
-                    let maxMId = 0;
-                    if(allMentions.length > 0) maxMId = Math.max(...allMentions.map(m => app.readProp(m, "IdMention") || 0));
-                    const newMId = maxMId + 1;
-                    const mentionCode = mentionName.substring(0, 4).toUpperCase();
-                    await app.apiPost('/api/Mention', { IdMention: newMId, NomMention: mentionName, CodeMention: mentionCode });
-                    mentionId = newMId;
-                } catch(err) {
-                    alert("Erreur lors de la création automatique de la mention : " + err.message);
-                    return;
-                }
-            }
-
-            // Generate ID logic depending on how your backend handles it. If auto-increment, send 0
-            // Find max id to avoid conflict if backend doesn't auto-increment properly (workaround)
-            let maxId = 0;
-            if(allFilieres.length > 0) {
-                maxId = Math.max(...allFilieres.map(f => app.readProp(f, "IdFiliere") || 0));
-            }
-            const newId = maxId + 1;
-
-            const payload = {
-                IdFiliere: newId,
-                IdMention: parseInt(mentionId),
-                CodeFiliere: parcoursCode,
-                NomFiliere: parcoursNom
-            };
-
-            try {
-                await app.apiPost('/api/Filiere', payload);
-                closeAddFiliereModal();
-                loadStructures(); // reload
-            } catch (error) {
-                alert("Erreur lors de l'ajout du parcours : " + error.message);
-            }
+            document.getElementById('btn-' + tabId).classList.add('border-blue-600', 'text-blue-600');
+            document.getElementById('btn-' + tabId).classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById('pane-' + tabId).classList.remove('hidden');
+            
+            if (window.lucide) lucide.createIcons();
         }
 
-        async function loadStructures() {
-            const tbody = document.getElementById("structuresTableBody");
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500"><div class="flex justify-center items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500"></i> Chargement...</div></td></tr>';
-            if (window.lucide) lucide.createIcons();
-
+        async function loadAllData() {
             try {
-                const [mentions, filieres, niveaux, classes] = await Promise.all([
+                const [mentions, filieres, niveaux, annees] = await Promise.all([
                     app.apiGet('/api/Mention'),
                     app.apiGet('/api/Filiere'),
                     app.apiGet('/api/Niveau'),
-                    app.apiGet('/api/Classe')
+                    app.apiGet('/api/AnneeAcademique')
                 ]);
+
                 allMentions = mentions || [];
                 allFilieres = filieres || [];
                 allNiveaux = niveaux || [];
-                allClasses = classes || [];
+                allAnnees = annees.Items || annees || [];
 
-                document.getElementById("statMentions").textContent = allMentions.length;
-                document.getElementById("statFilieres").textContent = allFilieres.length;
-                document.getElementById("statClasses").textContent = allClasses.length;
+                // Bind dropdowns
+                fillSelect('filiereMentionId', allMentions, 'IdMention', m => prop(m, 'NomMention'));
+                fillSelect('niveauMentionId', allMentions, 'IdMention', m => prop(m, 'NomMention'));
+                fillSelect('anneeSourceId', allAnnees, 'IdAnnee', a => prop(a, 'Libelle'));
 
-                renderStructures(allMentions);
+                renderAnnees();
+                renderMentionsAndFilieres();
+                renderNiveaux();
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-600 font-bold">Erreur: ${app.escapeHtml(err.message)}</td></tr>`;
+                console.error("Error loading configuration data:", err);
             }
         }
 
-        function renderStructures(mentions) {
-            const tbody = document.getElementById("structuresTableBody");
-            tbody.innerHTML = "";
+        function fillSelect(id, items, valueName, textFn) {
+            const select = document.getElementById(id);
+            if (!select) return;
+            select.innerHTML = (items || []).map(item => `<option value="${prop(item, valueName)}">${esc(textFn(item))}</option>`).join('');
+        }
 
-            if (mentions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Aucune structure trouvée.</td></tr>';
+        // ================= RENDERING =================
+
+        function renderAnnees() {
+            const container = document.getElementById('anneesGrid');
+            if (allAnnees.length === 0) {
+                container.innerHTML = `<div class="bg-white p-8 text-center text-gray-500 border border-gray-100 rounded-xl">Aucune année académique configurée.</div>`;
                 return;
             }
 
-            mentions.forEach(function(m) {
-                const id = app.readProp(m, "IdMention");
-                const nom = app.escapeHtml(app.readProp(m, "NomMention") || "");
-                const code = app.escapeHtml(app.readProp(m, "CodeMention") || "N/A");
+            container.innerHTML = allAnnees.map(a => {
+                const id = prop(a, 'IdAnnee');
+                const libelle = esc(prop(a, 'Libelle'));
+                const isActive = prop(a, 'EstActive');
+                const isArchived = prop(a, 'EstArchivee');
+                const dateDebut = new Date(prop(a, 'DateDebutAnnee')).toLocaleDateString();
+                const dateFin = new Date(prop(a, 'DateFinAnnee')).toLocaleDateString();
+                const classesCount = a.Classes ? a.Classes.length : 0;
+                const profsCount = prop(a, 'ProfesseursCount') || 0;
 
-                // Get niveaux for this mention
-                const mentionNiveaux = allNiveaux.filter(n => app.readProp(n, "IdMention") == id);
-                const niveauxStr = mentionNiveaux.map(n => app.escapeHtml(app.readProp(n, "CodeNiveau") || "")).join(", ") || "Aucun";
+                let badge = `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">À Venir</span>`;
+                if (isArchived) {
+                    badge = `<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold">Archivée</span>`;
+                } else if (isActive) {
+                    badge = `<span class="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-bold">Active</span>`;
+                }
 
-                // Get filieres for this mention
-                const mentionFilieres = allFilieres.filter(f => {
-                    // Check if Filiere belongs to Mention. Depending on API response, IdMention might be on Filiere or Mention property.
-                    const fIdMention = app.readProp(f, "IdMention");
-                    if (fIdMention) return fIdMention == id;
-                    const fMention = app.readProp(f, "Mention");
-                    return fMention && app.readProp(fMention, "IdMention") == id;
-                });
-                const filieresHtml = mentionFilieres.length > 0
-                    ? mentionFilieres.map(f => `<span class="inline-block bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-bold mr-1 mb-1">${app.escapeHtml(app.readProp(f, "CodeFiliere") || app.readProp(f, "NomFiliere") || "")}</span>`).join("")
-                    : '<span class="text-gray-400 text-xs italic">Aucune</span>';
-
-                const tr = document.createElement("tr");
-                tr.className = "hover:bg-gray-50/50 transition-colors";
-                tr.innerHTML = `
-                    <td class="py-4 px-6 font-semibold text-[#17203A]">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="award" class="w-4 h-4 text-blue-500"></i>
-                            ${nom}
+                return `
+                    <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row justify-between p-6 items-center gap-6">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="calendar" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-lg font-black text-[#17203A] m-0">${libelle}</h4>
+                                    ${badge}
+                                </div>
+                                <p class="text-xs text-gray-500 m-0 mt-1">Période: ${dateDebut} au ${dateFin}</p>
+                            </div>
                         </div>
-                    </td>
-                    <td class="py-4 px-6"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${code}</span></td>
-                    <td class="py-4 px-6 text-gray-600 font-medium">${niveauxStr}</td>
-                    <td class="py-4 px-6">${filieresHtml}</td>
+
+                        <div class="flex gap-8 text-center">
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0">Classes</p>
+                                <p class="text-base font-black text-gray-700 m-0 mt-1">${classesCount}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0">Profs Assignés</p>
+                                <p class="text-base font-black text-gray-700 m-0 mt-1">${profsCount}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 shrink-0">
+                            ${!isArchived ? `
+                                <button onclick="archiveAnnee(${id})" class="h-9 px-3 border border-gray-200 hover:bg-gray-50 rounded text-xs font-semibold text-gray-600 flex items-center gap-1.5 bg-white">
+                                    <i data-lucide="archive" class="w-4 h-4"></i> Archiver
+                                </button>
+                            ` : `
+                                <button onclick="restoreAnnee(${id})" class="h-9 px-3 border border-gray-200 hover:bg-gray-50 rounded text-xs font-semibold text-gray-600 flex items-center gap-1.5 bg-white">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Restaurer
+                                </button>
+                            `}
+                            <button onclick="genererClassesPourAnnee(${id})" class="h-9 px-3 bg-[#5C8ABF] text-white hover:bg-[#4d7daf] rounded text-xs font-semibold flex items-center gap-1.5 border-none">
+                                <i data-lucide="layers" class="w-4 h-4"></i> Générer Classes
+                            </button>
+                            <button onclick="genererEdtPourAnnee(${id})" class="h-9 px-3 bg-[#17203A] text-white hover:bg-[#12192B] rounded text-xs font-semibold flex items-center gap-1.5 border-none">
+                                <i data-lucide="play" class="w-4 h-4"></i> Générer EDT
+                            </button>
+                        </div>
+                    </div>
                 `;
-                tbody.appendChild(tr);
-            });
+            }).join('');
             if (window.lucide) lucide.createIcons();
         }
 
-        function filterStructures() {
-            const query = document.getElementById("searchStructures").value.toLowerCase().trim();
-            if (!query) { renderStructures(allMentions); return; }
-            const filtered = allMentions.filter(m => {
-                const nom = (app.readProp(m, "NomMention") || "").toLowerCase();
-                const code = (app.readProp(m, "CodeMention") || "").toLowerCase();
-                return nom.includes(query) || code.includes(query);
-            });
-            renderStructures(filtered);
+        function renderMentionsAndFilieres() {
+            // Render Mentions
+            const mentionsContainer = document.getElementById('mentionsList');
+            if (allMentions.length === 0) {
+                mentionsContainer.innerHTML = `<div class="p-6 text-center text-sm text-gray-500">Aucune mention configurée.</div>`;
+            } else {
+                mentionsContainer.innerHTML = allMentions.map(m => {
+                    const id = prop(m, 'IdMention');
+                    const code = esc(prop(m, 'CodeMention'));
+                    const nom = esc(prop(m, 'NomMention'));
+                    return `
+                        <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">${code}</span>
+                                <span class="font-semibold text-gray-700">${nom}</span>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="editMention(${id}, '${code}', '${nom}')" class="p-1.5 text-gray-400 hover:text-[#17203A] hover:bg-gray-100 rounded-md border-none bg-transparent cursor-pointer transition">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteMention(${id})" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md border-none bg-transparent cursor-pointer transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render Filières
+            const filieresContainer = document.getElementById('filieresTableBody');
+            if (allFilieres.length === 0) {
+                filieresContainer.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-500">Aucune filière configurée.</td></tr>`;
+            } else {
+                filieresContainer.innerHTML = allFilieres.map(f => {
+                    const id = prop(f, 'IdFiliere');
+                    const code = esc(prop(f, 'CodeFiliere'));
+                    const nom = esc(prop(f, 'NomFiliere'));
+                    const mentionName = f.Mention ? esc(prop(f.Mention, 'NomMention')) : 'N/A';
+                    const mentionId = f.Mention ? prop(f.Mention, 'IdMention') : 0;
+                    return `
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="py-3 px-4 font-bold text-purple-700">${code}</td>
+                            <td class="py-3 px-4 font-medium text-gray-700">${nom}</td>
+                            <td class="py-3 px-4 text-xs text-gray-500 font-semibold">${mentionName}</td>
+                            <td class="py-3 px-4 text-right">
+                                <div class="flex justify-end gap-1">
+                                    <button onclick="editFiliere(${id}, ${mentionId}, '${code}', '${nom}')" class="p-1.5 text-gray-400 hover:text-[#17203A] hover:bg-gray-100 rounded-md border-none bg-transparent cursor-pointer transition">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="deleteFiliere(${id})" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md border-none bg-transparent cursor-pointer transition">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderNiveaux() {
+            const container = document.getElementById('niveauxTableBody');
+            if (allNiveaux.length === 0) {
+                container.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-500">Aucun niveau configuré.</td></tr>`;
+                return;
+            }
+
+            container.innerHTML = allNiveaux.map(n => {
+                const id = prop(n, 'IdNiveau');
+                const code = esc(prop(n, 'CodeNiveau'));
+                const ordre = prop(n, 'Ordre');
+                const mentionName = n.Mention ? esc(prop(n.Mention, 'NomMention')) : 'N/A';
+                const mentionId = n.Mention ? prop(n.Mention, 'IdMention') : 0;
+                return `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="py-3 px-4 font-bold text-green-700">${code}</td>
+                        <td class="py-3 px-4 font-semibold text-gray-500 text-xs">${mentionName}</td>
+                        <td class="py-3 px-4 font-medium text-gray-600">${ordre}</td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="flex justify-end gap-1">
+                                <button onclick="editNiveau(${id}, ${mentionId}, '${code}', ${ordre})" class="p-1.5 text-gray-400 hover:text-[#17203A] hover:bg-gray-100 rounded-md border-none bg-transparent cursor-pointer transition">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteNiveau(${id})" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md border-none bg-transparent cursor-pointer transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // ================= ACTIONS & MODALS =================
+
+        function toggleCopySelection() {
+            const mode = document.getElementById('anneeModeCreation').value;
+            const container = document.getElementById('copyYearContainer');
+            if (mode === 'copy') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // Année Académique Modals
+        function openAnneeModal() {
+            document.getElementById('formAnnee').reset();
+            toggleCopySelection();
+            document.getElementById('anneeModal').classList.remove('hidden');
+            document.getElementById('anneeModal').classList.add('flex');
+        }
+        function closeAnneeModal() {
+            document.getElementById('anneeModal').classList.add('hidden');
+            document.getElementById('anneeModal').classList.remove('flex');
+        }
+
+        async function saveAnnee(e) {
+            e.preventDefault();
+            const libelle = document.getElementById('anneeLibelle').value;
+            const dateDebut = document.getElementById('anneeDateDebut').value;
+            const dateFin = document.getElementById('anneeDateFin').value;
+            const estActive = document.getElementById('anneeEstActive').checked;
+            const mode = document.getElementById('anneeModeCreation').value;
+
+            try {
+                if (mode === 'auto') {
+                    // Create year, semestres and auto-generate classes based on filiere+level
+                    await app.apiPost('/api/AnneeAcademique/CreerComplete', {
+                        Libelle: libelle,
+                        DateDebut: dateDebut,
+                        DateFin: dateFin,
+                        EstActive: estActive
+                    });
+                } else {
+                    // Create year, copy structure from selected sourceId
+                    const sourceId = document.getElementById('anneeSourceId').value;
+                    const res = await app.apiPost('/api/AnneeAcademique/CreerAvecSemestres', {
+                        Libelle: libelle,
+                        DateDebut: dateDebut,
+                        DateFin: dateFin,
+                        EstActive: estActive
+                    });
+                    const newId = res.Annee ? prop(res.Annee, 'IdAnnee') : res.idAnnee;
+                    if (newId && sourceId) {
+                        await app.apiPost(`/api/AnneeAcademique/${newId}/CopierReglages/${sourceId}`, {});
+                    }
+                }
+                closeAnneeModal();
+                loadAllData();
+            } catch (err) {
+                alert("Erreur lors de la création: " + err.message);
+            }
+        }
+
+        async function archiveAnnee(id) {
+            if (confirm("Voulez-vous archiver cette année académique ?")) {
+                try {
+                    await app.apiPost(`/api/AnneeAcademique/${id}/Archiver`, {});
+                    loadAllData();
+                } catch (err) {
+                    alert("Erreur d'archivage: " + err.message);
+                }
+            }
+        }
+
+        async function restoreAnnee(id) {
+            try {
+                await app.apiPost(`/api/AnneeAcademique/${id}/Restaurer`, {});
+                loadAllData();
+            } catch (err) {
+                alert("Erreur de restauration: " + err.message);
+            }
+        }
+
+        async function genererClassesPourAnnee(id) {
+            try {
+                const res = await app.apiPost(`/api/AnneeAcademique/${id}/GenererClasses`, {});
+                alert(res.Message || "Classes générées avec succès !");
+                loadAllData();
+            } catch (err) {
+                alert("Erreur: " + err.message);
+            }
+        }
+
+        async function genererEdtPourAnnee(id) {
+            try {
+                const res = await app.apiPost(`/api/AnneeAcademique/${id}/GenererEdt`, {});
+                alert(res.Message || "EDT templates générés avec succès !");
+                loadAllData();
+            } catch (err) {
+                alert("Erreur: " + err.message);
+            }
+        }
+
+        // Mention Modals
+        function openMentionModal() {
+            document.getElementById('mentionModalTitle').textContent = "Ajouter une Mention";
+            document.getElementById('mentionId').value = "0";
+            document.getElementById('mentionCode').value = "";
+            document.getElementById('mentionNom').value = "";
+            document.getElementById('mentionModal').classList.remove('hidden');
+            document.getElementById('mentionModal').classList.add('flex');
+        }
+        function closeMentionModal() {
+            document.getElementById('mentionModal').classList.add('hidden');
+            document.getElementById('mentionModal').classList.remove('flex');
+        }
+        function editMention(id, code, nom) {
+            document.getElementById('mentionModalTitle').textContent = "Modifier la Mention";
+            document.getElementById('mentionId').value = id;
+            document.getElementById('mentionCode').value = code;
+            document.getElementById('mentionNom').value = nom;
+            document.getElementById('mentionModal').classList.remove('hidden');
+            document.getElementById('mentionModal').classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+        async function saveMention(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('mentionId').value);
+            const code = document.getElementById('mentionCode').value.trim();
+            const nom = document.getElementById('mentionNom').value.trim();
+
+            const data = { IdMention: id, CodeMention: code, NomMention: nom };
+
+            try {
+                if (id === 0) {
+                    await app.apiPost('/api/Mention', data);
+                } else {
+                    await app.apiPut(`/api/Mention/${id}`, data);
+                }
+                closeMentionModal();
+                loadAllData();
+            } catch (err) {
+                alert("Erreur: " + err.message);
+            }
+        }
+        async function deleteMention(id) {
+            if (confirm("Voulez-vous vraiment supprimer cette mention ?")) {
+                try {
+                    await app.apiDelete(`/api/Mention/${id}`);
+                    loadAllData();
+                } catch (err) {
+                    alert("Erreur: " + err.message);
+                }
+            }
+        }
+
+        // Filière Modals
+        function openFiliereModal() {
+            document.getElementById('filiereModalTitle').textContent = "Ajouter une Filière";
+            document.getElementById('filiereId').value = "0";
+            document.getElementById('filiereCode').value = "";
+            document.getElementById('filiereNom').value = "";
+            document.getElementById('filiereModal').classList.remove('hidden');
+            document.getElementById('filiereModal').classList.add('flex');
+        }
+        function closeFiliereModal() {
+            document.getElementById('filiereModal').classList.add('hidden');
+            document.getElementById('filiereModal').classList.remove('flex');
+        }
+        function editFiliere(id, mentionId, code, nom) {
+            document.getElementById('filiereModalTitle').textContent = "Modifier la Filière";
+            document.getElementById('filiereId').value = id;
+            document.getElementById('filiereMentionId').value = mentionId;
+            document.getElementById('filiereCode').value = code;
+            document.getElementById('filiereNom').value = nom;
+            document.getElementById('filiereModal').classList.remove('hidden');
+            document.getElementById('filiereModal').classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+        async function saveFiliere(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('filiereId').value);
+            const mentionId = parseInt(document.getElementById('filiereMentionId').value);
+            const code = document.getElementById('filiereCode').value.trim();
+            const nom = document.getElementById('filiereNom').value.trim();
+
+            const data = { IdFiliere: id, IdMention: mentionId, CodeFiliere: code, NomFiliere: nom };
+
+            try {
+                if (id === 0) {
+                    await app.apiPost('/api/Filiere', data);
+                } else {
+                    await app.apiPut(`/api/Filiere/${id}`, data);
+                }
+                closeFiliereModal();
+                loadAllData();
+            } catch (err) {
+                alert("Erreur: " + err.message);
+            }
+        }
+        async function deleteFiliere(id) {
+            if (confirm("Voulez-vous vraiment supprimer cette filière ?")) {
+                try {
+                    await app.apiDelete(`/api/Filiere/${id}`);
+                    loadAllData();
+                } catch (err) {
+                    alert("Erreur: " + err.message);
+                }
+            }
+        }
+
+        // Niveau Modals
+        function openNiveauModal() {
+            document.getElementById('niveauModalTitle').textContent = "Ajouter un Niveau";
+            document.getElementById('niveauId').value = "0";
+            document.getElementById('niveauCode').value = "";
+            document.getElementById('niveauOrdre').value = "";
+            document.getElementById('niveauModal').classList.remove('hidden');
+            document.getElementById('niveauModal').classList.add('flex');
+        }
+        function closeNiveauModal() {
+            document.getElementById('niveauModal').classList.add('hidden');
+            document.getElementById('niveauModal').classList.remove('flex');
+        }
+        function editNiveau(id, mentionId, code, ordre) {
+            document.getElementById('niveauModalTitle').textContent = "Modifier le Niveau";
+            document.getElementById('niveauId').value = id;
+            document.getElementById('niveauMentionId').value = mentionId;
+            document.getElementById('niveauCode').value = code;
+            document.getElementById('niveauOrdre').value = ordre;
+            document.getElementById('niveauModal').classList.remove('hidden');
+            document.getElementById('niveauModal').classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+        async function saveNiveau(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('niveauId').value);
+            const mentionId = parseInt(document.getElementById('niveauMentionId').value);
+            const code = document.getElementById('niveauCode').value.trim();
+            const ordre = parseInt(document.getElementById('niveauOrdre').value);
+
+            const data = { IdNiveau: id, IdMention: mentionId, CodeNiveau: code, Ordre: ordre };
+
+            try {
+                if (id === 0) {
+                    await app.apiPost('/api/Niveau', data);
+                } else {
+                    await app.apiPut(`/api/Niveau/${id}`, data);
+                }
+                closeNiveauModal();
+                loadAllData();
+            } catch (err) {
+                alert("Erreur: " + err.message);
+            }
+        }
+        async function deleteNiveau(id) {
+            if (confirm("Voulez-vous vraiment supprimer ce niveau d'étude ?")) {
+                try {
+                    await app.apiDelete(`/api/Niveau/${id}`);
+                    loadAllData();
+                } catch (err) {
+                    alert("Erreur: " + err.message);
+                }
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function() {
-            loadStructures();
+            loadAllData();
         });
     </script>
 }

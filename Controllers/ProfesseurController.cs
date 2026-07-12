@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Gestion_SalleClasseEDT.Models;
+using Gestion_SalleClasseEDT.Services;
 
 namespace Gestion_SalleClasseEDT.Controllers
 {
@@ -17,11 +18,13 @@ namespace Gestion_SalleClasseEDT.Controllers
     {
         private readonly EMITDbContext db;
         private readonly IWebHostEnvironment _env;
+        private readonly IConflitService _conflitService;
 
-        public ProfesseurController(EMITDbContext context, IWebHostEnvironment env)
+        public ProfesseurController(EMITDbContext context, IWebHostEnvironment env, IConflitService conflitService)
         {
             db = context;
             _env = env;
+            _conflitService = conflitService;
         }
 
         // GET: api/Professeur
@@ -178,34 +181,44 @@ namespace Gestion_SalleClasseEDT.Controllers
 
             if (prof == null) return NotFound("Professeur non trouvé.");
 
-            var today = DateTime.Now.Date;
+            var today = DateTime.UtcNow.Date;
             var daysToSubtract = (int)today.DayOfWeek - 1;
             if (daysToSubtract < 0) daysToSubtract = 6; // Sunday is 0, we want Monday as start
 
-            var startOfCurrentWeek = today.AddDays(-daysToSubtract);
+            var startOfCurrentWeek = DateTime.SpecifyKind(today.AddDays(-daysToSubtract), DateTimeKind.Utc);
             var startOfTargetWeek = startOfCurrentWeek.AddDays(7 * semaineOffset);
             var endOfTargetWeek = startOfTargetWeek.AddDays(7);
 
-            // Fetching creneaux. Since creneaux don't have explicit dates (they are weekly recurrence),
-            // if we need accurate per-week data (like specific exams or canceled courses),
-            // we would check exceptions. For now, assuming they apply to every week.
-            var creneaux = prof.Cours?
-                .Where(c => c.AffectationMatiere == null || 
-                           (startOfTargetWeek.Date <= c.AffectationMatiere.DateFin.Date && endOfTargetWeek.Date >= c.AffectationMatiere.DateDebut.Date))
-                .SelectMany(c => c.Creneaux?.Select(cr => new
+            // Fetching seances from Seance table (source of truth) for the target week
+            var seances = await db.Seances
+                .Include(s => s.Cours.Matiere)
+                .Include(s => s.Cours.Classe)
+                .Include(s => s.Salle)
+                .Where(s => s.Cours.IdProfesseur == prof.IdProfesseur && s.Statut != "Annulee" && s.Date >= startOfTargetWeek && s.Date < endOfTargetWeek)
+                .ToListAsync();
+
+            var creneaux = seances.Select(s => new
+            {
+                IdCours = s.IdCours,
+                NomMatiere = s.Cours?.Matiere?.NomMatiere ?? "—",
+                NomClasse = s.Cours?.Classe?.NomClasse ?? "—",
+                NomSalle = s.Salle?.NomSalle ?? "—",
+                TypeCours = s.Cours?.TypeCours ?? "cours",
+                JourSemaine = s.Date.DayOfWeek switch
                 {
-                    IdCours = c.IdCours,
-                    NomMatiere = c.Matiere?.NomMatiere ?? "—",
-                    NomClasse = c.Classe?.NomClasse ?? "—",
-                    NomSalle = c.Salle?.NomSalle ?? "—",
-                    TypeCours = (c.TypeCours != null && c.TypeCours.ToLower() == "examen") ? "examen" : "cours",
-                    JourSemaine = cr.JourSemaine,
-                    HeureDebut = cr.HeureDebut,
-                    HeureFin = cr.HeureFin,
-                    Duree = (cr.HeureFin - cr.HeureDebut).TotalHours
-                }) ?? Enumerable.Empty<dynamic>())
-                .Where(c => c.TypeCours == "cours" || c.TypeCours == "examen")
-                .ToList() ?? new List<dynamic>();
+                    DayOfWeek.Monday => "MON",
+                    DayOfWeek.Tuesday => "TUE",
+                    DayOfWeek.Wednesday => "WED",
+                    DayOfWeek.Thursday => "THU",
+                    DayOfWeek.Friday => "FRI",
+                    DayOfWeek.Saturday => "SAT",
+                    DayOfWeek.Sunday => "SUN",
+                    _ => ""
+                },
+                HeureDebut = s.StartTime,
+                HeureFin = s.EndTime,
+                Duree = (s.EndTime - s.StartTime).TotalHours
+            }).ToList();
 
             var stats = new
             {
@@ -217,7 +230,14 @@ namespace Gestion_SalleClasseEDT.Controllers
             {
                 SemaineDebut = startOfTargetWeek,
                 SemaineFin = endOfTargetWeek,
-                Disponibilites = prof.Disponibilites?.Select(d => new { d.JourSemaine, d.HeureDebut, d.HeureFin }),
+                Disponibilites = prof.Disponibilites?.Select(d => new 
+                { 
+                    JourSemaine = d.TypeDisponibilite == TypeDisponibilite.Ponctuelle && d.DateSpecifique.HasValue 
+                        ? d.DateSpecifique.Value.ToString("yyyy-MM-dd") 
+                        : (d.JourSemaineCode ?? d.JourSemaine), 
+                    d.HeureDebut, 
+                    d.HeureFin 
+                }),
                 Stats = stats,
                 Creneaux = creneaux
             });
@@ -296,6 +316,120 @@ namespace Gestion_SalleClasseEDT.Controllers
             return Ok(result);
         }
 
+        public async Task<IActionResult> GetSuggestionsPourCours(int idCours)
+        {
+            var cours = await db.Cours
+                .Include(c => c.Matiere)
+                .Include(c => c.Classe)
+                .Include(c => c.AffectationMatiere)
+                .FirstOrDefaultAsync(c => c.IdCours == idCours);
+
+            if (cours == null) return NotFound(new { Message = "Cours non trouvé." });
+
+            var suggestions = new List<SuggestionPourCoursResult>();
+
+            if (cours.IdProfesseur.HasValue)
+            {
+                var currentProf = await db.Professeurs.FindAsync(cours.IdProfesseur.Value);
+                if (currentProf != null)
+                {
+                    suggestions.Add(new SuggestionPourCoursResult
+                    {
+                        IdProfesseur = currentProf.IdProfesseur,
+                        Nom = currentProf.Prenom + " " + currentProf.Nom,
+                        CapaciteHoraireMax = currentProf.CapaciteHoraireMax,
+                        HeuresEffectuees = currentProf.HeuresEffectuees,
+                        RemainingCapacity = currentProf.CapaciteHoraireMax - currentProf.HeuresEffectuees,
+                        Type = "Actuel",
+                        Source = "Cours déjà assigné"
+                    });
+                }
+            }
+
+            var professorIds = new HashSet<int>();
+
+            if (cours.Matiere?.IdProfesseurResponsable != null)
+            {
+                var responsable = await db.Professeurs.FindAsync(cours.Matiere.IdProfesseurResponsable.Value);
+                if (responsable != null)
+                {
+                    professorIds.Add(responsable.IdProfesseur);
+                    suggestions.Add(new SuggestionPourCoursResult
+                    {
+                        IdProfesseur = responsable.IdProfesseur,
+                        Nom = responsable.Prenom + " " + responsable.Nom,
+                        CapaciteHoraireMax = responsable.CapaciteHoraireMax,
+                        HeuresEffectuees = responsable.HeuresEffectuees,
+                        RemainingCapacity = responsable.CapaciteHoraireMax - responsable.HeuresEffectuees,
+                        Type = "Responsable",
+                        Source = "Responsable de la matière"
+                    });
+                }
+            }
+
+            var affectations = await db.AffectationsMatieres
+                .Include(a => a.Professeur)
+                .Where(a => a.EstActif && a.IdMatiere == cours.IdMatiere && a.IdClasse == cours.IdClasse)
+                .ToListAsync();
+
+            foreach (var aff in affectations)
+            {
+                if (aff.Professeur == null) continue;
+                if (professorIds.Add(aff.Professeur.IdProfesseur))
+                {
+                    suggestions.Add(new SuggestionPourCoursResult
+                    {
+                        IdProfesseur = aff.Professeur.IdProfesseur,
+                        Nom = aff.Professeur.Prenom + " " + aff.Professeur.Nom,
+                        CapaciteHoraireMax = aff.Professeur.CapaciteHoraireMax,
+                        HeuresEffectuees = aff.Professeur.HeuresEffectuees,
+                        RemainingCapacity = aff.Professeur.CapaciteHoraireMax - aff.Professeur.HeuresEffectuees,
+                        Type = "Affectation",
+                        Source = "Affectation matière/classe"
+                    });
+                }
+            }
+
+            var extras = await db.Professeurs
+                .Where(p => p.EstActif)
+                .ToListAsync();
+
+            foreach (var prof in extras)
+            {
+                if (professorIds.Contains(prof.IdProfesseur)) continue;
+                if (prof.IdAnneeAcademique == cours.Classe?.IdAnneeAcademique)
+                {
+                    suggestions.Add(new SuggestionPourCoursResult
+                    {
+                        IdProfesseur = prof.IdProfesseur,
+                        Nom = prof.Prenom + " " + prof.Nom,
+                        CapaciteHoraireMax = prof.CapaciteHoraireMax,
+                        HeuresEffectuees = prof.HeuresEffectuees,
+                        RemainingCapacity = prof.CapaciteHoraireMax - prof.HeuresEffectuees,
+                        Type = "Autre",
+                        Source = "Professeur actif"
+                    });
+                }
+            }
+
+            var sorted = suggestions
+                .OrderByDescending(s => s.RemainingCapacity)
+                .ToList();
+
+            return Ok(sorted);
+        }
+
+        private sealed class SuggestionPourCoursResult
+        {
+            public int IdProfesseur { get; set; }
+            public string Nom { get; set; } = string.Empty;
+            public int CapaciteHoraireMax { get; set; }
+            public int HeuresEffectuees { get; set; }
+            public int RemainingCapacity { get; set; }
+            public string Type { get; set; } = string.Empty;
+            public string Source { get; set; } = string.Empty;
+        }
+
         [HttpGet]
         [Route("CreneauxProposes")]
         public async Task<IActionResult> GetCreneauxProposes(string email, int? matiereId)
@@ -364,40 +498,20 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (!TimeSpan.TryParse(dto.HeureDebut, out var hd) || !TimeSpan.TryParse(dto.HeureFin, out var hf))
                 return BadRequest("Invalid time format.");
 
-            // Validation: Check for overlaps in existing actual recurring Creneaux
-            var jourSemaine = date.DayOfWeek switch
-            {
-                DayOfWeek.Monday => "MON",
-                DayOfWeek.Tuesday => "TUE",
-                DayOfWeek.Wednesday => "WED",
-                DayOfWeek.Thursday => "THU",
-                DayOfWeek.Friday => "FRI",
-                DayOfWeek.Saturday => "SAT",
-                DayOfWeek.Sunday => "SUN",
-                _ => ""
-            };
-
             var prof = await db.Professeurs.FirstOrDefaultAsync(p => p.Email == dto.Email);
             int profId = prof?.IdProfesseur ?? 0;
 
-            var conflictCreneau = await db.Creneaux
-                .Include(c => c.Cours)
-                .FirstOrDefaultAsync(c =>
-                    c.JourSemaine == jourSemaine &&
-                    (c.Cours.IdProfesseur == profId || c.Cours.IdClasse == dto.IdClasse || (dto.IdSalle.HasValue && c.Cours.IdSalle == dto.IdSalle.Value)) &&
-                    ((hd >= c.HeureDebut && hd < c.HeureFin) ||
-                     (hf > c.HeureDebut && hf <= c.HeureFin) ||
-                     (hd <= c.HeureDebut && hf >= c.HeureFin))
-                );
+            var conflictSeance = await _conflitService.VerifierAsync(
+                date: date.Date,
+                heureDebut: hd,
+                heureFin: hf,
+                salleId: dto.IdSalle,
+                classeId: dto.IdClasse,
+                profId: profId);
 
-            if (conflictCreneau != null)
+            if (conflictSeance.HasConflict)
             {
-                if (conflictCreneau.Cours.IdProfesseur == profId)
-                    return BadRequest("Conflit d'emploi du temps : Vous dispensez déjà un autre cours à cette heure sur ce jour de la semaine.");
-                if (conflictCreneau.Cours.IdClasse == dto.IdClasse)
-                    return BadRequest("Conflit d'emploi du temps : La classe a déjà un cours prévu à cette heure sur ce jour de la semaine.");
-                if (dto.IdSalle.HasValue && conflictCreneau.Cours.IdSalle == dto.IdSalle.Value)
-                    return BadRequest("Conflit d'emploi du temps : La salle est occupée à cette heure sur ce jour de la semaine.");
+                return BadRequest(conflictSeance.Message);
             }
 
             // Validation: Check for overlaps in other proposed/active DemandesEdt on the exact date

@@ -50,6 +50,15 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IClasseGenerationService, ClasseGenerationService>();
+builder.Services.AddScoped<IReglageDisponibiliteService, ReglageDisponibiliteService>();
+
+// Phase 1.2 — Conflict checking centralisé (source : Seance, pas Creneau)
+builder.Services.AddScoped<IConflitService, ConflitService>();
+
+// Phase 1.7 — Génération DRY des cours depuis une affectation
+builder.Services.AddScoped<IAffectationService, AffectationService>();
+
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

@@ -46,6 +46,7 @@ namespace Gestion_SalleClasseEDT.Models
     public DbSet<Professeur> Professeurs { get; set; }
     public DbSet<Salle> Salles { get; set; }
     public DbSet<DisponibiliteProf> DisponibilitesProf { get; set; }
+    public DbSet<ReglageDisponibilite> ReglagesDisponibilite { get; set; }
     public DbSet<Cours> Cours { get; set; }
     public DbSet<Seance> Seances { get; set; }
     public DbSet<Groupe> Groupes { get; set; }
