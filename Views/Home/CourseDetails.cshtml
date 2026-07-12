@@ -147,13 +147,13 @@
                             <span class="block text-xs text-gray-400">@(Model.Classe?.Filiere?.CodeFiliere ?? "")</span>
                         </div>
                     </li>
-                    @if (Model.Groupe != null)
+                    @if (!string.IsNullOrEmpty(Model.Groupe))
                     {
                         <li class="flex items-start gap-3">
                             <i data-lucide="users" class="w-5 h-5 text-gray-400 mt-0.5"></i>
                             <div>
                                 <span class="block text-gray-500 text-xs">Groupe</span>
-                                <span class="font-medium text-gray-900">@Model.Groupe.Name</span>
+                                <span class="font-medium text-gray-900">@Model.Groupe</span>
                             </div>
                         </li>
                     }

@@ -49,6 +49,18 @@ namespace Gestion_SalleClasseEDT.Models
         [Column("statut")]
         public string? Statut { get; set; } = "Cree";
 
+        [NotMapped]
+        public string? Groupe { get; set; }
+
+        [NotMapped]
+        public string? Objectives { get; set; }
+
+        [NotMapped]
+        public string? Skills { get; set; }
+
+        [NotMapped]
+        public string? Evaluation { get; set; }
+
         // Navigation properties
         [ForeignKey("IdMatiere")]
         public virtual Matiere? Matiere { get; set; }

@@ -35,6 +35,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true;
 });
 
+builder.Services.AddHttpContextAccessor();
+
 // Allow frontend to call the API (CORS)
 builder.Services.AddCors(options =>
 {
@@ -47,6 +49,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 builder.Services.AddScoped<IPlanningService, PlanningService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<SubjectService>();
 builder.Services.AddScoped<SchedulingService>();
 

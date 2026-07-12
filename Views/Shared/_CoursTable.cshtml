@@ -56,9 +56,9 @@
                                 <div class="flex flex-col">
                                     <span class="font-medium text-gray-700">@(cours.Classe?.NomClasse ?? "Non assignée")</span>
                                     <span class="text-xs text-gray-400">@(cours.Classe?.Filiere?.CodeFiliere ?? "")</span>
-                                    @if (cours.Groupe != null)
+                                    @if (!string.IsNullOrEmpty(cours.Groupe))
                                     {
-                                        <span class="text-xs text-blue-600">Groupe: @cours.Groupe.Name</span>
+                                        <span class="text-xs text-blue-600">Groupe: @cours.Groupe</span>
                                     }
                                 </div>
                             </td>
