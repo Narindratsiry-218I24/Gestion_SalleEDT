@@ -255,7 +255,21 @@
                 loadDemandes();
             }, [requestFilters]);
 
-            const submitDemande = async () => {
+            const handleAction = async (id, action) => {
+  let route = '';
+  if (action === 'Valider') route = `${API_BASE}/DemandeEDT/${id}/Valider`;
+  else if (action === 'Refuser') route = `${API_BASE}/DemandeEDT/${id}/Refuser`;
+  else if (action === 'Annuler') route = `${API_BASE}/DemandeEDT/${id}/Suspendre`;
+  const response = await fetch(route, { method: 'POST' });
+  if (!response.ok) {
+    const err = await response.text();
+    alert(`Erreur ${action}: ${err}`);
+    return;
+  }
+  await loadDemandes();
+};
+
+const submitDemande = async () => {
                 if (!selectedClasse || !selectedMatiere) {
                     alert('Choisissez une classe et une matiere avant d envoyer la demande.');
                     return;
