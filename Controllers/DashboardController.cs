@@ -39,13 +39,13 @@ namespace Gestion_SalleClasseEDT.Controllers
                 TotalCours        = db.Cours.Count(),
                 DemandesAttente   = db.DemandesEdt.Count(d =>
                     d.Statut == "en_attente" || d.Statut == "en attente" || d.Statut == "pending"),
-                OccupancyRate     = db.Salles.Any()
+                OccupancyRate = db.Salles.Any()
                     ? (double)db.Seances
-                        .Where(s => s.Date.Date == DateTime.Today && s.SalleId != null)
+                        .Where(s => s.SalleId != null && s.Date >= DateTime.Today && s.Date < DateTime.Today.AddDays(1))
                         .Select(s => s.SalleId)
                         .Distinct()
-                        .Count() / db.Salles.Count() * 100
-                    : 0
+                        .Count() * 100.0 / db.Salles.Count()
+                    : 0,
             };
 
             return Ok(stats);

@@ -608,7 +608,10 @@
         document.getElementById('detailModal').addEventListener('click', function(e) { if(e.target === this) closeDetailModal(); });
 
         window.addEventListener('load', function() {
-            // insert pagination UI
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('gradeFilter').addEventListener('change', applyFilters);
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('specialiteFilter').addEventListener('change', applyFilters);
             const pagWrapper = document.createElement('div');
             pagWrapper.className = 'mt-4 flex items-center justify-between gap-4';
             pagWrapper.innerHTML = `

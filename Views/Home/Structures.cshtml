@@ -62,6 +62,7 @@
                         <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code</th>
                         <th class="py-4 px-6 font-bold text-gray-500 text-sm">Niveaux</th>
                         <th class="py-4 px-6 font-bold text-gray-500 text-sm">Filières associées</th>
+                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="structuresTableBody">
@@ -277,7 +278,12 @@
                     return fMention && app.readProp(fMention, "IdMention") == id;
                 });
                 const filieresHtml = mentionFilieres.length > 0
-                    ? mentionFilieres.map(f => `<span class="inline-block bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-bold mr-1 mb-1">${app.escapeHtml(app.readProp(f, "CodeFiliere") || app.readProp(f, "NomFiliere") || "")}</span>`).join("")
+                    ? mentionFilieres.map(f => {
+                        const fname = app.escapeHtml(app.readProp(f, "CodeFiliere") || app.readProp(f, "NomFiliere") || "");
+                        return `<div class="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-bold mr-1 mb-1">
+                            <span>${fname}</span>
+                        </div>`;
+                    }).join("")
                     : '<span class="text-gray-400 text-xs italic">Aucune</span>';
 
                 const tr = document.createElement("tr");
@@ -292,6 +298,19 @@
                     <td class="py-4 px-6"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${code}</span></td>
                     <td class="py-4 px-6 text-gray-600 font-medium">${niveauxStr}</td>
                     <td class="py-4 px-6">${filieresHtml}</td>
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-2">
+                            <button onclick="detailsMention(${id})" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Détails">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="editMention(${id})" class="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Modifier">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteMention(${id})" class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Supprimer">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -308,6 +327,197 @@
             });
             renderStructures(filtered);
         }
+
+        
+        // --- Actions for Mention ---
+        window.detailsMention = async function(id) {
+            try {
+                const res = await fetch(`/api/Mention/${id}`);
+                if (!res.ok) throw new Error("Impossible de récupérer les détails");
+                const m = await res.json();
+                
+                const nom = app.readProp(m, "NomMention") || "";
+                const code = app.readProp(m, "CodeMention") || "";
+                const nivCount = app.readProp(m, "NiveauCount") || 0;
+                const filCount = app.readProp(m, "FiliereCount") || 0;
+
+                Swal.fire({
+                    title: `Mention : ${nom} (${code})`,
+                    html: `
+                        <div class="text-left mt-4 space-y-2">
+                            <p><strong>Code :</strong> ${code}</p>
+                            <p><strong>Niveaux rattachés :</strong> ${nivCount}</p>
+                            <p><strong>Filières rattachées :</strong> ${filCount}</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    confirmButtonText: 'Fermer',
+                    confirmButtonColor: '#3085d6'
+                });
+            } catch (e) {
+                Swal.fire('Erreur', e.message, 'error');
+            }
+        };
+
+        window.editMention = async function(id) {
+            const mention = allMentions.find(m => app.readProp(m, "IdMention") == id);
+            if (!mention) return;
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Modifier la mention',
+                html:
+                    `<input id="swal-input-nom" class="swal2-input" placeholder="Nom de la mention" value="${app.readProp(mention, "NomMention") || ''}">` +
+                    `<input id="swal-input-code" class="swal2-input" placeholder="Code (ex: INFO)" value="${app.readProp(mention, "CodeMention") || ''}">`,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Enregistrer',
+                cancelButtonText: 'Annuler',
+                preConfirm: () => {
+                    return {
+                        NomMention: document.getElementById('swal-input-nom').value,
+                        CodeMention: document.getElementById('swal-input-code').value
+                    }
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const payload = { IdMention: id, NomMention: formValues.NomMention, CodeMention: formValues.CodeMention };
+                    const res = await fetch(`/api/Mention/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        Swal.fire('Succès', 'Mention modifiée avec succès', 'success');
+                        loadStructures();
+                    } else {
+                        const err = await res.text();
+                        Swal.fire('Erreur', err, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Erreur', e.message, 'error');
+                }
+            }
+        };
+
+        window.deleteMention = async function(id) {
+            const result = await Swal.fire({
+                title: 'Êtes-vous sûr ?',
+                text: "Vous ne pourrez pas revenir en arrière !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/Mention/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        Swal.fire('Supprimé!', 'La mention a été supprimée.', 'success');
+                        loadStructures();
+                    } else {
+                        const data = await res.json().catch(() => null);
+                        Swal.fire('Erreur', data?.message || 'Erreur lors de la suppression', 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Erreur', e.message, 'error');
+                }
+            }
+        };
+
+        // --- Actions for Filiere ---
+        window.editFiliere = async function(id) {
+            const filiere = allFilieres.find(f => app.readProp(f, "IdFiliere") == id || app.readProp(f, "idFiliere") == id);
+            if (!filiere) return;
+
+            const idMention = app.readProp(filiere, "IdMention") || app.readProp(filiere, "idMention");
+            
+            // Build options for Mentions
+            let optionsHtml = allMentions.map(m => {
+                const mId = app.readProp(m, "IdMention");
+                const selected = (mId == idMention) ? "selected" : "";
+                return `<option value="${mId}" ${selected}>${app.readProp(m, "NomMention")}</option>`;
+            }).join("");
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Modifier le parcours',
+                html:
+                    `<select id="swal-input-mention" class="swal2-select w-full max-w-full m-0 mt-4 h-10 text-sm border-gray-300 rounded-md">
+                        <option value="">Sélectionnez une mention</option>
+                        ${optionsHtml}
+                     </select>` +
+                    `<input id="swal-input-code" class="swal2-input" placeholder="Code (ex: DA2I)" value="${app.readProp(filiere, "CodeFiliere") || app.readProp(filiere, "codeFiliere") || ''}">` +
+                    `<input id="swal-input-nom" class="swal2-input" placeholder="Nom complet" value="${app.readProp(filiere, "NomFiliere") || app.readProp(filiere, "nomFiliere") || ''}">`,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Enregistrer',
+                cancelButtonText: 'Annuler',
+                preConfirm: () => {
+                    const selectedMention = document.getElementById('swal-input-mention').value;
+                    if (!selectedMention) {
+                        Swal.showValidationMessage('Veuillez sélectionner une mention');
+                        return false;
+                    }
+                    return {
+                        IdMention: parseInt(selectedMention),
+                        CodeFiliere: document.getElementById('swal-input-code').value,
+                        NomFiliere: document.getElementById('swal-input-nom').value
+                    }
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const payload = { IdFiliere: id, IdMention: formValues.IdMention, CodeFiliere: formValues.CodeFiliere, NomFiliere: formValues.NomFiliere };
+                    const res = await fetch(`/api/Filiere/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        Swal.fire('Succès', 'Parcours modifié avec succès', 'success');
+                        loadStructures();
+                    } else {
+                        const err = await res.text();
+                        Swal.fire('Erreur', err, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Erreur', e.message, 'error');
+                }
+            }
+        };
+
+        window.deleteFiliere = async function(id) {
+            const result = await Swal.fire({
+                title: 'Êtes-vous sûr ?',
+                text: "Vous ne pourrez pas revenir en arrière !",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/Filiere/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        Swal.fire('Supprimée!', 'La filière a été supprimée.', 'success');
+                        loadStructures();
+                    } else {
+                        const data = await res.json().catch(() => null);
+                        Swal.fire('Erreur', data?.message || 'Erreur lors de la suppression', 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Erreur', e.message, 'error');
+                }
+            }
+        };
 
         document.addEventListener("DOMContentLoaded", function() {
             loadStructures();

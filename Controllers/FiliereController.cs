@@ -24,7 +24,68 @@ namespace Gestion_SalleClasseEDT.Controllers
             return Ok(filieres);
         }
 
-        // POST endpoint to create a Filiere
+        // GET endpoint for specific Filiere details
+        [HttpGet]
+        [Route("{id}")]
+        public IActionResult GetFiliere(int id)
+        {
+            var filiere = db.Filieres
+                .Include(f => f.Mention)
+                .Select(f => new {
+                    f.IdFiliere,
+                    f.IdMention,
+                    f.CodeFiliere,
+                    f.NomFiliere,
+                    MentionNom = f.Mention != null ? f.Mention.NomMention : null,
+                    ClasseCount = db.Classes.Count(c => c.IdFiliere == f.IdFiliere),
+                    MatiereCount = db.Matieres.Count(m => m.IdFiliere == f.IdFiliere)
+                })
+                .FirstOrDefault(f => f.IdFiliere == id);
+            
+            if (filiere == null)
+                return NotFound();
+            
+            return Ok(filiere);
+        }
+
+        // PUT endpoint to update a Filiere
+        [HttpPut]
+        [Route("{id}")]
+        public IActionResult UpdateFiliere(int id, [FromBody] Filiere filiereUpdate)
+        {
+            if (filiereUpdate == null || id != filiereUpdate.IdFiliere)
+                return BadRequest("Invalid payload.");
+
+            var filiere = db.Filieres.Find(id);
+            if (filiere == null)
+                return NotFound();
+
+            filiere.IdMention = filiereUpdate.IdMention;
+            filiere.CodeFiliere = filiereUpdate.CodeFiliere;
+            filiere.NomFiliere = filiereUpdate.NomFiliere;
+
+            db.SaveChanges();
+            return NoContent();
+        }
+
+        // DELETE endpoint to remove a Filiere
+        [HttpDelete]
+        [Route("{id}")]
+        public IActionResult DeleteFiliere(int id)
+        {
+            var filiere = db.Filieres.Find(id);
+            if (filiere == null)
+                return NotFound();
+            
+            if (db.Classes.Any(c => c.IdFiliere == id) || db.Matieres.Any(m => m.IdFiliere == id))
+            {
+                return BadRequest(new { message = "Impossible de supprimer ce parcours car il contient des classes ou des matières." });
+            }
+
+            db.Filieres.Remove(filiere);
+            db.SaveChanges();
+            return NoContent();
+        }
         [HttpPost]
         [Route("")]
         public IActionResult CreateFiliere([FromBody] Filiere filiere)

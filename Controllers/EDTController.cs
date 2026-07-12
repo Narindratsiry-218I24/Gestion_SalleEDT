@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Gestion_SalleClasseEDT.Models;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace Gestion_SalleClasseEDT.Controllers
 {
@@ -24,54 +28,171 @@ namespace Gestion_SalleClasseEDT.Controllers
             int? classeId = null, int? profId = null, int? salleId = null,
             string? cycle = null, string? niveau = null, string? semaineType = null)
         {
-            var query = db.Cours
-                .Include(c => c.Matiere)
-                .Include(c => c.Professeur)
-                .Include(c => c.Classe).ThenInclude(cl => cl.Filiere).ThenInclude(f => f.Mention)
-                .Include(c => c.Classe).ThenInclude(cl => cl.Niveau)
-                .Include(c => c.Salle)
-                .Include(c => c.Creneaux)
+            var query = db.Seances
+                .Include(s => s.Cours).ThenInclude(c => c.Matiere)
+                .Include(s => s.Cours).ThenInclude(c => c.Professeur)
+                .Include(s => s.Cours).ThenInclude(c => c.Classe).ThenInclude(cl => cl.Filiere).ThenInclude(f => f.Mention)
+                .Include(s => s.Cours).ThenInclude(c => c.Classe).ThenInclude(cl => cl.Niveau)
+                .Include(s => s.Salle)
                 .AsQueryable();
 
-            if (classeId.HasValue) query = query.Where(c => c.IdClasse == classeId);
-            if (profId.HasValue)   query = query.Where(c => c.IdProfesseur == profId);
-            if (salleId.HasValue)  query = query.Where(c => c.IdSalle == salleId);
+            if (classeId.HasValue) query = query.Where(s => s.Cours.IdClasse == classeId);
+            if (profId.HasValue)   query = query.Where(s => s.Cours.IdProfesseur == profId);
+            if (salleId.HasValue)  query = query.Where(s => s.SalleId == salleId);
 
             if (!string.IsNullOrEmpty(cycle) && cycle != "all")
-                query = query.Where(c => c.Classe.Filiere.NomFiliere.Contains(cycle));
+                query = query.Where(s => s.Cours.Classe.Filiere.NomFiliere.Contains(cycle));
 
             if (!string.IsNullOrEmpty(niveau) && niveau != "all")
-                query = query.Where(c => c.Classe.Niveau.CodeNiveau.Contains(niveau));
+                query = query.Where(s => s.Cours.Classe.Niveau.CodeNiveau.Contains(niveau));
 
-            if (!string.IsNullOrEmpty(semaineType) && semaineType != "all")
-                query = query.Where(c => c.Creneaux.Any(cr => cr.SemaineType == semaineType));
+            var seances = query.ToList();
 
-            var coursList = query.ToList();
-
-            var result = coursList.Select(c => new {
-                c.IdCours,
-                c.TypeCours,
-                c.Statut,
-                Matiere = c.Matiere != null ? new { c.Matiere.IdMatiere, c.Matiere.NomMatiere, Couleur = "#3b82f6" } : null,
-                Professeur = c.Professeur != null ? new { c.Professeur.IdProfesseur, c.Professeur.Nom, c.Professeur.Prenom } : null,
-                Classe = c.Classe != null ? new { 
-                    c.Classe.IdClasse, 
-                    c.Classe.NomClasse,
-                    Filiere = c.Classe.Filiere?.NomFiliere,
-                    Mention = c.Classe.Filiere?.Mention?.NomMention,
-                    Niveau = c.Classe.Niveau?.CodeNiveau
-                } : null,
-                Salle = c.Salle != null ? new { c.Salle.IdSalle, c.Salle.NomSalle, c.Salle.Capacite } : null,
-                Creneaux = c.Creneaux?.Select(cr => new {
-                    cr.IdCreneau,
-                    cr.JourSemaine,
-                    cr.HeureDebut,
-                    cr.HeureFin,
-                    cr.SemaineType
-                })
+            var result = seances.Select(s => new {
+                s.Id,
+                s.Date,
+                s.StartTime,
+                s.EndTime,
+                Course = new {
+                    s.Cours.IdCours,
+                    s.Cours.TypeCours,
+                    s.Cours.Statut,
+                    Matiere = s.Cours.Matiere != null ? new { s.Cours.Matiere.IdMatiere, s.Cours.Matiere.NomMatiere, Couleur = "#3b82f6" } : null,
+                    Professeur = s.Cours.Professeur != null ? new { s.Cours.Professeur.IdProfesseur, s.Cours.Professeur.Nom, s.Cours.Professeur.Prenom } : null,
+                    Classe = s.Cours.Classe != null ? new { 
+                        s.Cours.Classe.IdClasse, 
+                        s.Cours.Classe.NomClasse,
+                        Filiere = s.Cours.Classe.Filiere?.NomFiliere,
+                        Mention = s.Cours.Classe.Filiere?.Mention?.NomMention,
+                        Niveau = s.Cours.Classe.Niveau?.CodeNiveau
+                    } : null,
+                },
+                Salle = s.Salle != null ? new { s.Salle.IdSalle, s.Salle.NomSalle, s.Salle.Capacite } : null
             });
 
             return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("ExportExcel")]
+        public IActionResult ExportExcel(
+            int? classeId = null, int? profId = null, int? salleId = null,
+            string? cycle = null, string? niveau = null, string? semaineType = null)
+        {
+            var query = db.Seances
+                .Include(s => s.Cours).ThenInclude(c => c.Matiere)
+                .Include(s => s.Cours).ThenInclude(c => c.Professeur)
+                .Include(s => s.Cours).ThenInclude(c => c.Classe)
+                .Include(s => s.Salle)
+                .AsQueryable();
+
+            if (classeId.HasValue) query = query.Where(s => s.Cours.IdClasse == classeId);
+            if (profId.HasValue)   query = query.Where(s => s.Cours.IdProfesseur == profId);
+            if (salleId.HasValue)  query = query.Where(s => s.SalleId == salleId);
+
+            var seances = query.OrderBy(s => s.Date).ThenBy(s => s.StartTime).ToList();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Date;Heure de Debut;Heure de Fin;Matiere;Type de Cours;Professeur;Classe;Salle");
+            
+            foreach (var s in seances)
+            {
+                var prof = s.Cours?.Professeur != null ? $"{s.Cours.Professeur.Nom} {s.Cours.Professeur.Prenom}" : "-";
+                var matiere = s.Cours?.Matiere?.NomMatiere ?? "-";
+                var classe = s.Cours?.Classe?.NomClasse ?? "-";
+                var salle = s.Salle?.NomSalle ?? "-";
+                var typeCours = s.Cours?.TypeCours ?? "-";
+
+                sb.AppendLine($"{s.Date:yyyy-MM-dd};{s.StartTime};{s.EndTime};\"{matiere}\";\"{typeCours}\";\"{prof}\";\"{classe}\";\"{salle}\"");
+            }
+
+            var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+            var bytes = bom.Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+
+            return File(bytes, "text/csv", "EmploiDuTemps.csv");
+        }
+
+        [HttpGet]
+        [Route("ExportPdf")]
+        public IActionResult ExportPdf(
+            int? classeId = null, int? profId = null, int? salleId = null)
+        {
+            var query = db.Seances
+                .Include(s => s.Cours).ThenInclude(c => c.Matiere)
+                .Include(s => s.Cours).ThenInclude(c => c.Professeur)
+                .Include(s => s.Cours).ThenInclude(c => c.Classe)
+                .Include(s => s.Salle)
+                .AsQueryable();
+
+            if (classeId.HasValue) query = query.Where(s => s.Cours.IdClasse == classeId);
+            if (profId.HasValue)   query = query.Where(s => s.Cours.IdProfesseur == profId);
+            if (salleId.HasValue)  query = query.Where(s => s.SalleId == salleId);
+
+            var seances = query.OrderBy(s => s.Date).ThenBy(s => s.StartTime).ToList();
+
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(1, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    page.Header().Text("Emploi du Temps").SemiBold().FontSize(20).FontColor(Colors.Blue.Darken2);
+
+                    page.Content().PaddingVertical(1, Unit.Centimetre).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn();
+                            columns.RelativeColumn();
+                            columns.RelativeColumn();
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn();
+                            columns.RelativeColumn();
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("Date").Bold();
+                            header.Cell().Text("Début").Bold();
+                            header.Cell().Text("Fin").Bold();
+                            header.Cell().Text("Matière").Bold();
+                            header.Cell().Text("Professeur").Bold();
+                            header.Cell().Text("Classe").Bold();
+                            header.Cell().Text("Salle").Bold();
+                            
+                            header.Cell().ColumnSpan(7).PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Black);
+                        });
+
+                        foreach (var s in seances)
+                        {
+                            table.Cell().Text(s.Date.ToString("yyyy-MM-dd"));
+                            table.Cell().Text(s.StartTime.ToString(@"hh\:mm"));
+                            table.Cell().Text(s.EndTime.ToString(@"hh\:mm"));
+                            table.Cell().Text(s.Cours?.Matiere?.NomMatiere ?? "-");
+                            table.Cell().Text(s.Cours?.Professeur != null ? $"{s.Cours.Professeur.Nom} {s.Cours.Professeur.Prenom}" : "-");
+                            table.Cell().Text(s.Cours?.Classe?.NomClasse ?? "-");
+                            table.Cell().Text(s.Salle?.NomSalle ?? "-");
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Page ");
+                        x.CurrentPageNumber();
+                        x.Span(" / ");
+                        x.TotalPages();
+                    });
+                });
+            });
+
+            byte[] pdfBytes = document.GeneratePdf();
+            return File(pdfBytes, "application/pdf", "EmploiDuTemps.pdf");
         }
 
         [HttpGet]

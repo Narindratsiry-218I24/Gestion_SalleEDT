@@ -34,7 +34,7 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (string.IsNullOrEmpty(email))
                 return null;
 
-            return await _db.Professeurs
+            var prof = await _db.Professeurs
                 .Include(p => p.Utilisateur)
                 .Include(p => p.AffectationsMatieres)
                     .ThenInclude(a => a.Matiere)
@@ -53,6 +53,37 @@ namespace Gestion_SalleClasseEDT.Controllers
                     .ThenInclude(c => c.Creneaux)
                 .Include(p => p.Disponibilites)
                 .FirstOrDefaultAsync(p => p.Email == email);
+                
+            if (prof == null && (email == "toojratooj@gmail.com" || email == "toojraootj@gmail.com"))
+            {
+                // Auto-create for test account
+                var user = await _db.Utilisateurs.FirstOrDefaultAsync(u => u.Email == email);
+                if (user == null)
+                {
+                    user = new Utilisateur { Nom = "Tooj", Prenom = "Ratooj", Email = email, Role = "Professeur", StatutCompte = "Actif", DateCreation = DateTime.UtcNow };
+                    _db.Utilisateurs.Add(user);
+                    await _db.SaveChangesAsync();
+                }
+                
+                // check if prof exists first before adding
+                prof = await _db.Professeurs.FirstOrDefaultAsync(p => p.IdUtilisateur == user.IdUtilisateur || p.Email == email);
+                if (prof == null)
+                {
+                    // Fix sequence before inserting to avoid PK violation if seeded manually
+                    await _db.Database.ExecuteSqlRawAsync("SELECT setval(pg_get_serial_sequence('professeur', 'id_professeur'), (SELECT COALESCE(MAX(id_professeur), 0) + 1 FROM professeur), false);");
+
+                    prof = new Professeur { 
+                        Nom = "Tooj", Prenom = "Ratooj", Email = email, 
+                        Telephone = "0340000001", Grade = "Titulaire", Matricule = "MAT-TEST-002", 
+                        Titre = "Dr", Specialite = "Informatique", Statut = "Permanent", 
+                        IdUtilisateur = user.IdUtilisateur, CapaciteHoraireMax = 20, EstActif = true, DateCreation = DateTime.UtcNow
+                    };
+                    _db.Professeurs.Add(prof);
+                    await _db.SaveChangesAsync();
+                }
+            }
+            
+            return prof;
         }
 
         // ─────────────────────────────────────────────────────────────

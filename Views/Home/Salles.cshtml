@@ -5,10 +5,22 @@
 <div class="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Salles</h1>
-            <p class="text-gray-500 mt-1">Gérez l'infrastructure, la capacité d'accueil et la disponibilité des salles sur l'ensemble du campus.</p>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Infrastructures et Classes</h1>
+            <p class="text-gray-500 mt-1">Gérez les salles de classe, les amphithéâtres et l'affectation des classes.</p>
         </div>
-        <div class="flex flex-wrap items-end gap-3">
+        <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <button id="tabSallesBtn" onclick="switchTab('salles')" class="px-4 py-2 text-sm font-bold rounded-md bg-white text-[#17203A] shadow-sm transition-all">
+                Salles
+            </button>
+            <button id="tabClassesBtn" onclick="switchTab('classes')" class="px-4 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-[#17203A] transition-all">
+                Classes
+            </button>
+        </div>
+    </div>
+
+    <!-- TAB SALLES -->
+    <div id="tabSalles" class="space-y-8 block">
+        <div class="flex flex-wrap items-end gap-3 justify-end">
             <div class="flex flex-col gap-1.5">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Bâtiment</span>
                 <select id="filterBatiment" onchange="loadSalles()" class="w-[140px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -32,72 +44,105 @@
                 <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Salle
             </button>
         </div>
-    </div>
 
-    <!-- Room Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h4 class="text-slate-500 text-sm font-semibold mb-2">Total Salles</h4>
-            <p class="text-3xl font-black text-[#17203A]" id="statTotal">--</p>
+        <!-- Room Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h4 class="text-slate-500 text-sm font-semibold mb-2">Total Salles</h4>
+                <p class="text-3xl font-black text-[#17203A]" id="statTotal">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles de Cours</h4>
+                <p class="text-3xl font-black text-[#17203A]" id="statCours">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles TP</h4>
+                <p class="text-3xl font-black text-[#17203A]" id="statTP">--</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h4 class="text-slate-500 text-sm font-semibold mb-2">Amphithéâtres</h4>
+                <p class="text-3xl font-black text-[#17203A]" id="statAmphi">--</p>
+            </div>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles de Cours</h4>
-            <p class="text-3xl font-black text-[#17203A]" id="statCours">--</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h4 class="text-slate-500 text-sm font-semibold mb-2">Salles TP</h4>
-            <p class="text-3xl font-black text-[#17203A]" id="statTP">--</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h4 class="text-slate-500 text-sm font-semibold mb-2">Amphithéâtres</h4>
-            <p class="text-3xl font-black text-[#17203A]" id="statAmphi">--</p>
-        </div>
-    </div>
 
-    <!-- Room Inventory Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 border-b border-gray-100">
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Nom Salle</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Bâtiment / Étage</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Porte</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Type</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm">Capacité</th>
-                        <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100" id="roomTableBody">
-                    <tr><td colspan="6" class="text-center py-4 text-gray-500">Chargement...</td></tr>
-                </tbody>
-            </table>
+        <!-- Room Inventory Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Nom Salle</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Bâtiment / Étage</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Porte</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Type</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Capacité</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="roomTableBody">
+                        <tr><td colspan="6" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <!-- Campus Layout & Usage -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-full">
-        <div class="lg:col-span-8 h-full">
-            <div class="h-full min-h-[300px] bg-gray-100 flex items-center justify-center relative overflow-hidden group rounded-xl">
-                <div class="absolute inset-0 bg-blue-900/5 transition-colors duration-500"></div>
-                <div class="relative z-10 text-center p-12">
-                    <div class="bg-white px-4 py-2 rounded-lg shadow-sm font-bold text-[#17203A] mb-4 inline-block">Plan Interactif du Campus</div>
-                    <p class="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">La cartographie visuelle sera affichée ici.</p>
+        <!-- Campus Layout & Usage -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-full">
+            <div class="lg:col-span-8 h-full">
+                <div class="h-full min-h-[300px] bg-gray-100 flex items-center justify-center relative overflow-hidden group rounded-xl">
+                    <div class="absolute inset-0 bg-blue-900/5 transition-colors duration-500"></div>
+                    <div class="relative z-10 text-center p-12">
+                        <div class="bg-white px-4 py-2 rounded-lg shadow-sm font-bold text-[#17203A] mb-4 inline-block">Plan Interactif du Campus</div>
+                        <p class="text-sm text-gray-400 max-w-xs mx-auto leading-relaxed">La cartographie visuelle sera affichée ici.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-4 h-full">
+                <div class="bg-white rounded-xl shadow-sm p-6 h-full">
+                    <h3 class="text-lg font-bold text-[#17203A] mb-4">Usage & Efficacité</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">Taux d'occupation global</span>
+                            <span class="font-bold text-[#17203A]">76%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: 76%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="lg:col-span-4 h-full">
-            <div class="bg-white rounded-xl shadow-sm p-6 h-full">
-                <h3 class="text-lg font-bold text-[#17203A] mb-4">Usage & Efficacité</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-500">Taux d'occupation global</span>
-                        <span class="font-bold text-[#17203A]">76%</span>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-2">
-                        <div class="bg-blue-600 h-2 rounded-full" style="width: 76%"></div>
-                    </div>
-                </div>
+    </div>
+
+    <!-- TAB CLASSES -->
+    <div id="tabClasses" class="space-y-8 hidden">
+        <div class="flex flex-wrap items-end gap-3 justify-end">
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Année Académique</span>
+                <select id="filterAnneeClasse" onchange="loadClassesList()" class="w-[180px] h-11 bg-white border border-gray-200 rounded-md font-bold text-[#17203A] px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </select>
+            </div>
+            <button class="h-11 px-6 bg-[#17203A] text-white hover:bg-[#12192B] gap-2 font-bold rounded-md flex items-center border-none" onclick="openAddClassModal()">
+                <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Classe
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Nom Classe</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Code</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Mention / Filière</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm">Niveau</th>
+                            <th class="py-4 px-6 font-bold text-gray-500 text-sm text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="classesTableBody">
+                        <tr><td colspan="5" class="text-center py-4 text-gray-500">Chargement...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -152,6 +197,51 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Class Modal -->
+    <div id="addClassModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="document.getElementById('addClassModal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold text-[#17203A] mb-4">Ajouter / Modifier Classe</h2>
+                <form class="space-y-4" id="formAddClass">
+                    <input type="hidden" id="classeId" value="0" />
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mention</label>
+                        <select id="classeMention" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" onchange="filterNiveauxFilieres()">
+                            <option value="">Sélectionner...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Niveau</label>
+                        <select id="classeNiveau" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" onchange="generateClassName()">
+                            <option value="">Sélectionner...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parcours / Filière</label>
+                        <select id="classeFiliere" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" onchange="generateClassName()">
+                            <option value="">Sélectionner...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom de la classe</label>
+                        <input type="text" id="classeNom" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-blue-50" placeholder="ex: INFO L3" />
+                        <p class="text-[10px] text-gray-500 mt-1">Généré automatiquement mais modifiable.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                        <input type="text" id="classeCode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Optionnel" />
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50" onclick="document.getElementById('addClassModal').classList.add('hidden')">Annuler</button>
+                        <button type="submit" class="px-4 py-2 bg-[#17203A] text-white rounded-md hover:bg-[#12192b]">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {
@@ -203,7 +293,10 @@
                         <td class="py-4 px-6 text-gray-600">N° ${porte}</td>
                         <td class="py-4 px-6"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider">${t}</span></td>
                         <td class="py-4 px-6 font-semibold text-gray-700">${cap} places</td>
-                        <td class="py-4 px-6 text-right">
+                        <td class="py-4 px-6 text-right flex justify-end gap-2">
+                            <button class="text-orange-600 hover:text-orange-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="editSalle(${id})">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
                             <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="deleteSalle(${id})">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
@@ -215,6 +308,194 @@
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-600 font-bold bg-red-50/30">Erreur lors du chargement des salles: ${app.escapeHtml(err.message)}</td></tr>`;
             }
+        }
+
+        let anneesAcademiques = [];
+        let mentions = [];
+        let niveaux = [];
+        let filieres = [];
+
+        function switchTab(tabId) {
+            document.getElementById('tabSalles').classList.add('hidden');
+            document.getElementById('tabClasses').classList.add('hidden');
+            document.getElementById('tabSallesBtn').className = 'px-4 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-[#17203A] transition-all';
+            document.getElementById('tabClassesBtn').className = 'px-4 py-2 text-sm font-bold rounded-md text-gray-500 hover:text-[#17203A] transition-all';
+
+            if (tabId === 'salles') {
+                document.getElementById('tabSalles').classList.remove('hidden');
+                document.getElementById('tabSallesBtn').className = 'px-4 py-2 text-sm font-bold rounded-md bg-white text-[#17203A] shadow-sm transition-all';
+            } else {
+                document.getElementById('tabClasses').classList.remove('hidden');
+                document.getElementById('tabClassesBtn').className = 'px-4 py-2 text-sm font-bold rounded-md bg-white text-[#17203A] shadow-sm transition-all';
+                if (anneesAcademiques.length === 0) {
+                    initClassesTab();
+                } else {
+                    loadClassesList();
+                }
+            }
+        }
+
+        async function initClassesTab() {
+            try {
+                const [anneesRes, mentionsRes, niveauxRes, filieresRes] = await Promise.all([
+                    app.apiGet("/api/AnneeAcademique"),
+                    app.apiGet("/api/Mention"),
+                    app.apiGet("/api/Niveau"),
+                    app.apiGet("/api/Filiere")
+                ]);
+                anneesAcademiques = anneesRes || [];
+                mentions = mentionsRes || [];
+                niveaux = niveauxRes || [];
+                filieres = filieresRes || [];
+
+                const anneeSelect = document.getElementById("filterAnneeClasse");
+                anneeSelect.innerHTML = anneesAcademiques.map(a => `<option value="${app.readProp(a, 'IdAnnee')}">${app.escapeHtml(app.readProp(a, 'Libelle'))}</option>`).join('');
+
+                const mentionSelect = document.getElementById("classeMention");
+                mentionSelect.innerHTML = '<option value="">Sélectionner...</option>' + mentions.map(m => `<option value="${app.readProp(m, 'IdMention')}">${app.escapeHtml(app.readProp(m, 'NomMention'))} (${app.escapeHtml(app.readProp(m, 'CodeMention'))})</option>`).join('');
+
+                loadClassesList();
+            } catch (err) {
+                console.error("Erreur initClassesTab", err);
+            }
+        }
+
+        async function loadClassesList() {
+            const tbody = document.getElementById("classesTableBody");
+            const anneeId = document.getElementById("filterAnneeClasse").value;
+            if (!anneeId) return;
+
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500"><i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-500 inline"></i> Chargement...</td></tr>';
+            if (window.lucide) lucide.createIcons();
+
+            try {
+                const data = await app.apiGet(`/api/Classe?anneeId=${anneeId}`);
+                tbody.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Aucune classe trouvée.</td></tr>';
+                    return;
+                }
+
+                data.forEach(function(c) {
+                    const id = app.readProp(c, "IdClasse");
+                    const nom = app.escapeHtml(app.readProp(c, "NomClasse"));
+                    const code = app.escapeHtml(app.readProp(c, "CodeClasse") || "-");
+                    const filiere = app.readProp(c, "Filiere");
+                    const nomFiliere = filiere ? app.escapeHtml(app.readProp(filiere, "NomFiliere")) : "-";
+                    // Using find to get Niveau as it is not included in the GET response directly sometimes
+                    const idNiveau = app.readProp(c, "IdNiveau");
+                    const niveauObj = niveaux.find(n => app.readProp(n, "IdNiveau") == idNiveau);
+                    const nomNiveau = niveauObj ? app.escapeHtml(app.readProp(niveauObj, "CodeNiveau")) : "-";
+
+                    const tr = document.createElement("tr");
+                    tr.className = "hover:bg-gray-50/50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="py-4 px-6 font-bold text-[#17203A]">${nom}</td>
+                        <td class="py-4 px-6 font-medium text-gray-600">${code}</td>
+                        <td class="py-4 px-6 text-gray-600">${nomFiliere}</td>
+                        <td class="py-4 px-6 font-semibold text-gray-700">${nomNiveau}</td>
+                        <td class="py-4 px-6 text-right flex justify-end gap-2">
+                            <button class="text-orange-600 hover:text-orange-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="editClasse(${id})">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                            <button class="text-red-600 hover:text-red-800 p-2 rounded-md bg-transparent border-none cursor-pointer transition" onclick="deleteClasse(${id})">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-600 font-bold bg-red-50/30">Erreur lors du chargement des classes: ${app.escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function filterNiveauxFilieres() {
+            const mentionId = document.getElementById("classeMention").value;
+            const niveauSelect = document.getElementById("classeNiveau");
+            const filiereSelect = document.getElementById("classeFiliere");
+
+            if (!mentionId) {
+                niveauSelect.innerHTML = '<option value="">Sélectionner...</option>';
+                filiereSelect.innerHTML = '<option value="">Sélectionner...</option>';
+                return;
+            }
+
+            const filteredNiveaux = niveaux.filter(n => app.readProp(n, 'IdMention') == mentionId);
+            niveauSelect.innerHTML = '<option value="">Sélectionner...</option>' + filteredNiveaux.map(n => `<option value="${app.readProp(n, 'IdNiveau')}" data-code="${app.escapeHtml(app.readProp(n, 'CodeNiveau'))}">${app.escapeHtml(app.readProp(n, 'CodeNiveau'))}</option>`).join('');
+
+            const filteredFilieres = filieres.filter(f => app.readProp(f, 'IdMention') == mentionId);
+            filiereSelect.innerHTML = '<option value="">Sélectionner...</option>' + filteredFilieres.map(f => `<option value="${app.readProp(f, 'IdFiliere')}" data-code="${app.escapeHtml(app.readProp(f, 'CodeFiliere'))}">${app.escapeHtml(app.readProp(f, 'NomFiliere'))} (${app.escapeHtml(app.readProp(f, 'CodeFiliere'))})</option>`).join('');
+            
+            generateClassName();
+        }
+
+        function generateClassName() {
+            const mentionSel = document.getElementById("classeMention");
+            const niveauSel = document.getElementById("classeNiveau");
+            const filiereSel = document.getElementById("classeFiliere");
+            
+            if (mentionSel.selectedIndex > 0 && niveauSel.selectedIndex > 0 && filiereSel.selectedIndex > 0) {
+                const mentionCode = mentions.find(m => app.readProp(m, 'IdMention') == mentionSel.value)?.CodeMention || "";
+                const niveauCode = niveauSel.options[niveauSel.selectedIndex].getAttribute('data-code') || "";
+                const filiereCode = filiereSel.options[filiereSel.selectedIndex].getAttribute('data-code') || "";
+
+                // Ex: INFO L3 DA2I
+                document.getElementById("classeNom").value = `${mentionCode} ${niveauCode} ${filiereCode}`.trim().replace(/\s+/g, ' ');
+            }
+        }
+
+        function openAddClassModal() {
+            document.getElementById("formAddClass").reset();
+            document.getElementById("classeId").value = "0";
+            document.getElementById("classeNiveau").innerHTML = '<option value="">Sélectionner...</option>';
+            document.getElementById("classeFiliere").innerHTML = '<option value="">Sélectionner...</option>';
+            document.getElementById('addClassModal').classList.remove('hidden');
+        }
+
+        async function editClasse(id) {
+            try {
+                const data = await app.apiGet('/api/Classe/' + id);
+                document.getElementById("classeId").value = id;
+                document.getElementById("classeNom").value = app.readProp(data, "NomClasse");
+                document.getElementById("classeCode").value = app.readProp(data, "CodeClasse") || "";
+                
+                const idFiliere = app.readProp(data, "IdFiliere");
+                const idNiveau = app.readProp(data, "IdNiveau");
+
+                // Find mention from filiere
+                const filiereObj = filieres.find(f => app.readProp(f, "IdFiliere") == idFiliere);
+                if (filiereObj) {
+                    const mentionId = app.readProp(filiereObj, "IdMention");
+                    document.getElementById("classeMention").value = mentionId;
+                    filterNiveauxFilieres();
+                    document.getElementById("classeNiveau").value = idNiveau;
+                    document.getElementById("classeFiliere").value = idFiliere;
+                }
+
+                document.getElementById('addClassModal').classList.remove('hidden');
+            } catch (err) {
+                alert("Erreur lors de la récupération de la classe: " + err.message);
+            }
+        }
+
+        async function deleteClasse(id) {
+            if (confirm("Voulez-vous vraiment supprimer cette classe ?")) {
+                try {
+                    await app.apiDelete('/api/Classe/' + id);
+                    loadClassesList();
+                } catch (err) {
+                    alert("Erreur lors de la suppression: " + err.message);
+                }
+            }
+        }
+
+        let currentSallesData = [];
+
+        async function editSalle(id) {
+            alert("Modification de la salle " + id + " à implémenter.");
         }
 
         async function deleteSalle(id) {
@@ -230,6 +511,56 @@
 
         document.addEventListener("DOMContentLoaded", function() {
             loadSalles();
+            
+            const formClass = document.getElementById("formAddClass");
+            if (formClass) {
+                formClass.addEventListener("submit", async function(e) {
+                    e.preventDefault();
+                    const id = parseInt(document.getElementById("classeId").value);
+                    const idFiliere = parseInt(document.getElementById("classeFiliere").value);
+                    const idNiveau = parseInt(document.getElementById("classeNiveau").value);
+                    const idAnnee = parseInt(document.getElementById("filterAnneeClasse").value);
+                    const nom = document.getElementById("classeNom").value.trim();
+                    const code = document.getElementById("classeCode").value.trim();
+
+                    if (!idFiliere || !idNiveau || !idAnnee) {
+                        alert("Veuillez remplir tous les champs obligatoires.");
+                        return;
+                    }
+
+                    const data = {
+                        IdClasse: id === 0 ? undefined : id,
+                        IdFiliere: idFiliere,
+                        IdNiveau: idNiveau,
+                        IdAnneeAcademique: idAnnee,
+                        NomClasse: nom,
+                        CodeClasse: code
+                    };
+
+                    try {
+                        const btn = formClass.querySelector('button[type="submit"]');
+                        btn.disabled = true;
+                        btn.innerHTML = 'Enregistrement...';
+
+                        if (id === 0) {
+                            await app.apiPost('/api/Classe/CreerPourAnnee', data);
+                        } else {
+                            await app.apiPut('/api/Classe/' + id, data);
+                        }
+                        
+                        document.getElementById("addClassModal").classList.add("hidden");
+                        formClass.reset();
+                        loadClassesList();
+                    } catch (err) {
+                        alert("Erreur: " + err.message);
+                    } finally {
+                        const btn = formClass.querySelector('button[type="submit"]');
+                        btn.disabled = false;
+                        btn.innerHTML = 'Enregistrer';
+                    }
+                });
+            }
+
             
             const form = document.getElementById("formAddRoom");
             if (form) {

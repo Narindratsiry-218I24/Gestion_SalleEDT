@@ -40,6 +40,7 @@ namespace Gestion_SalleClasseEDT.Controllers
                 new { email = "demandeur@emit.mg",  pass = "", id = 2, nom = "Demandeur", prenom = "Test",  role = "demandeur" },
                 new { email = "validateur@emit.mg", pass = "", id = 3, nom = "Validateur",prenom = "Test",  role = "validateur" },
                 new { email = "prof@emit.mg",       pass = "", id = 4, nom = "Prof",      prenom = "Test",  role = "professeur" },
+                new { email = "toojraootj@gmail.com", pass = "toojtooj123", id = 5, nom = "Tooj", prenom = "Raootj", role = "professeur" },
             };
             foreach (var ta in testAccounts)
             {

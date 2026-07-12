@@ -11,9 +11,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@title - EMIT</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Gestion_SalleClasseEDT.styles.css" asp-append-version="true" />
     <script>
         (function () {
             const isPublicPage = @isPublicPage.ToString().ToLowerInvariant();
@@ -131,6 +131,7 @@
                                 <i data-lucide="bell" class="h-5 w-5"></i>
                                 <span id="notifBadge" class="absolute top-1 right-1 hidden h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
                             </button>
+                            <button id="themeToggleBtn" class="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-[#17203A]"><i data-lucide="moon" class="h-5 w-5"></i></button>
                             
                             <!-- Dropdown Notifications -->
                             <div id="notifDropdown" class="absolute right-0 top-12 mt-2 w-80 sm:w-96 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 hidden z-50 overflow-hidden flex flex-col max-h-[80vh]">
@@ -174,6 +175,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const shell = document.getElementById("dashboardShell");

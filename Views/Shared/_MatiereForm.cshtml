@@ -139,8 +139,8 @@
                 profsList.forEach(p => {
                     const opt = document.createElement('option');
                     opt.value = p.IdProfesseur || p.idProfesseur;
-                    const nom = (p.NomProfesseur || p.nom || '');
-                    const prenom = (p.PrenomProfesseur || p.prenom || '');
+                    const nom = (p.nom || p.NomProfesseur || '');
+                    const prenom = (p.prenom || p.PrenomProfesseur || '');
                     opt.textContent = `${prenom} ${nom}`.trim() || 'Professeur';
                     profSelect.appendChild(opt);
                 });
@@ -171,15 +171,15 @@
         // Filtrer les filières basées sur allowedParcours
         const allowedParcoursLower = allowedParcours.map(p => p.toLowerCase());
         const filteredFilieres = filieresList.filter(f => {
-            const code = (f.CodeFiliere || "").trim().toLowerCase();
+            const code = (f.codeFiliere || f.CodeFiliere || "").trim().toLowerCase();
             return allowedParcoursLower.includes(code);
         });
 
         filteredFilieres.forEach(item => {
             const opt = document.createElement('option');
-            opt.value = item.IdFiliere || item.idFiliere;
-            const codeFiliere = item.CodeFiliere || "";
-            const nomFiliere = item.NomFiliere || "";
+            opt.value = item.idFiliere || item.IdFiliere;
+            const codeFiliere = item.codeFiliere || item.CodeFiliere || "";
+            const nomFiliere = item.nomFiliere || item.NomFiliere || "";
             opt.textContent = `${codeFiliere} - ${nomFiliere}`;
             selectParcours.appendChild(opt);
         });
@@ -192,15 +192,15 @@
         else if (niveauVal === "Master 1") codeNiveauCherche = "M1";
         else if (niveauVal === "Master 2") codeNiveauCherche = "M2";
 
-        const niveauObj = niveauxList.find(n => (n.CodeNiveau || "").trim().toUpperCase() === codeNiveauCherche);
+        const niveauObj = niveauxList.find(n => (n.codeNiveau || n.CodeNiveau || "").trim().toUpperCase() === codeNiveauCherche);
         if (niveauObj) {
-            const idNiveau = niveauObj.IdNiveau || niveauObj.idNiveau;
-            const filteredSemestres = semestresList.filter(s => (s.IdNiveau || s.idNiveau) == idNiveau);
+            const idNiveau = niveauObj.idNiveau || niveauObj.IdNiveau;
+            const filteredSemestres = semestresList.filter(s => (s.idNiveau || s.IdNiveau) == idNiveau);
             
             filteredSemestres.forEach(item => {
                 const opt = document.createElement('option');
-                opt.value = item.IdRefSemestre || item.idRefSemestre;
-                opt.textContent = item.CodeSemestre || "";
+                opt.value = item.idRefSemestre || item.IdRefSemestre;
+                opt.textContent = item.codeSemestre || item.CodeSemestre || "";
                 selectSemestre.appendChild(opt);
             });
         }

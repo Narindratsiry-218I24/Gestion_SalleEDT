@@ -1,192 +1,521 @@
+@model dynamic
 @{
-    ViewBag.Title = "Requêtes";
+    ViewData["Title"] = "Requêtes et Demandes";
 }
 
-<div class="space-y-8 animate-in fade-in duration-500">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="space-y-6 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col p-4">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail des Requêtes</h1>
-            <p class="text-gray-500 mt-1">Gérez et suivez vos modifications d'emploi du temps ou réservations de salles.</p>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Gestion des Requêtes</h1>
+            <p class="text-gray-500 mt-1">Consultez, filtrez et gérez les demandes de modification d'emploi du temps.</p>
+        </div>
+        <button onclick="ouvrirModalNouvelleRequete()" class="bg-[#5C8ABF] hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-lg flex items-center transition shadow-sm">
+            <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Créer Nouvelle Requête
+        </button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Classe</label>
+            <select class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm h-10 px-3 bg-gray-50">
+                <option value="">Toutes les classes</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Professeur</label>
+            <select class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm h-10 px-3 bg-gray-50">
+                <option value="">Tous les professeurs</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Salle</label>
+            <select class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm h-10 px-3 bg-gray-50">
+                <option value="">Toutes les salles</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Matière</label>
+            <select class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm h-10 px-3 bg-gray-50">
+                <option value="">Toutes les matières</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Semaine</label>
+            <select class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm h-10 px-3 bg-gray-50">
+                <option value="">Semaine actuelle</option>
+            </select>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        <div class="lg:col-span-8" id="app-root">
-            <!-- React App will mount here -->
-            <div class="flex justify-center items-center py-24 bg-white rounded-xl shadow-sm border border-gray-100">
-                <i data-lucide="loader-2" class="w-8 h-8 text-[#17203A] animate-spin"></i>
-                <span class="ml-2 text-gray-500 font-bold">Chargement de l'application...</span>
-            </div>
-        </div>
+    <!-- Main Content Grid: Table + Sidebar -->
+    <div class="flex flex-col lg:flex-row gap-6 flex-1 items-start">
         
-        <div class="lg:col-span-4">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 class="font-bold text-[#17203A] mb-4 m-0">Mes Dernières Demandes</h3>
-                <div class="space-y-4">
-                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 mt-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold px-2 py-1 bg-amber-100 text-amber-700 rounded-md">En attente</span>
-                            <span class="text-xs text-gray-400">Il y a 2h</span>
-                        </div>
-                        <p class="font-bold text-sm text-[#17203A] m-0">Déplacement de cours - L1 Info</p>
-                        <p class="text-xs text-gray-500 mt-1 m-0">Algorithmique 1</p>
-                    </div>
-                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 mt-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded-md">Validé</span>
-                            <span class="text-xs text-gray-400">Hier</span>
-                        </div>
-                        <p class="font-bold text-sm text-[#17203A] m-0">Réservation de salle</p>
-                        <p class="text-xs text-gray-500 mt-1 m-0">Labo Info 1</p>
-                    </div>
+        <!-- Table Section -->
+        <div class="w-full lg:w-2/3 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/50 border-b border-gray-200">
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Type</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Matière / Classe</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Salle</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="requests-table-body">
+                        <!-- Mocked Data Row 1 -->
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="p-4 text-sm font-medium text-gray-900">#REQ-001</td>
+                            <td class="p-4">
+                                <div class="text-sm font-semibold text-[#17203A]">Déplacement</div>
+                                <div class="text-xs text-gray-500">12/07/2026</div>
+                            </td>
+                            <td class="p-4">
+                                <div class="text-sm font-semibold text-gray-800">Algorithmique</div>
+                                <div class="text-xs text-gray-500">L3 Informatique</div>
+                            </td>
+                            <td class="p-4 text-sm text-gray-600">Salle 402</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 border border-yellow-200">En Attente</span>
+                            </td>
+                            <td class="p-4 text-right space-x-2">
+                                <button onclick="selectRequest(1)" class="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 hover:bg-blue-100 rounded transition tooltip" title="Voir Détails">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                <button class="text-red-600 hover:text-red-800 p-1 bg-red-50 hover:bg-red-100 rounded transition tooltip" title="Annuler">
+                                    <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Mocked Data Row 2 -->
+                        <tr class="hover:bg-gray-50/50 transition-colors bg-blue-50/30">
+                            <td class="p-4 text-sm font-medium text-gray-900">#REQ-002</td>
+                            <td class="p-4">
+                                <div class="text-sm font-semibold text-[#17203A]">Annulation</div>
+                                <div class="text-xs text-gray-500">10/07/2026</div>
+                            </td>
+                            <td class="p-4">
+                                <div class="text-sm font-semibold text-gray-800">Bases de Données</div>
+                                <div class="text-xs text-gray-500">L2 Informatique</div>
+                            </td>
+                            <td class="p-4 text-sm text-gray-600">Machine 2</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">Validée</span>
+                            </td>
+                            <td class="p-4 text-right space-x-2">
+                                <button onclick="selectRequest(2)" class="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 hover:bg-blue-100 rounded transition tooltip" title="Voir Détails">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Mocked Data Row 3 -->
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="p-4 text-sm font-medium text-gray-900">#REQ-003</td>
+                            <td class="p-4">
+                                <div class="text-sm font-semibold text-[#17203A]">Remplacement</div>
+                                <div class="text-xs text-gray-500">08/07/2026</div>
+                            </td>
+                            <td class="p-4">
+                                <div class="text-sm font-semibold text-gray-800">Réseaux</div>
+                                <div class="text-xs text-gray-500">M1 Informatique</div>
+                            </td>
+                            <td class="p-4 text-sm text-gray-600">Salle 105</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">Refusée</span>
+                            </td>
+                            <td class="p-4 text-right space-x-2">
+                                <button onclick="selectRequest(3)" class="text-blue-600 hover:text-blue-800 p-1 bg-blue-50 hover:bg-blue-100 rounded transition tooltip" title="Voir Détails">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination (Mock) -->
+            <div class="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500 bg-gray-50/30">
+                <span>Affichage de 1 à 3 sur 12 requêtes</span>
+                <div class="flex space-x-1">
+                    <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-100 transition disabled:opacity-50" disabled>Précédent</button>
+                    <button class="px-3 py-1 bg-blue-50 text-blue-600 font-medium border border-blue-200 rounded">1</button>
+                    <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-100 transition">2</button>
+                    <button class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-100 transition">Suivant</button>
                 </div>
             </div>
+        </div>
+
+        <!-- Sidebar: Détails de la Requête -->
+        <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4">
+            <h2 class="text-lg font-bold text-[#17203A] border-b pb-3 mb-2 flex items-center">
+                <i data-lucide="file-text" class="w-5 h-5 mr-2 text-blue-500"></i> Détails de la Requête
+            </h2>
+            
+            <div id="request-details-placeholder" class="text-center py-10 text-gray-400">
+                <i data-lucide="mouse-pointer-click" class="w-12 h-12 mx-auto mb-3 opacity-20"></i>
+                <p class="text-sm">Sélectionnez une requête pour voir les détails.</p>
+            </div>
+            
+            <div id="request-details-content" class="hidden flex-col gap-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Requête</div>
+                        <div class="font-semibold text-[#17203A] text-lg" id="detail-id">#REQ-001</div>
+                    </div>
+                    <span id="detail-status" class="px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 border border-yellow-200">En Attente</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg text-sm border border-gray-100">
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Date proposée</div>
+                        <div class="font-medium flex items-center" id="detail-date"><i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> 15/07/2026</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Créneaux</div>
+                        <div class="font-medium flex items-center" id="detail-time"><i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> 08:00 - 10:00</div>
+                    </div>
+                    <div class="col-span-2">
+                        <div class="text-xs text-gray-500 mb-1">Matière / Classe</div>
+                        <div class="font-medium" id="detail-matiere">Algorithmique - L3 Informatique</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-2">Justification</div>
+                    <div class="bg-blue-50/50 p-3 rounded-lg text-sm text-gray-700 border border-blue-100/50 italic" id="detail-justif">
+                        "J'ai un empêchement de dernière minute pour raisons médicales. Je propose de rattraper ce cours le mercredi suivant matin."
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-2">Commentaires Admin</div>
+                    <div class="bg-gray-50 p-3 rounded-lg text-sm text-gray-600 border border-gray-200" id="detail-admin-comments">
+                        Aucun commentaire pour le moment.
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t flex flex-col gap-2">
+                    <button class="w-full bg-[#17203A] hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center transition text-sm">
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i> Valider Changements
+                    </button>
+                    <button class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center transition text-sm">
+                        <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Générer PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Nouvelle Requête (Hidden by default) -->
+<div id="modalNouvelleRequete" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div class="p-5 border-b flex justify-between items-center bg-gray-50">
+            <h3 class="text-xl font-bold text-[#17203A]">Créer Nouvelle Requête de Modification</h3>
+            <button onclick="fermerModalNouvelleRequete()" class="text-gray-400 hover:text-gray-600 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <!-- Reuse original form content here -->
+            <form id="requeteForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Mention</label>
+                        <select id="reqMention" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm" onchange="mettreAJourFilieres()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Niveau</label>
+                        <select id="reqNiveau" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm" onchange="mettreAJourFilieres()">
+                            <option value="">Sélectionnez un niveau</option>
+                            <option value="Licence 1">Licence 1</option>
+                            <option value="Licence 2">Licence 2</option>
+                            <option value="Licence 3">Licence 3</option>
+                            <option value="Master 1">Master 1</option>
+                            <option value="Master 2">Master 2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Parcours / Filière</label>
+                        <select id="reqFiliere" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm" onchange="mettreAJourClasses()"></select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Classe <span class="text-red-500">*</span></label>
+                        <select id="reqClasse" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm" required></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Matière (Saisie) <span class="text-red-500">*</span></label>
+                        <input type="text" id="reqMatiereText" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm" placeholder="Nom de la matière" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Bâtiment</label>
+                        <select id="reqBatiment" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm" onchange="mettreAJourSalles()">
+                            <option value="">Tous les bâtiments</option>
+                            <option value="A">Bâtiment A</option>
+                            <option value="B">Bâtiment B</option>
+                            <option value="C">Bâtiment C</option>
+                            <option value="D">Bâtiment D</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Salle <span class="text-gray-400 font-normal text-xs">(Optionnel)</span></label>
+                        <select id="reqSalle" class="w-full border-gray-300 rounded-lg p-2.5 bg-white text-sm"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Date Proposée</label>
+                        <input type="date" id="reqDate" class="w-full border-gray-300 rounded-lg p-2.5 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Heure Début</label>
+                        <input type="time" id="reqStart" class="w-full border-gray-300 rounded-lg p-2.5 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-[#17203A]">Heure Fin</label>
+                        <input type="time" id="reqEnd" class="w-full border-gray-300 rounded-lg p-2.5 text-sm" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-[#17203A]">Justification détaillée</label>
+                    <textarea id="reqJustif" class="w-full border-gray-300 rounded-lg p-3 text-sm h-24 resize-none" placeholder="Expliquez la raison de cette demande..." required></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="p-5 border-t bg-gray-50 flex justify-end gap-3">
+            <button type="button" onclick="fermerModalNouvelleRequete()" class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition text-sm">Annuler</button>
+            <button type="button" onclick="soumettreDemande()" class="bg-[#5C8ABF] hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition text-sm flex items-center">
+                <i data-lucide="send" class="w-4 h-4 mr-2"></i> Envoyer la Demande
+            </button>
         </div>
     </div>
 </div>
 
-@section scripts {
-    <!-- Babel & React CDNs -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@@babel/standalone/babel.min.js"></script>
-    
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const API_BASE = '/api';
 
-        function RequestApp() {
-            const [mentions, setMentions] = useState([]);
-            const [niveaux, setNiveaux] = useState([]);
-            const [filieres, setFilieres] = useState([]);
-            const [classes, setClasses] = useState([]);
-            const [matieres, setMatieres] = useState([]);
+<script>
+    function ouvrirModalNouvelleRequete() {
+        document.getElementById('modalNouvelleRequete').classList.remove('hidden');
+    }
 
-            const [selectedMention, setSelectedMention] = useState("");
-            const [selectedNiveau, setSelectedNiveau] = useState("");
-            const [selectedFiliere, setSelectedFiliere] = useState("");
-            const [selectedClasse, setSelectedClasse] = useState("");
-            const [selectedMatiere, setSelectedMatiere] = useState("");
+    function fermerModalNouvelleRequete() {
+        document.getElementById('modalNouvelleRequete').classList.add('hidden');
+    }
 
-            useEffect(() => {
-                // Fetch data
-                Promise.all([
-                    fetch(API_BASE + '/Niveau').then(r => r.json()),
-                    fetch(API_BASE + '/Classe').then(r => r.json()),
-                    fetch(API_BASE + '/Matiere').then(r => r.json())
-                ]).then(([levelsData, classesData, subjectsData]) => {
-                    setNiveaux(levelsData);
-                    setClasses(classesData);
-                    setMatieres(subjectsData);
+    function selectRequest(id) {
+        document.getElementById('request-details-placeholder').classList.add('hidden');
+        document.getElementById('request-details-content').classList.remove('hidden');
+        document.getElementById('request-details-content').classList.add('flex');
+        
+        // Update mock content based on selection
+        const statusBadge = document.getElementById('detail-status');
+        
+        if(id === 1) {
+            document.getElementById('detail-id').innerText = "#REQ-001";
+            document.getElementById('detail-matiere').innerText = "Algorithmique - L3 Informatique";
+            document.getElementById('detail-date').innerHTML = '<i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> 15/07/2026';
+            document.getElementById('detail-time').innerHTML = '<i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> 08:00 - 10:00';
+            document.getElementById('detail-justif').innerText = "J'ai un empêchement de dernière minute pour raisons médicales. Je propose de rattraper ce cours le mercredi suivant matin.";
+            document.getElementById('detail-admin-comments').innerText = "En attente de vérification de disponibilité de la salle.";
+            statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 border border-yellow-200";
+            statusBadge.innerText = "En Attente";
+        } else if (id === 2) {
+            document.getElementById('detail-id').innerText = "#REQ-002";
+            document.getElementById('detail-matiere').innerText = "Bases de Données - L2 Informatique";
+            document.getElementById('detail-date').innerHTML = '<i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> N/A (Annulation)';
+            document.getElementById('detail-time').innerHTML = '<i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> N/A';
+            document.getElementById('detail-justif').innerText = "Absence prévue pour conférence internationale.";
+            document.getElementById('detail-admin-comments').innerText = "Annulation validée. Les étudiants ont été notifiés.";
+            statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200";
+            statusBadge.innerText = "Validée";
+        } else {
+            document.getElementById('detail-id').innerText = "#REQ-003";
+            document.getElementById('detail-matiere').innerText = "Réseaux - M1 Informatique";
+            document.getElementById('detail-date').innerHTML = '<i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> 11/07/2026';
+            document.getElementById('detail-time').innerHTML = '<i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-gray-400"></i> 14:00 - 16:00';
+            document.getElementById('detail-justif').innerText = "Demande de salle plus grande pour un TP en commun.";
+            document.getElementById('detail-admin-comments').innerText = "Aucune grande salle disponible à cette date.";
+            statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200";
+            statusBadge.innerText = "Refusée";
+        }
+        
+        if (window.lucide) lucide.createIcons();
+    }
 
-                    const uniqueMentionsMap = new Map();
-                    levelsData.forEach(n => {
-                        if (n.Mention) uniqueMentionsMap.set(n.IdMention, n.Mention);
-                    });
-                    setMentions(Array.from(uniqueMentionsMap.values()));
 
-                    const filiereMap = new Map();
-                    classesData.forEach(c => { if (c.Filiere) filiereMap.set(c.IdFiliere, c.Filiere); });
-                    subjectsData.forEach(m => { if (m.Filiere) filiereMap.set(m.IdFiliere, m.Filiere); });
-                    setFilieres(Array.from(filiereMap.values()));
-                });
-            }, []);
+    function soumettreDemande() {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const idDemandeur = user.id || 1; 
 
-            const filteredNiveaux = niveaux.filter(n => selectedMention && n.IdMention == selectedMention);
-            const filteredFilieres = filieres.filter(f => selectedMention && selectedNiveau && f.IdMention == selectedMention && matieres.some(m => m.IdFiliere == f.IdFiliere && m.RefSemestre?.IdNiveau == selectedNiveau));
-            const filteredClasses = classes.filter(c => selectedFiliere && c.IdFiliere == selectedFiliere);
-            const filteredMatieres = matieres.filter(m => selectedFiliere && selectedNiveau && m.IdFiliere == selectedFiliere && m.RefSemestre?.IdNiveau == selectedNiveau);
+        const matiereSaisie = document.getElementById('reqMatiereText').value;
+        const salleChoice = document.getElementById('reqSalle').value;
+        
+        let justifText = document.getElementById('reqJustif').value;
+        if(matiereSaisie) justifText = `[Matière saisie: ${matiereSaisie}] ` + justifText;
 
-            return (
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-bold mb-6 text-[#17203A]">Nouvelle Demande</h2>
-                    
-                    {/* Mention & Niveau */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Mention</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {mentions.map(m => (
-                                    <button 
-                                        key={m.IdMention} 
-                                        onClick={() => { setSelectedMention(m.IdMention); setSelectedNiveau(""); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedMention == m.IdMention ? 'bg-[#17203A] border-[#17203A] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                    >
-                                        {m.CodeMention || m.NomMention}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Niveau</label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {!selectedMention ? <span className="text-sm text-gray-400 italic">Choisissez une mention</span> : filteredNiveaux.map(n => (
-                                    <button 
-                                        key={n.IdNiveau} 
-                                        onClick={() => { setSelectedNiveau(n.IdNiveau); setSelectedFiliere(""); setSelectedClasse(""); setSelectedMatiere(""); }}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedNiveau == n.IdNiveau ? 'bg-[#5C8ABF] border-[#5C8ABF] text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                    >
-                                        {n.CodeNiveau}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+        const payload = {
+            IdClasse: parseInt(document.getElementById('reqClasse').value) || null,
+            IdMatiere: null,
+            IdSalle: salleChoice ? parseInt(salleChoice) : null,
+            DateSouhaitee: document.getElementById('reqDate').value,
+            HeureDebutSouhaitee: document.getElementById('reqStart').value,
+            HeureFinSouhaitee: document.getElementById('reqEnd').value,
+            Justification: justifText,
+            IdDemandeur: idDemandeur,
+            Statut: "en_attente"
+        };
 
-                    {/* Filiere */}
-                    <div className="mb-6">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">3. Filière</label>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                            {!selectedNiveau ? <span className="text-sm text-gray-400 italic">Choisissez un niveau</span> : filteredFilieres.map(f => (
-                                <button 
-                                    key={f.IdFiliere} 
-                                    onClick={() => { setSelectedFiliere(f.IdFiliere); setSelectedClasse(""); setSelectedMatiere(""); }}
-                                    className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${selectedFiliere == f.IdFiliere ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-100 text-gray-500 hover:border-gray-300'}`}
-                                >
-                                    {f.CodeFiliere || f.NomFiliere}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+        fetch('/api/DemandeEDT/Creer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            if (res.ok) {
+                Swal.fire('Succès', 'Votre demande a été soumise avec succès.', 'success');
+                fermerModalNouvelleRequete();
+                document.getElementById('requeteForm').reset();
+            } else {
+                return res.json().then(err => { throw err; });
+            }
+        })
+        .catch(err => Swal.fire('Erreur', err.Message || 'Erreur lors de la soumission', 'error'));
+    }
 
-                    {/* Classe & Matiere */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">4. Classe</label>
-                            <select 
-                                value={selectedClasse} 
-                                onChange={e => { setSelectedClasse(e.target.value); setSelectedMatiere(""); }} 
-                                disabled={!selectedFiliere}
-                                className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
-                            >
-                                <option value="">Choisir Classe...</option>
-                                {filteredClasses.map(c => <option key={c.IdClasse} value={c.IdClasse}>{c.NomClasse}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">5. Matière</label>
-                            <select 
-                                value={selectedMatiere} 
-                                onChange={e => setSelectedMatiere(e.target.value)} 
-                                disabled={!selectedClasse}
-                                className="w-full mt-2 h-12 rounded-xl border border-gray-200 px-4 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20"
-                            >
-                                <option value="">Choisir Matière...</option>
-                                {filteredMatieres.map(m => <option key={m.IdMatiere} value={m.IdMatiere}>{m.NomMatiere}</option>)}
-                            </select>
-                        </div>
-                    </div>
+    let allMatieres = [];
+    let allClasses = [];
+    let allMentions = [];
+    let allFilieres = [];
+    let allNiveaux = [];
+    let allSalles = [];
 
-                    <div className="mt-8">
-                        <button className="w-full bg-[#17203A] hover:bg-[#12192B] text-white font-bold h-14 rounded-xl transition-colors border-none cursor-pointer" onClick={() => alert("Soumission en cours...")}>
-                            Envoyer la Demande
-                        </button>
-                    </div>
-                </div>
-            );
+    const parcoursConfig = {
+        "Informatique": { "Licence": ["DA2I"], "Master": ["M2I", "SDIA", "SIGD"] },
+        "Management": { "Licence": ["AES"], "Master": ["AE", "MEAS"] },
+        "Multimédia": { "Licence": ["ICM"], "Master": ["RPO", "RCPO"] }
+    };
+
+    async function chargerDonneesFormulaire() {
+        try {
+            const [classes, matieres, mentions, filieres, niveaux, salles] = await Promise.all([
+                fetch('/api/Classe').then(r => r.json()),
+                fetch('/api/Matiere').then(r => r.json()),
+                fetch('/api/Mention').then(r => r.json()),
+                fetch('/api/Filiere').then(r => r.json()),
+                fetch('/api/Niveau').then(r => r.json()),
+                fetch('/api/Salle').then(r => r.json())
+            ]);
+            
+            allClasses = classes || [];
+            allMatieres = matieres || [];
+            allMentions = mentions || [];
+            allFilieres = filieres || [];
+            allNiveaux = niveaux || [];
+            allSalles = salles || [];
+            
+            const reqMention = document.getElementById('reqMention');
+            reqMention.innerHTML = '<option value="">Sélectionnez une mention</option>';
+            allMentions.forEach(m => {
+                reqMention.innerHTML += `<option value="${m.idMention || m.IdMention}">${m.nomMention || m.NomMention}</option>`;
+            });
+            
+            mettreAJourFilieres();
+            mettreAJourClasses();
+            mettreAJourSalles();
+            
+        } catch(e) {
+            console.error("Erreur chargement donnees", e);
+        }
+    }
+
+    function getCycle(niveauVal) {
+        if (!niveauVal) return null;
+        if (niveauVal.toLowerCase().includes('licence')) return 'Licence';
+        if (niveauVal.toLowerCase().includes('master')) return 'Master';
+        return null;
+    }
+
+    function mettreAJourFilieres() {
+        const mentionId = document.getElementById('reqMention').value;
+        const niveauVal = document.getElementById('reqNiveau').value;
+        const reqFiliere = document.getElementById('reqFiliere');
+        
+        reqFiliere.innerHTML = '<option value="">Sélectionnez un parcours</option>';
+        
+        let mentionObj = allMentions.find(m => (m.idMention || m.IdMention) == mentionId);
+        let mentionName = mentionObj ? (mentionObj.nomMention || mentionObj.NomMention) : null;
+        let cycle = getCycle(niveauVal);
+
+        let allowedParcours = [];
+        if (mentionName && cycle && parcoursConfig[mentionName]) {
+            allowedParcours = parcoursConfig[mentionName][cycle] || [];
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('app-root'));
-        root.render(<RequestApp />);
-    </script>
-}
+        const allowedParcoursLower = allowedParcours.map(p => p.toLowerCase());
+        
+        const filieresFiltrees = allFilieres.filter(f => {
+            if (mentionId && (f.idMention || f.IdMention) != mentionId) return false;
+            if (allowedParcoursLower.length > 0) {
+                const code = (f.codeFiliere || f.CodeFiliere || "").trim().toLowerCase();
+                if (!allowedParcoursLower.includes(code)) return false;
+            }
+            return true;
+        });
+            
+        filieresFiltrees.forEach(f => {
+            const code = (f.codeFiliere || f.CodeFiliere);
+            const nom = (f.nomFiliere || f.NomFiliere);
+            const label = code + (nom ? ` - ${nom}` : '');
+            reqFiliere.innerHTML += `<option value="${f.idFiliere || f.IdFiliere}">${label}</option>`;
+        });
+        
+        mettreAJourClasses();
+    }
+
+    function mettreAJourClasses() {
+        const filiereId = document.getElementById('reqFiliere').value;
+        const reqClasse = document.getElementById('reqClasse');
+        
+        reqClasse.innerHTML = '<option value="">Sélectionnez une classe</option>';
+        
+        const classesFiltrees = allClasses.filter(c => {
+            let match = true;
+            if (filiereId && (c.idFiliere || c.IdFiliere) != filiereId) match = false;
+            return match;
+        });
+            
+        classesFiltrees.forEach(c => {
+            reqClasse.innerHTML += `<option value="${c.idClasse || c.IdClasse}">${c.nomClasse || c.NomClasse}</option>`;
+        });
+    }
+    
+    function mettreAJourSalles() {
+        const batiment = document.getElementById('reqBatiment').value;
+        const reqSalle = document.getElementById('reqSalle');
+        
+        reqSalle.innerHTML = '<option value="">Toutes les salles</option>';
+        
+        const sallesFiltrees = batiment 
+            ? allSalles.filter(s => (s.codeBatiment || s.CodeBatiment) === batiment)
+            : allSalles;
+            
+        sallesFiltrees.forEach(s => {
+            reqSalle.innerHTML += `<option value="${s.idSalle || s.IdSalle}">${s.nomSalle || s.NomSalle} (Cap: ${s.capacite || s.Capacite})</option>`;
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) lucide.createIcons();
+        chargerDonneesFormulaire();
+    });
+</script>

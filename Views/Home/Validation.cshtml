@@ -1,116 +1,223 @@
+@model dynamic
 @{
-    ViewBag.Title = "Validation";
+    ViewData["Title"] = "Validation des Requêtes";
 }
-
-<div class="space-y-8 animate-in fade-in duration-500 mt-8">
-    <div class="flex items-center justify-between mb-8">
+<div class="space-y-8 animate-in fade-in zoom-in-95 duration-500 relative h-full flex flex-col">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Portail de Validation</h1>
-            <p class="text-gray-500 mt-1">Gérez les demandes d'emploi du temps et les réservations de salles en attente.</p>
+            <h1 class="text-3xl font-black text-[#17203A] tracking-tight">Validation des Requêtes</h1>
+            <p class="text-gray-500 mt-1">Gérez et validez les demandes d'emploi du temps des enseignants.</p>
         </div>
     </div>
 
-    <div id="app-validation-root">
-        <div class="flex justify-center items-center py-24 bg-white rounded-xl shadow-sm border border-gray-100">
-            <i data-lucide="loader-2" class="w-8 h-8 text-[#17203A] animate-spin"></i>
-            <span class="ml-2 text-gray-500 font-bold">Chargement du panneau...</span>
+    <!-- Overview KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="layers" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Total Demandes</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statTotal">--</h4>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center">
+                <i data-lucide="clock" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">En attente</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statAttente">--</h4>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+                <i data-lucide="check-circle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Approuvées</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statAcceptees">--</h4>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                <i data-lucide="x-circle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider m-0">Refusées</p>
+                <h4 class="text-2xl font-black text-[#17203A] m-0" id="statRefusees">--</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
+        <div class="flex border-b border-gray-100 bg-gray-50/50">
+            <button id="btnTabAttente" class="px-6 py-4 text-sm font-semibold text-[#5C8ABF] border-b-2 border-[#5C8ABF] transition-all" onclick="switchTab('attente')">
+                Demandes en attente <span id="badgeAttente" class="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full hidden">0</span>
+            </button>
+            <button id="btnTabHistorique" class="px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-all border-b-2 border-transparent" onclick="switchTab('historique')">
+                Historique des validations
+            </button>
+        </div>
+
+        <div class="p-6 h-full min-h-[400px]">
+            <div id="demandes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Rempli en JS -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center h-full text-center space-y-4 text-gray-400 py-12">
+                <i data-lucide="inbox" class="w-16 h-16 text-gray-300"></i>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-700">Aucune demande trouvée</h3>
+                    <p class="text-sm">Il n'y a aucune requête correspondante pour le moment.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-@section scripts {
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@@babel/standalone/babel.min.js"></script>
+<script>
+    let toutesLesDemandes = [];
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const API_BASE = '/api';
+    function chargerDemandes() {
+        fetch('/api/DemandeEDT')
+            .then(res => res.json())
+            .then(data => {
+                toutesLesDemandes = data;
+                mettreAJourKPI();
+                afficherDemandes('attente');
+            });
+    }
 
-        function ValidationApp() {
-            const [demandes, setDemandes] = useState([]);
-            const [rooms, setRooms] = useState([]);
-            const [loading, setLoading] = useState(true);
+    function mettreAJourKPI() {
+        const total = toutesLesDemandes.length;
+        const attente = toutesLesDemandes.filter(d => ['en_attente_admin', 'proposee_prof', 'contre_proposition_prof', 'en_attente'].includes(d.statut.toLowerCase())).length;
+        const acceptees = toutesLesDemandes.filter(d => d.statut.toLowerCase() === 'acceptee').length;
+        const refusees = toutesLesDemandes.filter(d => d.statut.toLowerCase() === 'refusee').length;
 
-            // Fetch
-            const fetchData = () => {
-                setLoading(true);
-                Promise.all([
-                    fetch(API_BASE + '/DemandeEDT').then(r => r.json()),
-                    fetch(API_BASE + '/Salle').then(r => r.json())
-                ]).then(([demandesData, roomsData]) => {
-                    const actives = demandesData.filter(d => ['en_attente_admin', 'proposee_prof', 'modif_acceptee_prof', 'contre_proposition_prof'].includes(d.Statut?.toLowerCase()));
-                    setDemandes(actives);
-                    setRooms(roomsData);
-                    setLoading(false);
-                });
-            };
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statAttente').textContent = attente;
+        document.getElementById('statAcceptees').textContent = acceptees;
+        document.getElementById('statRefusees').textContent = refusees;
 
-            useEffect(() => { fetchData(); }, []);
+        const badge = document.getElementById('badgeAttente');
+        if (attente > 0) {
+            badge.textContent = attente;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
 
-            const handleApprove = (id) => {
-                fetch(API_BASE + '/DemandeEDT/' + id + '/Valider', { method: 'POST' })
-                    .then(res => { if(res.ok) { alert('Demande Validée avec succès!'); fetchData(); } else { alert('Erreur de validation'); } });
-            };
+    function afficherDemandes(type) {
+        const container = document.getElementById('demandes-list');
+        const emptyState = document.getElementById('emptyState');
+        container.innerHTML = '';
 
-            const handleReject = (id) => {
-                fetch(API_BASE + '/DemandeEDT/' + id + '/Refuser', { method: 'POST' })
-                    .then(res => { if(res.ok) { alert('Demande Refusée.'); fetchData(); } });
-            };
+        const filtre = type === 'attente' 
+            ? d => ['en_attente_admin', 'proposee_prof', 'contre_proposition_prof', 'en_attente'].includes(d.statut.toLowerCase())
+            : d => ['acceptee', 'refusee'].includes(d.statut.toLowerCase());
 
-            const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('fr-FR') : '';
-            const formatTime = (ts) => ts ? ts.substring(0, 5) : '';
+        const demandesFiltrees = toutesLesDemandes.filter(filtre);
 
-            if (loading) return <div className="text-center font-bold text-gray-500 py-12">Chargement des requêtes...</div>;
-
-            return (
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-[#17203A] m-0">Demandes de Planification Actives</h3>
-                        <span className="bg-[#17203A] text-white px-4 py-1 rounded-full font-bold text-sm shadow-sm">{demandes.length} Active(s)</span>
-                    </div>
-
-                    {demandes.length === 0 ? (
-                        <div className="bg-white p-8 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100 font-medium">Aucune demande en attente pour le moment.</div>
-                    ) : (
-                        demandes.map(req => (
-                            <div key={req.IdDemande} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#5C8ABF] mb-6 hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4 border-b border-gray-50 pb-4">
-                                    <h4 className="font-extrabold text-lg text-[#17203A] m-0">REQ-{req.IdDemande} : {req.TypeDemande}</h4>
-                                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">{req.Statut}</span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 m-0">Justification</p>
-                                        <p className="text-sm text-gray-700 m-0 leading-relaxed">{req.Justification || 'Aucune justification fournie.'}</p>
-                                    </div>
-                                    <div className="bg-[#f0f4f8] p-4 rounded-lg border border-[#e1e9f2]">
-                                        <p className="text-xs font-bold text-[#5C8ABF] uppercase tracking-wider mb-2 m-0">Détails de la demande</p>
-                                        <div className="space-y-1 mt-2">
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Classe:</strong> {req.Classe?.NomClasse || 'N/A'}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Matière:</strong> {req.Matiere?.NomMatiere || 'N/A'}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Date:</strong> {formatDate(req.DateSouhaitee)}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Heure:</strong> {formatTime(req.HeureDebutSouhaitee)} - {formatTime(req.HeureFinSouhaitee)}</p>
-                                            <p className="text-sm text-gray-800 m-0"><strong className="text-[#17203A]">Salle souhaitée:</strong> {req.Salle?.NomSalle || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end gap-3 mt-4 border-t border-gray-50 pt-4">
-                                    <button onClick={() => handleApprove(req.IdDemande)} className="bg-green-600 hover:bg-green-700 transition-colors text-white font-bold px-6 py-2.5 rounded-lg text-sm border-none cursor-pointer flex items-center gap-2">
-                                        <i data-lucide="check-circle" className="w-4 h-4"></i> Valider (Approuver)
-                                    </button>
-                                    <button onClick={() => handleReject(req.IdDemande)} className="bg-red-50 hover:bg-red-100 transition-colors text-red-600 border border-red-200 font-bold px-6 py-2.5 rounded-lg text-sm cursor-pointer flex items-center gap-2">
-                                        <i data-lucide="x-circle" className="w-4 h-4"></i> Refuser
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            );
+        if (demandesFiltrees.length === 0) {
+            container.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            emptyState.classList.add('flex');
+        } else {
+            container.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('app-validation-root'));
-        root.render(<ValidationApp />);
-    </script>
-}
+        demandesFiltrees.forEach(d => {
+            const date = new Date(d.dateSouhaitee).toLocaleDateString();
+            const badgeColor = type === 'attente' ? 'bg-yellow-50 text-yellow-700' : (d.statut.toLowerCase() === 'acceptee' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700');
+            const borderColor = type === 'attente' ? 'border-yellow-400' : (d.statut.toLowerCase() === 'acceptee' ? 'border-green-400' : 'border-red-400');
+            
+            container.innerHTML += `
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow border-l-4 ${borderColor} flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-gray-800 line-clamp-1" title="${d.matiere ? d.matiere.nomMatiere : 'Nouvelle Demande'}">${d.matiere ? d.matiere.nomMatiere : 'Nouvelle Demande'}</h3>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${badgeColor}">${d.statut.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-4 space-y-1">
+                            <div class="flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i> ${date}</div>
+                            <div class="flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-gray-400"></i> ${d.heureDebutSouhaitee} - ${d.heureFinSouhaitee}</div>
+                        </div>
+                        <div class="text-xs bg-gray-50/80 p-3 rounded-lg mb-4 text-gray-600 italic">
+                            ${d.justification ? `"${d.justification}"` : 'Aucune justification fournie'}
+                        </div>
+                    </div>
+                    ${type === 'attente' ? `
+                    <div class="flex space-x-2 mt-4 pt-4 border-t border-gray-50">
+                        <button onclick="validerDemande(${d.idDemande}, this)" class="flex-1 bg-green-50 hover:bg-green-100 text-green-700 font-semibold py-2 rounded-lg transition-colors flex justify-center items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i> Valider
+                        </button>
+                        <button onclick="refuserDemande(${d.idDemande}, this)" class="flex-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-2 rounded-lg transition-colors flex justify-center items-center gap-2 text-sm">
+                            <i data-lucide="x" class="w-4 h-4"></i> Refuser
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function validerDemande(id, btn) {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+        btn.disabled = true;
+        if (window.lucide) lucide.createIcons();
+
+        fetch(`/api/DemandeEDT/${id}/Valider`, { method: 'POST' })
+            .then(async res => {
+                if(res.ok) {
+                    Swal.fire('Succès', 'Demande validée.', 'success');
+                    chargerDemandes();
+                } else {
+                    const text = await res.text();
+                    Swal.fire('Conflit détecté', text, 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    if (window.lucide) lucide.createIcons();
+                }
+            })
+            .catch(err => {
+                Swal.fire('Erreur système', 'Impossible de valider.', 'error');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            });
+    }
+
+    function refuserDemande(id, btn) {
+        fetch(`/api/DemandeEDT/${id}/Refuser`, { method: 'POST' })
+            .then(() => {
+                Swal.fire('Refusée', 'La demande a été rejetée.', 'info');
+                chargerDemandes();
+            });
+    }
+
+    function switchTab(type) {
+        const btnAttente = document.getElementById('btnTabAttente');
+        const btnHistorique = document.getElementById('btnTabHistorique');
+        
+        if(type === 'attente') {
+            btnAttente.className = "px-6 py-4 text-sm font-semibold text-[#5C8ABF] border-b-2 border-[#5C8ABF] transition-all";
+            btnHistorique.className = "px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-all border-b-2 border-transparent";
+        } else {
+            btnHistorique.className = "px-6 py-4 text-sm font-semibold text-[#5C8ABF] border-b-2 border-[#5C8ABF] transition-all";
+            btnAttente.className = "px-6 py-4 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-all border-b-2 border-transparent";
+        }
+        
+        afficherDemandes(type);
+    }
+
+    document.addEventListener('DOMContentLoaded', chargerDemandes);
+</script>
