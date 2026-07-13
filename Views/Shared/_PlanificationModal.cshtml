@@ -427,11 +427,12 @@
         const salleSelect = document.getElementById('wizardSalleId');
         salleSelect.innerHTML = '<option value="">Sélectionnez une salle</option>';
         wizardSalles.forEach(s => {
-            let spaceLabel = `Capacité: ${s.Capacite}`;
+            let capacite = window.app.readProp(s, 'Capacite');
+            let spaceLabel = `Capacité: ${capacite}`;
             if (classEffectif > 0) {
                 spaceLabel += ` (Classe: ${classEffectif})`;
             }
-            salleSelect.innerHTML += `<option value="${s.IdSalle}">${s.NomSalle} (${s.TypeSalle}, ${spaceLabel})</option>`;
+            salleSelect.innerHTML += `<option value="${window.app.readProp(s, 'IdSalle')}">${window.app.readProp(s, 'NomSalle')} (${window.app.readProp(s, 'TypeSalle')}, ${spaceLabel})</option>`;
         });
 
         // Load groups
@@ -442,7 +443,7 @@
                 const groupsRes = await fetch(`/api/Groupe/ByClasse/${wizardCourse.IdClasse}`);
                 const groups = await groupsRes.json();
                 groups.forEach(g => {
-                    groupeSelect.innerHTML += `<option value="${g.Id}" ${wizardCourse.IdGroupe === g.Id ? 'selected' : ''}>Groupe: ${g.Name}</option>`;
+                    groupeSelect.innerHTML += `<option value="${window.app.readProp(g, 'Id')}" ${wizardCourse.IdGroupe === window.app.readProp(g, 'Id') ? 'selected' : ''}>Groupe: ${window.app.readProp(g, 'Name')}</option>`;
                 });
             } catch(e) { console.warn("Error loading groups:", e); }
         }

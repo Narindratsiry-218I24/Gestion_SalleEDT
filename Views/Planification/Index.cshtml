@@ -688,7 +688,7 @@
                 } else {
                     sel.innerHTML = '<option value="">Sélectionnez une salle libre</option>';
                     salles.forEach(s => {
-                        sel.innerHTML += `<option value="${s.idSalle || s.IdSalle}">${s.nomSalle || s.NomSalle} (Capacité: ${s.capacite || s.Capacite}) - Bât: ${s.codeBatiment || s.CodeBatiment} Etage: ${s.etage || s.Etage}</option>`;
+                        sel.innerHTML += `<option value="${window.app.readProp(s, 'IdSalle')}">${window.app.readProp(s, 'NomSalle')} (Capacité: ${window.app.readProp(s, 'Capacite')}) - Bât: ${window.app.readProp(s, 'CodeBatiment')} Etage: ${window.app.readProp(s, 'Etage')}</option>`;
                     });
                     sel.disabled = false;
                 }

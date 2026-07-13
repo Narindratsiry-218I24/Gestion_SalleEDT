@@ -59,6 +59,7 @@ namespace Gestion_SalleClasseEDT.Controllers
         public IActionResult CreateClasse([FromBody] Classe classe)
         {
             ModelState.Remove("Filiere");
+            ModelState.Remove("Niveau");
             ModelState.Remove("AnneeAcademique");
             ModelState.Remove("AffectationsMatieres");
             ModelState.Remove("Cours");
@@ -111,6 +112,7 @@ namespace Gestion_SalleClasseEDT.Controllers
         {
             if (id != classe.IdClasse) return BadRequest();
             ModelState.Remove("Filiere");
+            ModelState.Remove("Niveau");
             ModelState.Remove("AnneeAcademique");
             ModelState.Remove("AffectationsMatieres");
             ModelState.Remove("Cours");

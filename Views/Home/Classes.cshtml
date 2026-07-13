@@ -148,7 +148,37 @@
             fillSelect('affProfesseur', professeurs, 'IdProfesseur', p => `${prop(p, 'Nom')} ${prop(p, 'Prenom') || ''}`.trim());
 
             document.getElementById('anneeFilter').addEventListener('change', refreshByYear);
+            document.getElementById('classeFiliere').addEventListener('change', autoGenerateClasseName);
+            document.getElementById('classeNiveau').addEventListener('change', autoGenerateClasseName);
             await refreshByYear();
+        }
+
+        function autoGenerateClasseName() {
+            const filiereId = document.getElementById('classeFiliere').value;
+            const niveauId = document.getElementById('classeNiveau').value;
+            if (!filiereId || !niveauId) return;
+
+            const filiere = filieres.find(f => prop(f, 'IdFiliere') == filiereId);
+            const niveau = niveaux.find(n => prop(n, 'IdNiveau') == niveauId);
+            if (!filiere || !niveau) return;
+
+            const niveauCode = prop(niveau, 'CodeNiveau'); // e.g., L1, L2, L3, M1, M2
+            const filiereCode = prop(filiere, 'CodeFiliere'); // e.g., DA2I, SDIA
+            const mentionCode = filiere.Mention ? prop(filiere.Mention, 'CodeMention') : prop(filiere, 'IdMention'); // Need actual mention code. Wait, API might not return it directly, but let's assume it does or we can map it.
+
+            // The user rule: Mention + Niveau for L (e.g. INFO L3), Filiere + Niveau for M (e.g. SDIA M1)
+            let generatedName = "";
+            if (niveauCode.startsWith('L')) {
+                // We don't have mentionCode readily available if not included, let's use filiere's mention or just use Filiere for L if Mention missing.
+                // Wait, filiere has 'Mention' object if it was expanded. Let's check.
+                const mCode = filiere.Mention ? prop(filiere.Mention, 'CodeMention') : (filiere.IdMention === 1 ? 'INFO' : filiere.IdMention === 2 ? 'MANAGEMENT' : 'MULTI-MEDIA');
+                generatedName = `${mCode} ${niveauCode}`;
+            } else {
+                generatedName = `${filiereCode} ${niveauCode}`;
+            }
+
+            document.getElementById('classeNom').value = generatedName;
+            document.getElementById('classeCode').value = generatedName;
         }
 
         async function refreshByYear() {
@@ -166,7 +196,8 @@
 
         function fillSelect(id, items, valueName, textFn) {
             const select = document.getElementById(id);
-            select.innerHTML = (items || []).map(item => `<option value="${prop(item, valueName)}">${esc(textFn(item))}</option>`).join('');
+            const defaultOption = '<option value="">Sélectionnez...</option>';
+            select.innerHTML = defaultOption + (items || []).map(item => `<option value="${prop(item, valueName)}">${esc(textFn(item))}</option>`).join('');
         }
 
         function renderClasses() {

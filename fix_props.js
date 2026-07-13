@@ -1,54 +1,34 @@
 const fs = require('fs');
 
-let c = fs.readFileSync('Views/Shared/_MatiereForm.cshtml', 'utf8');
+const path = 'Views/Professeurs/Index.cshtml';
+let data = fs.readFileSync(path, 'utf8');
 
-c = c.replace(/const filteredFilieres = filieresList\.filter\(f => \{[\s\S]*?\}\);/g, `const allowedParcoursLower = allowedParcours.map(p => p.toLowerCase());
-        const filteredFilieres = filieresList.filter(f => {
-            const code = (app.readProp(f, 'CodeFiliere') || f.CodeFiliere || "").trim().toLowerCase();
-            return allowedParcoursLower.includes(code);
-        });`);
+// Replace the first foreach
+data = data.replace(
+    /@foreach \(var p in Model\)\s*\{\s*var profData = JsonSerializer\.Serialize\(new \{[\s\S]*?IdUtilisateur = p\.IdUtilisateur\s*\}\);\s*var statusClass[\s\S]*?var statusIcon =[\s\S]*?"â Œ";/g,
+    `@foreach (var item in profsWithJson)
+                {
+                    var p = item.Prof;
+                    var profData = item.JsonData;
 
-c = c.replace(/filteredFilieres\.forEach\(item => \{[\s\S]*?\}\);/g, `filteredFilieres.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = app.readProp(item, 'IdFiliere') || item.IdFiliere;
-            const codeFiliere = app.readProp(item, 'CodeFiliere') || item.CodeFiliere;
-            const nomFiliere = app.readProp(item, 'NomFiliere') || item.NomFiliere;
-            opt.textContent = \`\${codeFiliere} - \${nomFiliere}\`;
-            selectParcours.appendChild(opt);
-        });`);
+                    var statusClass = p.Statut == "Actif" ? "bg-green-100 text-green-800" :
+                                      p.Statut == "En congé" ? "bg-yellow-100 text-yellow-800" :
+                                      "bg-red-100 text-red-800";
+                    var statusIcon = p.Statut == "Actif" ? "✅" :
+                                     p.Statut == "En congé" ? "⚠️" :
+                                     "❌";`
+);
 
-c = c.replace(/const niveauObj = niveauxList\.find.*?;/g, `const niveauObj = niveauxList.find(n => (app.readProp(n, 'CodeNiveau') || n.CodeNiveau || "").trim().toUpperCase() === codeNiveauCherche);`);
+// Replace the second foreach
+data = data.replace(
+    /@foreach \(var p in Model\)\s*\{\s*var profData = JsonSerializer\.Serialize\(new \{[\s\S]*?CapaciteHoraireMax = p\.CapaciteHoraireMax, HeuresEffectuees = p\.HeuresEffectuees\s*\}\);\s*var statusIcon = p\.Statut == "Actif" \? "âœ…" : p\.Statut == "En congÃ©" \? "âš ï¸ " : "â Œ";/g,
+    `@foreach (var item in profsWithJson)
+        {
+            var p = item.Prof;
+            var profData = item.JsonData;
 
-fs.writeFileSync('Views/Shared/_MatiereForm.cshtml', c);
+            var statusIcon = p.Statut == "Actif" ? "✅" : p.Statut == "En congé" ? "⚠️" : "❌";`
+);
 
-// And edit Matieres.cshtml
-let c2 = fs.readFileSync('Views/Home/Matieres.cshtml', 'utf8');
-
-c2 = c2.replace(/const filiereObj = filieresList\.find\(f => f\.IdFiliere === matiere\.IdFiliere\);/g, `const idF = app.readProp(matiere, 'IdFiliere') || matiere.IdFiliere;
-            const filiereObj = filieresList.find(f => (app.readProp(f, 'IdFiliere') || f.IdFiliere) === idF);`);
-
-c2 = c2.replace(/if\(filiereObj && filiereObj\.Mention\) {/g, `const mentionObj = app.readProp(filiereObj, 'Mention') || filiereObj.Mention;
-            if(filiereObj && mentionObj) {`);
-
-c2 = c2.replace(/const nomMention = filiereObj\.Mention\.NomMention;/g, `const nomMention = app.readProp(mentionObj, 'NomMention') || mentionObj.NomMention;`);
-
-c2 = c2.replace(/const semestreObj = semestresList\.find\(s => s\.IdRefSemestre === matiere\.IdRefSemestre\);/g, `const idRS = app.readProp(matiere, 'IdRefSemestre') || matiere.IdRefSemestre;
-            const semestreObj = semestresList.find(s => (app.readProp(s, 'IdRefSemestre') || s.IdRefSemestre) === idRS);`);
-
-c2 = c2.replace(/if\(semestreObj && semestreObj\.Niveau\) {/g, `const nivObj = app.readProp(semestreObj, 'Niveau') || semestreObj.Niveau;
-            if(semestreObj && nivObj) {`);
-
-c2 = c2.replace(/const codeNiv = semestreObj\.Niveau\.CodeNiveau \|\| "";/g, `const codeNiv = (app.readProp(nivObj, 'CodeNiveau') || nivObj.CodeNiveau || "").trim().toUpperCase();`);
-
-c2 = c2.replace(/document\.getElementById\('idMatiere'\)\.value = matiere\.IdMatiere;/g, `document.getElementById('idMatiere').value = app.readProp(matiere, 'IdMatiere') || matiere.IdMatiere;`);
-c2 = c2.replace(/document\.getElementById\('codeMatiere'\)\.value = matiere\.CodeMatiere/g, `document.getElementById('codeMatiere').value = app.readProp(matiere, 'CodeMatiere') || matiere.CodeMatiere`);
-c2 = c2.replace(/document\.getElementById\('nomMatiere'\)\.value = matiere\.NomMatiere/g, `document.getElementById('nomMatiere').value = app.readProp(matiere, 'NomMatiere') || matiere.NomMatiere`);
-c2 = c2.replace(/document\.getElementById\('idFiliere'\)\.value = matiere\.IdFiliere/g, `document.getElementById('idFiliere').value = idF || matiere.IdFiliere`);
-c2 = c2.replace(/document\.getElementById\('idRefSemestre'\)\.value = matiere\.IdRefSemestre/g, `document.getElementById('idRefSemestre').value = idRS || matiere.IdRefSemestre`);
-c2 = c2.replace(/document\.getElementById\('credit'\)\.value = matiere\.Credit/g, `document.getElementById('credit').value = app.readProp(matiere, 'Credit') || matiere.Credit`);
-c2 = c2.replace(/document\.getElementById\('volumeHoraire'\)\.value = matiere\.VolumeHoraire/g, `document.getElementById('volumeHoraire').value = app.readProp(matiere, 'VolumeHoraire') || matiere.VolumeHoraire`);
-c2 = c2.replace(/document\.getElementById\('idProfesseurResponsable'\)\.value = matiere\.IdProfesseurResponsable/g, `document.getElementById('idProfesseurResponsable').value = app.readProp(matiere, 'IdProfesseurResponsable') || matiere.IdProfesseurResponsable`);
-
-fs.writeFileSync('Views/Home/Matieres.cshtml', c2);
-
-console.log("Done");
+fs.writeFileSync(path, data, 'utf8');
+console.log('done');

@@ -98,21 +98,6 @@ namespace Gestion_SalleClasseEDT.Controllers
         }
 
         // ─────────────────────────────────────────────────────────────
-        // CALENDRIER — vue mensuelle
-        // ─────────────────────────────────────────────────────────────
-        public async Task<IActionResult> Calendrier(string email, int? mois, int? annee)
-        {
-            var prof = await GetProfesseurFromRequest();
-            if (prof == null) return View("ProfNonTrouve");
-
-            var vm = new ProfesseurDashboardViewModel(prof, _db);
-            await vm.LoadAsync();
-            vm.CalendrierMois = mois ?? DateTime.Now.Month;
-            vm.CalendrierAnnee = annee ?? DateTime.Now.Year;
-            return View(vm);
-        }
-
-        // ─────────────────────────────────────────────────────────────
         // PLANIFIER CRÉNEAUX — interface interactive
         // ─────────────────────────────────────────────────────────────
         public async Task<IActionResult> PlanifierCreneaux(string email)

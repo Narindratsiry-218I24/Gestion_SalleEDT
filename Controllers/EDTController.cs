@@ -22,7 +22,8 @@ namespace Gestion_SalleClasseEDT.Controllers
         [Route("")]
         public IActionResult GetHebdomadaire(
             int? classeId = null, int? profId = null, int? salleId = null,
-            string? cycle = null, string? niveau = null, string? semaineType = null)
+            string? cycle = null, string? niveau = null, string? semaineType = null,
+            DateTime? startDate = null, DateTime? endDate = null)
         {
             var seancesQuery = db.Seances
                 .Include(s => s.Cours).ThenInclude(c => c.Matiere)
@@ -36,6 +37,9 @@ namespace Gestion_SalleClasseEDT.Controllers
             if (classeId.HasValue) seancesQuery = seancesQuery.Where(s => s.Cours.IdClasse == classeId.Value);
             if (profId.HasValue)   seancesQuery = seancesQuery.Where(s => s.Cours.IdProfesseur == profId.Value);
             if (salleId.HasValue)  seancesQuery = seancesQuery.Where(s => s.SalleId == salleId.Value);
+
+            if (startDate.HasValue) seancesQuery = seancesQuery.Where(s => s.Date.Date >= startDate.Value.Date);
+            if (endDate.HasValue) seancesQuery = seancesQuery.Where(s => s.Date.Date <= endDate.Value.Date);
 
             if (!string.IsNullOrEmpty(cycle) && cycle != "all")
                 seancesQuery = seancesQuery.Where(s => s.Cours.Classe.Filiere.NomFiliere.Contains(cycle));

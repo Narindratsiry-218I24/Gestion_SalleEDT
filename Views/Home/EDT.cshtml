@@ -9,6 +9,12 @@
             <p class="text-gray-500 mt-1">Gérer la répartition hebdomadaire des cours</p>
         </div>
         <div class="flex gap-3">
+            <button type="button" onclick="app.exportTablePdf('Emploi du Temps')" class="h-10 inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-red-600 shadow-sm hover:bg-red-50" title="Exporter PDF">
+                <i data-lucide="file-text" class="h-4 w-4"></i> PDF
+            </button>
+            <button type="button" onclick="app.exportTableExcel('Emploi du Temps')" class="h-10 inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-green-600 shadow-sm hover:bg-green-50" title="Exporter Excel">
+                <i data-lucide="file-spreadsheet" class="h-4 w-4"></i> Excel
+            </button>
             <button class="bg-[#17203A] hover:bg-[#12192B] text-white flex items-center gap-2 h-10 px-4 rounded-md font-medium border-none cursor-pointer" onclick="document.getElementById('newRequestModal').classList.remove('hidden')">
                 <i data-lucide="plus" class="w-4 h-4"></i> Nouvelle Demande
             </button>
@@ -16,24 +22,35 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-6 border border-gray-100 print:hidden">
-        <div class="flex flex-col gap-1">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Classe</span>
-            <select id="filterClasse" onchange="loadEDT()" class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                <option value="all">Toutes les classes</option>
-            </select>
+    <div class="bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center justify-between gap-6 border border-gray-100 print:hidden">
+        <div class="flex flex-wrap items-center gap-6">
+            <div class="flex flex-col gap-1">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Classe</span>
+                <select id="filterClasse" onchange="loadEDT()" class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                    <option value="all">Toutes les classes</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Enseignant</span>
+                <select id="filterProf" onchange="loadEDT()" class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                    <option value="all">Tous les enseignants</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Salle</span>
+                <select id="filterSalle" onchange="loadEDT()" class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
+                    <option value="all">Toutes les salles</option>
+                </select>
+            </div>
         </div>
-        <div class="flex flex-col gap-1">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Enseignant</span>
-            <select id="filterProf" onchange="loadEDT()" class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                <option value="all">Tous les enseignants</option>
-            </select>
-        </div>
-        <div class="flex flex-col gap-1">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Salle</span>
-            <select id="filterSalle" onchange="loadEDT()" class="w-[180px] h-10 bg-gray-50/50 border-none font-bold text-[#17203A] rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-[#17203A]/20">
-                <option value="all">Toutes les salles</option>
-            </select>
+        <div class="flex items-center gap-2 mt-4 sm:mt-0">
+            <button onclick="changeWeek(-1)" class="h-10 px-3 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 text-gray-700 flex items-center" title="Semaine Précédente">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <input type="date" id="weekPicker" onchange="onWeekChange()" class="h-10 bg-white border border-gray-200 text-sm font-bold text-[#17203A] rounded-md px-3 focus:ring-2 focus:ring-blue-500 outline-none" />
+            <button onclick="changeWeek(1)" class="h-10 px-3 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 text-gray-700 flex items-center" title="Semaine Suivante">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
         </div>
     </div>
 
@@ -212,6 +229,34 @@
             return "edt-block-other";
         }
 
+        let currentWeekStart = new Date();
+
+        function getMonday(d) {
+            d = new Date(d);
+            var day = d.getDay(),
+                diff = d.getDate() - day + (day == 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function setWeekPicker() {
+            document.getElementById('weekPicker').value = currentWeekStart.toISOString().split('T')[0];
+        }
+
+        function changeWeek(offset) {
+            currentWeekStart.setDate(currentWeekStart.getDate() + (offset * 7));
+            setWeekPicker();
+            loadEDT();
+        }
+
+        function onWeekChange() {
+            const val = document.getElementById('weekPicker').value;
+            if (val) {
+                currentWeekStart = getMonday(val);
+                setWeekPicker();
+                loadEDT();
+            }
+        }
+
         async function initFilters() {
             try {
                 const [classes, profs, salles] = await Promise.all([
@@ -259,11 +304,17 @@
             const profId = document.getElementById("filterProf").value;
             const salleId = document.getElementById("filterSalle").value;
 
+            const monday = getMonday(currentWeekStart);
+            const friday = new Date(monday);
+            friday.setDate(friday.getDate() + 4); // Friday
+
             let url = "/api/EDT?";
             const params = [];
             if (classeId && classeId !== "all") params.push("classeId=" + classeId);
             if (profId && profId !== "all") params.push("profId=" + profId);
             if (salleId && salleId !== "all") params.push("salleId=" + salleId);
+            params.push("startDate=" + monday.toISOString().split('T')[0]);
+            params.push("endDate=" + friday.toISOString().split('T')[0]);
             url += params.join("&");
 
             try {
@@ -344,6 +395,8 @@
         }
 
         document.addEventListener("DOMContentLoaded", async function() {
+            currentWeekStart = getMonday(new Date());
+            setWeekPicker();
             buildTimeLabels();
             buildDayGridlines();
             await initFilters();

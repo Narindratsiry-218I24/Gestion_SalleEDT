@@ -300,6 +300,11 @@
     }
 
     function handleProposeAlternative(id) {
+        let salleOptions = '<option value="">Sélectionnez une salle</option>';
+        allRooms.forEach(r => {
+            salleOptions += `<option value="${window.app.readProp(r, 'IdSalle')}">${window.app.readProp(r, 'NomSalle')}</option>`;
+        });
+
         Swal.fire({
             title: 'Proposer une alternative',
             html: `
@@ -312,6 +317,8 @@
                         <div><label class="text-xs font-bold text-gray-500 uppercase">Heure fin</label>
                             <input type="time" id="altEnd" class="swal2-input w-full mt-1" /></div>
                     </div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Nouvelle Salle</label>
+                        <select id="altSalle" class="swal2-select w-full mt-1">${salleOptions}</select></div>
                     <div><label class="text-xs font-bold text-gray-500 uppercase">Note pour le professeur</label>
                         <textarea id="altNote" class="swal2-textarea w-full mt-1" placeholder="Explication du changement..."></textarea></div>
                 </div>`,
@@ -322,24 +329,25 @@
                 const date = document.getElementById('altDate').value;
                 const start = document.getElementById('altStart').value;
                 const end = document.getElementById('altEnd').value;
-                if (!date || !start || !end) {
-                    Swal.showValidationMessage('Veuillez renseigner la date et les heures.');
+                const salleId = document.getElementById('altSalle').value;
+                if (!date || !start || !end || !salleId) {
+                    Swal.showValidationMessage('Veuillez renseigner la date, les heures et la salle.');
                     return false;
                 }
-                return { date, start, end, note: document.getElementById('altNote').value };
+                return { date, start, end, salleId: parseInt(salleId), note: document.getElementById('altNote').value };
             }
         }).then(result => {
             if (!result.isConfirmed) return;
-            const { date, start, end, note } = result.value;
-            fetch('/api/DemandeEDT/' + id + '/ProposeAlternative', {
+            const { date, start, end, salleId, note } = result.value;
+            fetch('/api/DemandeEDT/' + id + '/ProposerAlternatives', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+                body: JSON.stringify([{
                     DateProposee: date,
                     HeureDebutProposee: start + ':00',
                     HeureFinProposee: end + ':00',
-                    Note: note
-                })
+                    IdSalleProposee: salleId
+                }])
             }).then(res => {
                 if (res.ok) {
                     Swal.fire({ icon: 'success', title: 'Alternative proposée', text: 'Le professeur sera notifié.', timer: 1800, showConfirmButton: false });

@@ -28,8 +28,17 @@
                     <option value="amphi">Amphi</option>
                 </select>
             </div>
+            <button type="button" onclick="app.exportTablePdf('Salles')" class="h-11 px-4 bg-white border border-gray-200 text-red-600 hover:bg-red-50 gap-2 font-bold rounded-md flex items-center shadow-sm" title="Exporter PDF">
+                <i data-lucide="file-text" class="w-4 h-4"></i> PDF
+            </button>
+            <button type="button" onclick="app.exportTableExcel('Salles')" class="h-11 px-4 bg-white border border-gray-200 text-green-600 hover:bg-green-50 gap-2 font-bold rounded-md flex items-center shadow-sm" title="Exporter Excel">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
+            </button>
             <button class="h-11 px-6 bg-[#17203A] text-white hover:bg-[#12192B] gap-2 font-bold rounded-md flex items-center border-none" onclick="document.getElementById('addRoomModal').classList.remove('hidden')">
                 <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Salle
+            </button>
+            <button class="h-11 px-6 bg-blue-600 text-white hover:bg-blue-700 gap-2 font-bold rounded-md flex items-center border-none" onclick="promptAddClasse()">
+                <i data-lucide="users" class="w-4 h-4"></i> Ajouter Classe
             </button>
         </div>
     </div>
@@ -272,5 +281,141 @@
                 });
             }
         });
-    </script>
+        // ADD CLASSE FUNCTIONALITY IN SALLES PAGE
+    async function promptAddClasse() {
+        try {
+            const [anneesData, filieresData, niveauxData] = await Promise.all([
+                fetch('/api/AnneeAcademique').then(r => r.json()),
+                fetch('/api/Filiere').then(r => r.json()),
+                fetch('/api/Niveau').then(r => r.json())
+            ]);
+            
+            const annees = window.app.readProp(anneesData, 'Items') || anneesData;
+            if (!annees || annees.length === 0) {
+                return Swal.fire('Erreur', 'Aucune année académique configurée.', 'error');
+            }
+            const activeAnnee = annees.find(a => window.app.readProp(a, 'EstActive')) || annees[0];
+
+            let filiereOptions = '<option value="">-- Filière --</option>';
+            filieresData.forEach(f => {
+                filiereOptions += `<option value="${window.app.readProp(f, 'IdFiliere')}">${window.app.readProp(f, 'NomFiliere')}</option>`;
+            });
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Ajouter une Classe',
+                html: `
+                    <div class="space-y-4 text-left">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700">Filière / Parcours</label>
+                            <select id="swal-filiere" class="w-full mt-1 p-2 border border-gray-300 rounded-md" onchange="onFiliereChangeForNiveau()">
+                                ${filiereOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700">Niveau</label>
+                            <select id="swal-niveau" class="w-full mt-1 p-2 border border-gray-300 rounded-md" onchange="autoGenClasseName()">
+                                <option value="">-- Sélectionnez une filière d'abord --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700">Nom de la Classe (Auto-généré)</label>
+                            <input id="swal-nom" class="w-full mt-1 p-2 border border-gray-300 rounded-md bg-gray-50" readonly />
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Ajouter',
+                cancelButtonText: 'Annuler',
+                didOpen: () => {
+                    window.filieresDataCache = filieresData;
+                    window.niveauxDataCache = niveauxData;
+                },
+                preConfirm: () => {
+                    const filId = document.getElementById('swal-filiere').value;
+                    const nivId = document.getElementById('swal-niveau').value;
+                    const nom = document.getElementById('swal-nom').value;
+                    if (!filId || !nivId || !nom) {
+                        Swal.showValidationMessage('Veuillez sélectionner la filière et le niveau.');
+                        return false;
+                    }
+                    return { idFiliere: parseInt(filId), idNiveau: parseInt(nivId), nomClasse: nom, idAnnee: window.app.readProp(activeAnnee, 'IdAnnee') };
+                }
+            });
+
+            if (formValues) {
+                const res = await fetch('/api/Classe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        IdFiliere: formValues.idFiliere,
+                        IdNiveau: formValues.idNiveau,
+                        IdAnneeAcademique: formValues.idAnnee,
+                        NomClasse: formValues.nomClasse,
+                        CodeClasse: formValues.nomClasse
+                    })
+                });
+                if (res.ok) {
+                    Swal.fire('Succès', 'Classe ajoutée avec succès !', 'success');
+                } else {
+                    const txt = await res.text();
+                    Swal.fire('Erreur', txt, 'error');
+                }
+            }
+        } catch(e) {
+            console.error(e);
+            Swal.fire('Erreur', e.message, 'error');
+        }
+    }
+
+    function autoGenClasseName() {
+        const filId = document.getElementById('swal-filiere').value;
+        const nivId = document.getElementById('swal-niveau').value;
+        if (!filId || !nivId) return;
+
+        const filiere = window.filieresDataCache.find(f => window.app.readProp(f, 'IdFiliere') == filId);
+        const niveau = window.niveauxDataCache.find(n => window.app.readProp(n, 'IdNiveau') == nivId);
+        if (!filiere || !niveau) return;
+
+        const niveauCode = window.app.readProp(niveau, 'CodeNiveau') || '';
+        const filiereCode = window.app.readProp(filiere, 'CodeFiliere') || '';
+        let mCode = "";
+        
+        if (filiere.Mention && window.app.readProp(filiere.Mention, 'CodeMention')) {
+            mCode = window.app.readProp(filiere.Mention, 'CodeMention');
+        } else {
+            const idM = window.app.readProp(filiere, 'IdMention');
+            mCode = idM === 1 ? 'INFO' : idM === 2 ? 'MANAGEMENT' : 'MULTI-MEDIA';
+        }
+
+        let genName = "";
+        if (niveauCode.startsWith('L')) {
+            genName = `${mCode} ${niveauCode}`;
+        } else {
+            genName = `${filiereCode} ${niveauCode}`;
+        }
+        document.getElementById('swal-nom').value = genName;
+    }
+
+    function onFiliereChangeForNiveau() {
+        const filId = document.getElementById('swal-filiere').value;
+        const nivSelect = document.getElementById('swal-niveau');
+        nivSelect.innerHTML = '<option value="">-- Niveau --</option>';
+        document.getElementById('swal-nom').value = '';
+
+        if (!filId) return;
+
+        const filiere = window.filieresDataCache.find(f => window.app.readProp(f, 'IdFiliere') == filId);
+        if (!filiere) return;
+
+        const mentionId = window.app.readProp(filiere, 'IdMention');
+        const niveauxFiltres = window.niveauxDataCache.filter(n => window.app.readProp(n, 'IdMention') == mentionId);
+
+        niveauxFiltres.forEach(n => {
+            nivSelect.innerHTML += `<option value="${window.app.readProp(n, 'IdNiveau')}">${window.app.readProp(n, 'CodeNiveau')}</option>`;
+        });
+
+        autoGenClasseName();
+    }
+</script>
 }

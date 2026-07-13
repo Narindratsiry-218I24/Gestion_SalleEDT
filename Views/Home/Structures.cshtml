@@ -313,7 +313,8 @@
         function fillSelect(id, items, valueName, textFn) {
             const select = document.getElementById(id);
             if (!select) return;
-            select.innerHTML = (items || []).map(item => `<option value="${prop(item, valueName)}">${esc(textFn(item))}</option>`).join('');
+            const defaultOption = '<option value="">Sélectionnez...</option>';
+            select.innerHTML = defaultOption + (items || []).map(item => `<option value="${prop(item, valueName)}">${esc(textFn(item))}</option>`).join('');
         }
 
         // ================= RENDERING =================

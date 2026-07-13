@@ -17,7 +17,7 @@ builder.Services.AddDbContext<EMITDbContext>(options =>
         $"Port={Environment.GetEnvironmentVariable("DB_PORT") ?? "5432"};" +
         $"Database={Environment.GetEnvironmentVariable("DB_NAME") ?? "EMIT_EDT_DB"};" +
         $"User Id={Environment.GetEnvironmentVariable("DB_USER") ?? "postgres"};" +
-        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "tsiririmlay"};"
+        $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "kifeko"};"
     );
     options.ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });

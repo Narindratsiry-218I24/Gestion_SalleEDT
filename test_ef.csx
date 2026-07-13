@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 var services = new ServiceCollection();
 services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 services.AddDbContext<EMITDbContext>(options => {
-    options.UseNpgsql("Server=localhost;Port=5432;Database=EMIT_EDT_DB;User Id=postgres;Password=tsiririmlay;");
+    options.UseNpgsql("Server=localhost;Port=5432;Database=EMIT_EDT_DB;User Id=postgres;Password=kifeko;");
     options.EnableSensitiveDataLogging();
 });
 var provider = services.BuildServiceProvider();

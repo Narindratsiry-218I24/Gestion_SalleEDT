@@ -29,6 +29,32 @@
 }
 
 <div class="max-w-7xl mx-auto py-8">
+    @{
+        var profsWithJson = Model.Select(p => new {
+            Prof = p,
+            JsonData = JsonSerializer.Serialize(new {
+                p.IdProfesseur,
+                p.Matricule,
+                p.Nom,
+                p.Prenom,
+                p.Email,
+                p.Telephone,
+                p.TelephonePortable,
+                p.Grade,
+                p.Specialite,
+                p.Statut,
+                p.PhotoUrl,
+                p.Biographie,
+                p.CvUrl,
+                Titre = p.Titre,
+                DateEmbauche = p.DateEmbauche?.ToString("dd/MM/yyyy"),
+                CapaciteHoraireMax = p.CapaciteHoraireMax,
+                HeuresEffectuees = p.HeuresEffectuees,
+                StatutCompte = p.Utilisateur?.StatutCompte ?? "Aucun compte",
+                IdUtilisateur = p.IdUtilisateur
+            })
+        }).ToList();
+    }
     <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h1 class="text-3xl font-bold text-[#17203A]">Gestion des Professeurs</h1>
@@ -77,8 +103,14 @@
                 <button type="button" onclick="resetFilters()" class="h-10 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" title="RÃ©initialiser">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
                 </button>
-                <button type="button" onclick="exportCSV()" class="h-10 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" title="Exporter">
+                <button type="button" onclick="exportCSV()" class="h-10 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50" title="Exporter CSV">
                     <i data-lucide="download" class="h-4 w-4"></i>
+                </button>
+                <button type="button" onclick="app.exportTablePdf('Professeurs')" class="h-10 inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-red-600 shadow-sm hover:bg-red-50" title="Exporter PDF">
+                    <i data-lucide="file-text" class="h-4 w-4"></i> PDF
+                </button>
+                <button type="button" onclick="app.exportTableExcel('Professeurs')" class="h-10 inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-green-600 shadow-sm hover:bg-green-50" title="Exporter Excel">
+                    <i data-lucide="file-spreadsheet" class="h-4 w-4"></i> Excel
                 </button>
 
                 <a asp-action="Create" class="h-10 inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700" title="Ajouter un professeur">

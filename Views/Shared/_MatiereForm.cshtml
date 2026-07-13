@@ -138,9 +138,9 @@
                 profSelect.innerHTML = '<option value="">Sélectionnez un professeur</option>';
                 profsList.forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = p.IdProfesseur || p.idProfesseur;
-                    const nom = (p.NomProfesseur || p.nom || '');
-                    const prenom = (p.PrenomProfesseur || p.prenom || '');
+                    opt.value = window.app.readProp(p, 'IdProfesseur');
+                    const nom = window.app.readProp(p, 'Nom') || '';
+                    const prenom = window.app.readProp(p, 'Prenom') || '';
                     opt.textContent = `${prenom} ${nom}`.trim() || 'Professeur';
                     profSelect.appendChild(opt);
                 });
@@ -177,9 +177,9 @@
 
         filteredFilieres.forEach(item => {
             const opt = document.createElement('option');
-            opt.value = item.IdFiliere || item.idFiliere;
-            const codeFiliere = item.CodeFiliere || "";
-            const nomFiliere = item.NomFiliere || "";
+            opt.value = window.app.readProp(item, 'IdFiliere');
+            const codeFiliere = window.app.readProp(item, 'CodeFiliere') || "";
+            const nomFiliere = window.app.readProp(item, 'NomFiliere') || "";
             opt.textContent = `${codeFiliere} - ${nomFiliere}`;
             selectParcours.appendChild(opt);
         });
@@ -192,15 +192,15 @@
         else if (niveauVal === "Master 1") codeNiveauCherche = "M1";
         else if (niveauVal === "Master 2") codeNiveauCherche = "M2";
 
-        const niveauObj = niveauxList.find(n => (n.CodeNiveau || "").trim().toUpperCase() === codeNiveauCherche);
+        const niveauObj = niveauxList.find(n => (window.app.readProp(n, 'CodeNiveau') || "").trim().toUpperCase() === codeNiveauCherche);
         if (niveauObj) {
-            const idNiveau = niveauObj.IdNiveau || niveauObj.idNiveau;
-            const filteredSemestres = semestresList.filter(s => (s.IdNiveau || s.idNiveau) == idNiveau);
+            const idNiveau = window.app.readProp(niveauObj, 'IdNiveau');
+            const filteredSemestres = semestresList.filter(s => window.app.readProp(s, 'IdNiveau') == idNiveau);
             
             filteredSemestres.forEach(item => {
                 const opt = document.createElement('option');
-                opt.value = item.IdRefSemestre || item.idRefSemestre;
-                opt.textContent = item.CodeSemestre || "";
+                opt.value = window.app.readProp(item, 'IdRefSemestre');
+                opt.textContent = window.app.readProp(item, 'CodeSemestre') || "";
                 selectSemestre.appendChild(opt);
             });
         }

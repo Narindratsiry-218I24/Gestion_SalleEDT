@@ -10,7 +10,13 @@
             <p class="text-gray-500 mt-1">Gérez le catalogue des matières, crédits et volumes horaires.</p>
         </div>
         <div class="flex gap-2">
-            <button type="button" class="flex items-center gap-2 bg-[#17203A] hover:bg-[#12192B] text-white px-4 py-2 rounded-lg transition-colors font-medium" onclick="openCreateModal()">
+            <button type="button" onclick="app.exportTablePdf('Matieres')" class="h-10 inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-red-600 shadow-sm hover:bg-red-50" title="Exporter PDF">
+                <i data-lucide="file-text" class="h-4 w-4"></i> PDF
+            </button>
+            <button type="button" onclick="app.exportTableExcel('Matieres')" class="h-10 inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-green-600 shadow-sm hover:bg-green-50" title="Exporter Excel">
+                <i data-lucide="file-spreadsheet" class="h-4 w-4"></i> Excel
+            </button>
+            <button type="button" class="flex items-center gap-2 bg-[#17203A] hover:bg-[#12192B] text-white px-4 py-2 rounded-lg transition-colors font-medium h-10" onclick="openCreateModal()">
                 <i data-lucide="plus" class="w-4 h-4"></i> Ajouter une Matière
             </button>
         </div>

@@ -110,13 +110,17 @@ ON CONFLICT (id_classe) DO NOTHING;
 INSERT INTO public.utilisateur (id_utilisateur, nom, prenom, email, role, password_hash, statut_compte, premier_login, date_creation) VALUES
 (1, 'Admin', 'EMIT', 'admin@emit.mg', 'admin', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01'),
 (2, 'Randriana', 'Aristhène', 'a.randriana@emit.edu', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01'),
-(3, 'Rakoto', 'Jean', 'j.rakoto@emit.edu', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01')
+(3, 'Rakoto', 'Jean', 'j.rakoto@emit.edu', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01'),
+(4, 'Prof', 'Test', 'prof@emit.mg', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01'),
+(5, 'Tooj', 'Ratooj', 'toojratooj@gmail.com', 'professeur', 'eZ+6yJQqiVrGMCBCcxGt8QWcjIVRDouhPiMFzIkFySY=', 'Actif', false, '2026-01-01')
 ON CONFLICT (id_utilisateur) DO UPDATE SET password_hash = EXCLUDED.password_hash, statut_compte = EXCLUDED.statut_compte;
 
 -- 10. Seed PROFESSEUR
 INSERT INTO public.professeur (id_professeur, id_utilisateur, matricule, nom, prenom, email, telephone, grade, specialite, statut, capacite_horaire_max, heures_effectuees, est_actif, date_creation, titre, photo_url, cv_url, biographie, specialites_secondaires, telephone_portable) VALUES
 (2, 2, 'PROF-0001', 'Randriana', 'Aristhène', 'a.randriana@emit.edu', '+261 34 00 000 01', 'Docteur', 'Informatique', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', ''),
-(3, 3, 'PROF-0002', 'Rakoto', 'Jean', 'j.rakoto@emit.edu', '+261 34 00 000 02', 'M. Conf.', 'Management', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', '')
+(3, 3, 'PROF-0002', 'Rakoto', 'Jean', 'j.rakoto@emit.edu', '+261 34 00 000 02', 'M. Conf.', 'Management', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', ''),
+(4, 4, 'PROF-0003', 'Prof', 'Test', 'prof@emit.mg', '+261 34 00 000 03', 'Docteur', 'Informatique', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', ''),
+(5, 5, 'PROF-0004', 'Tooj', 'Ratooj', 'toojratooj@gmail.com', '+261 34 00 000 04', 'Docteur', 'Informatique', 'Actif', 20, 0, true, '2026-01-01', 'Dr', '', '', '', '[]', '')
 ON CONFLICT (id_professeur) DO UPDATE SET matricule = EXCLUDED.matricule, id_utilisateur = EXCLUDED.id_utilisateur;
 
 ALTER TABLE matiere ADD COLUMN IF NOT EXISTS volume_horaire INT NOT NULL DEFAULT 0;
